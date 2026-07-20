@@ -19,16 +19,27 @@ $port = 52100 + (Get-Random -Maximum 1000)
 $env:PHANTOM_DATA_DIR = $data
 $process = Start-Process -FilePath $sidecar -ArgumentList @('serve','--host','127.0.0.1','--port',"$port",'--log-level','warning') -PassThru -WindowStyle Hidden
 try {
-  $tokenPath = Join-Path $data 'runtime\.api_token'; $deadline = (Get-Date).AddSeconds(45); $token = $null
+  $tokenPath = Join-Path $data 'runtime\.api_token'; $deadline = (Get-Date).AddSeconds(45); $token = $null; $ready = $null; $lastReadyError = 'not attempted'
   do {
     if ($process.HasExited) { throw "Sidecar exited early: $($process.ExitCode)" }
     if (Test-Path $tokenPath) { $token = (Get-Content -Raw $tokenPath).Trim() }
     if ($token) {
-      try { $ready = Invoke-RestMethod "http://127.0.0.1:$port/readyz" -Headers @{Authorization="Bearer $token"}; if ($ready.status -eq 'ready') { break } } catch {}
+      try {
+        $ready = Invoke-RestMethod "http://127.0.0.1:$port/readyz" -Headers @{Authorization="Bearer $token"}
+        $lastReadyError = "HTTP success, status=$($ready.status), db=$($ready.db)"
+        if ($ready.status -eq 'ready') { break }
+      } catch {
+        $lastReadyError = $_.Exception.Message
+      }
+    } else {
+      $lastReadyError = "token missing at $tokenPath"
     }
     Start-Sleep -Milliseconds 200
   } while ((Get-Date) -lt $deadline)
-  if (!$token -or $ready.status -ne 'ready') { throw 'Authenticated /readyz timeout' }
+  if (!$token -or !$ready -or $ready.status -ne 'ready') {
+    $health = try { (Invoke-RestMethod "http://127.0.0.1:$port/healthz" | ConvertTo-Json -Compress) } catch { "error: $($_.Exception.Message)" }
+    throw "Authenticated /readyz timeout; lastReadyError=$lastReadyError; healthz=$health; sidecarPid=$($process.Id); tokenExists=$(Test-Path $tokenPath)"
+  }
   $headers = @{Authorization="Bearer $token"; 'Content-Type'='application/json'}
   $body = @{name='windows-ci-smoke'; platform_tag='custom'; proxy_host=''; proxy_port=0} | ConvertTo-Json
   $profile = Invoke-RestMethod "http://127.0.0.1:$port/v1/profiles" -Method Post -Headers $headers -Body $body

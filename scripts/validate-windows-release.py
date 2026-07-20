@@ -21,6 +21,7 @@ require("COLLECT(" in spec and ("camoufox.exe" in spec or "camoufox-bin.exe" in 
 for token in ("/readyz", "/v1/profiles", "/v1/sessions/instant", "taskkill.exe", "Get-CimInstance", "phantom-sidecar.exe", "Phantom Browser.exe"):
     require(token in smoke, f"smoke missing {token}")
 require("$ready.status -eq 'ready'" in smoke, "smoke must accept the /readyz contract status=ready")
+require("lastReadyError" in smoke and "/healthz" in smoke, "smoke timeout must report the last readiness error and public health state")
 require(conf["bundle"]["targets"] == ["nsis"], "Tauri must build NSIS")
 require(conf["bundle"]["resources"].get("../../dist/phantom-sidecar") == "phantom-sidecar", "sidecar resource mapping missing")
 require("PHANTOM_PYTHON" in rust and "resources/phantom-sidecar/phantom-sidecar.exe" in rust and "taskkill" in rust, "Rust packaged discovery/cleanup missing")
