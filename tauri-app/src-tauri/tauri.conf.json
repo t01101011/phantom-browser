@@ -3,6 +3,7 @@
   "productName": "Phantom Browser",
   "version": "0.1.0",
   "identifier": "com.tk.phantombrowser",
+  "mainBinaryName": "Phantom Browser",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
