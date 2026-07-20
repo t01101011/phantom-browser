@@ -17,7 +17,7 @@ require("runs-on: windows-latest" in workflow, "workflow must use native windows
 require("x86_64-pc-windows-msvc" in workflow and "windows-gnu" not in workflow, "release must use MSVC, never GNU cross-build")
 for token in ("permissions:\n  contents: read", "SHA256SUMS", "smoke-windows.ps1", "phantom-sidecar.spec", "upload-artifact@v4", "downloadBootstrapper"):
     require(token in workflow or token in json.dumps(conf), f"missing release contract: {token}")
-require("COLLECT(" in spec and "camoufox.exe" in spec and "version.json" in spec, "spec must be onedir and require browser data")
+require("COLLECT(" in spec and ("camoufox.exe" in spec or "camoufox-bin.exe" in spec) and "version.json" in spec, "spec must be onedir and require browser data")
 for token in ("/readyz", "/v1/profiles", "/v1/sessions/instant", "taskkill.exe", "Get-CimInstance", "phantom-sidecar.exe", "Phantom Browser.exe"):
     require(token in smoke, f"smoke missing {token}")
 require(conf["bundle"]["targets"] == ["nsis"], "Tauri must build NSIS")
@@ -32,8 +32,8 @@ if archive:
     if archive.is_file():
         with zipfile.ZipFile(archive) as z:
             names = set(z.namelist())
-            for suffix in ("/Phantom Browser.exe", "/phantom-sidecar/phantom-sidecar.exe", "/phantom-sidecar/_internal/camoufox/camoufox.exe", "/phantom-sidecar/_internal/camoufox/version.json"):
-                require(any(n.endswith(suffix) for n in names), f"portable archive missing {suffix}")
+            for alternatives in (("/Phantom Browser.exe",), ("/phantom-sidecar/phantom-sidecar.exe",), ("/phantom-sidecar/_internal/camoufox/camoufox.exe", "/phantom-sidecar/_internal/camoufox/camoufox-bin.exe"), ("/phantom-sidecar/_internal/camoufox/version.json",)):
+                require(any(n.endswith(suffix) for n in names for suffix in alternatives), f"portable archive missing one of {alternatives}")
 if errors:
     print("FAIL\n" + "\n".join(f"- {e}" for e in errors)); raise SystemExit(1)
 print("PASS: Windows release static/layout contract" + (" and archive" if archive else ""))

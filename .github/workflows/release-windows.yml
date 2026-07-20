@@ -69,10 +69,11 @@ jobs:
         run: |
           $env:CAMOUFOX_CACHE = Join-Path $PWD 'build\camoufox-cache'
           python -m camoufox fetch
-          $cache = python -c "from camoufox.pkgman import INSTALL_DIR; print(INSTALL_DIR)"
+          $browser = python -c "from camoufox.pkgman import camoufox_path; print(camoufox_path(download_if_missing=False))"
           New-Item -ItemType Directory -Force build | Out-Null
-          Copy-Item -Recurse -Force $cache build\camoufox
-          if (!(Test-Path build\camoufox\camoufox.exe) -or !(Test-Path build\camoufox\version.json)) { throw 'Camoufox fetch incomplete' }
+          Copy-Item -Recurse -Force $browser build\camoufox
+          if (!(Test-Path build\camoufox\camoufox.exe) -and !(Test-Path build\camoufox\camoufox-bin.exe)) { throw 'Camoufox executable missing after fetch' }
+          if (!(Test-Path build\camoufox\version.json)) { throw 'Camoufox version metadata missing after fetch' }
 
       - name: Build PyInstaller onedir sidecar
         shell: pwsh
@@ -81,7 +82,7 @@ jobs:
         run: |
           python -m PyInstaller --noconfirm --clean packaging/phantom-sidecar.spec
           if (!(Test-Path dist\phantom-sidecar\phantom-sidecar.exe)) { throw 'PyInstaller output missing' }
-          if (!(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox.exe)) { throw 'Camoufox asset missing from onedir' }
+          if (!(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox.exe) -and !(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox-bin.exe)) { throw 'Camoufox asset missing from onedir' }
           dist\phantom-sidecar\phantom-sidecar.exe --help | Out-Null
 
       - name: Validate Rust sources with bundled resources

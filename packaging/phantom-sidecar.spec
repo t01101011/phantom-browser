@@ -9,8 +9,8 @@ ROOT = Path(SPECPATH).resolve().parent.parent
 CAMOUFOX_BROWSER = Path(os.environ.get("PHANTOM_CAMOUFOX_DIR", ROOT / "build" / "camoufox"))
 if not (CAMOUFOX_BROWSER / "version.json").is_file():
     raise SystemExit(f"Camoufox browser data missing: {CAMOUFOX_BROWSER / 'version.json'}")
-if not (CAMOUFOX_BROWSER / "camoufox.exe").is_file():
-    raise SystemExit(f"Camoufox executable missing: {CAMOUFOX_BROWSER / 'camoufox.exe'}")
+if not (CAMOUFOX_BROWSER / "camoufox.exe").is_file() and not (CAMOUFOX_BROWSER / "camoufox-bin.exe").is_file():
+    raise SystemExit(f"Camoufox executable missing in: {CAMOUFOX_BROWSER}")
 
 datas = [(str(CAMOUFOX_BROWSER), "camoufox")]
 binaries = []
