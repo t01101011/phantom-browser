@@ -23,6 +23,7 @@ for token in ("/readyz", "/v1/profiles", "/v1/sessions/instant", "taskkill.exe",
 require("$ready.status -eq 'ready'" in smoke, "smoke must accept the /readyz contract status=ready")
 require("lastReadyError" in smoke and "/healthz" in smoke, "smoke timeout must report the last readiness error and public health state")
 require("RedirectStandardOutput" in smoke and "RedirectStandardError" in smoke, "smoke must capture packaged sidecar stdout/stderr")
+require("((Get-Content -Raw $stdoutLog) -join '').Trim()" in smoke and "((Get-Content -Raw $stderrLog) -join '').Trim()" in smoke, "smoke must read empty redirected logs without null.Trim masking the root cause")
 require("Smoke packaged sidecar before desktop build" in workflow, "workflow must smoke the packaged sidecar before the expensive Tauri/NSIS build")
 require(conf["bundle"]["targets"] == ["nsis"], "Tauri must build NSIS")
 require(conf["bundle"]["resources"].get("../../dist/phantom-sidecar") == "phantom-sidecar", "sidecar resource mapping missing")

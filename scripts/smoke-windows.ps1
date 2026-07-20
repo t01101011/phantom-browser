@@ -42,8 +42,8 @@ try {
   } while ((Get-Date) -lt $deadline)
   if (!$token -or !$ready -or $ready.status -ne 'ready') {
     $health = try { (Invoke-RestMethod "http://127.0.0.1:$port/healthz" | ConvertTo-Json -Compress) } catch { "error: $($_.Exception.Message)" }
-    $stdout = if (Test-Path $stdoutLog) { (Get-Content -Raw $stdoutLog).Trim() } else { '<missing>' }
-    $stderr = if (Test-Path $stderrLog) { (Get-Content -Raw $stderrLog).Trim() } else { '<missing>' }
+    $stdout = if (Test-Path $stdoutLog) { ((Get-Content -Raw $stdoutLog) -join '').Trim() } else { '<missing>' }
+    $stderr = if (Test-Path $stderrLog) { ((Get-Content -Raw $stderrLog) -join '').Trim() } else { '<missing>' }
     throw "Authenticated /readyz timeout; lastReadyError=$lastReadyError; healthz=$health; sidecarPid=$($process.Id); tokenExists=$(Test-Path $tokenPath); stdout=$stdout; stderr=$stderr"
   }
   $headers = @{Authorization="Bearer $token"; 'Content-Type'='application/json'}
