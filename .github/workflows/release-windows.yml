@@ -1,0 +1,134 @@
+name: Release Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_TARGET: x86_64-pc-windows-msvc
+
+jobs:
+  build-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tauri-app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: tauri-app/src-tauri
+
+      - name: Install and validate sources
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check . pytest pyinstaller pyyaml
+          python -m pytest -q
+          Push-Location tauri-app
+          npm ci
+          npm test -- --run
+          npm run build
+          Pop-Location
+          python scripts/validate-windows-release.py
+          cargo test --manifest-path tauri-app/src-tauri/Cargo.toml --target $env:RUST_TARGET
+
+      - name: Task16 controlled stealth coherence gate
+        shell: pwsh
+        run: |
+          python -m playwright install chromium
+          python tests/stealth/probe_local.py --profile-dir "$env:RUNNER_TEMP\phantom-task16-profile" --output task16-artifacts/windows-chromium-raw.json
+          python scripts/stealth-coherence.py task16-artifacts/windows-chromium-raw.json --output task16-artifacts/windows-chromium-verdict.json
+          Get-ChildItem task16-artifacts\*.json | ForEach-Object { "$( (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)" } | Set-Content -Encoding ascii task16-artifacts\SHA256SUMS
+      - name: Upload Task16 Windows evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: task16-stealth-windows
+          path: task16-artifacts/
+          if-no-files-found: error
+
+      - name: Fetch native Windows Camoufox
+        shell: pwsh
+        run: |
+          $env:CAMOUFOX_CACHE = Join-Path $PWD 'build\camoufox-cache'
+          python -m camoufox fetch
+          $cache = python -c "from camoufox.pkgman import INSTALL_DIR; print(INSTALL_DIR)"
+          New-Item -ItemType Directory -Force build | Out-Null
+          Copy-Item -Recurse -Force $cache build\camoufox
+          if (!(Test-Path build\camoufox\camoufox.exe) -or !(Test-Path build\camoufox\version.json)) { throw 'Camoufox fetch incomplete' }
+
+      - name: Build PyInstaller onedir sidecar
+        shell: pwsh
+        env:
+          PHANTOM_CAMOUFOX_DIR: ${{ github.workspace }}\build\camoufox
+        run: |
+          python -m PyInstaller --noconfirm --clean packaging/phantom-sidecar.spec
+          if (!(Test-Path dist\phantom-sidecar\phantom-sidecar.exe)) { throw 'PyInstaller output missing' }
+          if (!(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox.exe)) { throw 'Camoufox asset missing from onedir' }
+          dist\phantom-sidecar\phantom-sidecar.exe --help | Out-Null
+
+      - name: Build NSIS bundle
+        working-directory: tauri-app
+        shell: pwsh
+        run: npm run tauri -- build --target x86_64-pc-windows-msvc --bundles nsis
+
+      - name: Stage and smoke portable layout
+        shell: pwsh
+        run: |
+          $stage = 'artifacts\Phantom-Browser-portable'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item tauri-app\src-tauri\target\x86_64-pc-windows-msvc\release\tauri-app.exe "$stage\Phantom Browser.exe"
+          Copy-Item -Recurse dist\phantom-sidecar "$stage\phantom-sidecar"
+          python scripts/test-windows-release-config.py "$stage\Phantom Browser.exe"
+          ./scripts/smoke-windows.ps1 -BundleRoot $stage
+          Compress-Archive -Path "$stage\*" -DestinationPath artifacts\Phantom-Browser-portable-windows-x64.zip
+          python scripts/validate-windows-release.py artifacts\Phantom-Browser-portable-windows-x64.zip
+
+      - name: Install and smoke NSIS bundle
+        shell: pwsh
+        run: |
+          $installer = Get-Item tauri-app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe | Select-Object -First 1
+          $install = Join-Path $env:RUNNER_TEMP 'Phantom-Browser-installed'
+          $p = Start-Process $installer.FullName -ArgumentList @('/S', "/D=$install") -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "NSIS install failed: $($p.ExitCode)" }
+          ./scripts/smoke-windows.ps1 -BundleRoot $install -SkipBrowserSession
+          Copy-Item $installer.FullName artifacts\
+          $uninstaller = Join-Path $install 'uninstall.exe'
+          if (Test-Path $uninstaller) { Start-Process $uninstaller -ArgumentList '/S' -Wait }
+
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem artifacts -File | Where-Object Name -ne SHA256SUMS | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)" | Add-Content -Encoding ascii artifacts\SHA256SUMS
+          }
+
+      - name: Upload checksummed Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-browser-windows-x64
+          path: |
+            artifacts/*.exe
+            artifacts/*.zip
+            artifacts/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

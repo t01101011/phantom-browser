@@ -1,0 +1,29 @@
+.venv/
+.env
+*.local.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+
+# Runtime state / secrets
+profiles.db
+profiles.db-*
+profiles_data/
+data/
+
+# Frontend / Rust build artifacts
+tauri-app/node_modules/
+tauri-app/dist/
+tauri-app/src-tauri/target/
+dist/
+
+# Spike outputs and logs
+spike/out/
+spike/*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

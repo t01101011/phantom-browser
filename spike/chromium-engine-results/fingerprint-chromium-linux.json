@@ -1,0 +1,142 @@
+{
+  "candidate": "fingerprint-chromium-148.0.7778.215",
+  "checksum_sha256": "b93542a3587a3faa8e08ca1d423a0d40399857f330d5e02e6107e2c80932cd0d",
+  "host": {
+    "arch": "x86_64",
+    "os": "Linux"
+  },
+  "schema_version": 1,
+  "surfaces": {
+    "binary": {
+      "browserVersion": "148.0.7778.215",
+      "path": "/root/projects/phantom-browser/spike/candidates/fingerprint/ungoogled-chromium-148.0.7778.215-1-x86_64_linux/chrome",
+      "sha256": "abd700e6015e259a00f1a31e99ad16f99f63365222328937454e8f603f575284"
+    },
+    "canvas_audio_client_rects": {
+      "audioContext": {
+        "sampleRate": 44100,
+        "supported": true
+      },
+      "canvasSha256": "aff2887fb746f6310dc50427abcabfb71b75366f9018e6021e943efcf4c7ba40",
+      "clientRects": [
+        {
+          "height": 20,
+          "width": 276.890625,
+          "x": 8,
+          "y": 8
+        }
+      ]
+    },
+    "cdp_attach_reconnect": {
+      "endpointScheme": "http",
+      "passed": true
+    },
+    "fonts": {
+      "arialWidth": 276.880859375,
+      "check": [
+        [
+          "Arial",
+          true
+        ],
+        [
+          "Times New Roman",
+          true
+        ],
+        [
+          "Courier New",
+          true
+        ],
+        [
+          "Segoe UI",
+          true
+        ],
+        [
+          "Noto Sans",
+          true
+        ]
+      ]
+    },
+    "persistent_user_data_dir": {
+      "passed": true,
+      "reconnectValue": "v1",
+      "relaunchValue": "v1"
+    },
+    "tls_http2": {
+      "reason": "requires controlled packet/server capture; browser JS cannot attest TLS fingerprint or HTTP/2 framing",
+      "status": "not_measured"
+    },
+    "ua_ua_ch": {
+      "brands": [
+        {
+          "brand": "Not/A)Brand",
+          "version": "99"
+        },
+        {
+          "brand": "Chromium",
+          "version": "148"
+        }
+      ],
+      "hints": {
+        "architecture": "x86",
+        "bitness": "64",
+        "brands": [
+          {
+            "brand": "Not/A)Brand",
+            "version": "99"
+          },
+          {
+            "brand": "Chromium",
+            "version": "148"
+          }
+        ],
+        "fullVersionList": [
+          {
+            "brand": "Not/A)Brand",
+            "version": "99.0.0.0"
+          },
+          {
+            "brand": "Chromium",
+            "version": "148.0.7778.217"
+          }
+        ],
+        "mobile": false,
+        "model": "",
+        "platform": "Linux",
+        "platformVersion": "",
+        "uaFullVersion": "148.0.7778.217"
+      },
+      "mobile": false,
+      "platform": "Linux x86_64",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+    },
+    "webgl_webgpu": {
+      "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "webglVendor": "Google Inc. (Google)",
+      "webgpuSupported": true
+    },
+    "webrtc_dns": {
+      "iceCandidates": []
+    },
+    "worker_main": {
+      "dedicatedWorker": {
+        "hardwareConcurrency": 2,
+        "languages": [
+          "en-US",
+          "en"
+        ],
+        "platform": "Linux x86_64",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+      },
+      "main": {
+        "hardwareConcurrency": 2,
+        "languages": [
+          "en-US",
+          "en"
+        ],
+        "platform": "Linux x86_64",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+      },
+      "serviceWorkerSupported": true
+    }
+  }
+}

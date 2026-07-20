@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: phantom-browser
+Version: 0.1.0
+Summary: Self-hosted antidetect browser profile manager — Camoufox + BrowserForge persistent fingerprints
+Requires-Python: >=3.10
+Requires-Dist: camoufox[geoip]>=0.5.4
+Requires-Dist: browserforge>=1.2.4
+Requires-Dist: playwright>=1.60
+Requires-Dist: platformdirs>=3
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn>=0.34
+Requires-Dist: httpx>=0.28
+Requires-Dist: mcp<2,>=1.28
+Provides-Extra: dev
+Requires-Dist: pytest<10,>=9; extra == "dev"

@@ -1,0 +1,11 @@
+camoufox[geoip]>=0.5.4
+browserforge>=1.2.4
+playwright>=1.60
+platformdirs>=3
+fastapi>=0.115
+uvicorn>=0.34
+httpx>=0.28
+mcp<2,>=1.28
+
+[dev]
+pytest<10,>=9

@@ -1,0 +1,61 @@
+name: Release Linux
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: tauri-app/package-lock.json }
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -q
+      - name: Task16 controlled stealth coherence gate
+        run: |
+          python -m playwright install chromium
+          python tests/stealth/probe_local.py --profile-dir "$RUNNER_TEMP/phantom-task16-profile" --output task16-artifacts/linux-chromium-raw.json
+          python scripts/stealth-coherence.py task16-artifacts/linux-chromium-raw.json --output task16-artifacts/linux-chromium-verdict.json
+          sha256sum task16-artifacts/*.json > task16-artifacts/SHA256SUMS
+      - name: Upload Task16 raw evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: task16-stealth-linux-${{ github.ref_name }}
+          path: task16-artifacts/
+          if-no-files-found: error
+      - name: Build and smoke container
+        run: |
+          docker compose config -q
+          docker compose build
+          docker compose up -d
+          for i in {1..30}; do curl -fsS http://127.0.0.1:5100/healthz && break; sleep 2; done
+          token="$(docker compose exec -T --user 10001 phantom cat /data/runtime/.api_token)"
+          PHANTOM_TOKEN="$token" scripts/smoke-linux.sh
+          docker compose down
+      - name: Build desktop
+        working-directory: tauri-app
+        run: |
+          npm ci
+          npm test -- --run
+          npm run build
+          cargo test --manifest-path src-tauri/Cargo.toml
+          npm run tauri build -- --bundles appimage,deb
+      - name: Checksums
+        run: |
+          mkdir -p release
+          find tauri-app/src-tauri/target/release/bundle -type f \( -name '*.AppImage' -o -name '*.deb' \) -exec cp {} release/ \;
+          cp Dockerfile docker-compose.yml packaging/phantom.service release/
+          cd release && sha256sum * > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phantom-linux-${{ github.ref_name }}
+          path: release/
+          if-no-files-found: error

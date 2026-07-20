@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "profile_id": "fixture-linux",
+  "runs": [
+    {
+      "contexts": {
+        "main": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        },
+        "worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        },
+        "shared_worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 4,
+          "timezone": "America/New_York"
+        },
+        "service_worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        }
+      },
+      "ua_ch": {
+        "status": "pass",
+        "platform": "Linux",
+        "full_versions": [
+          {
+            "brand": "Chromium",
+            "version": "147.0.0.0"
+          }
+        ]
+      },
+      "gpu": {
+        "webgl": {
+          "status": "pass",
+          "adapter_class": "software"
+        },
+        "webgpu": {
+          "status": "unsupported",
+          "reason": "headless adapter unavailable"
+        }
+      },
+      "screen": {
+        "width": 1920,
+        "height": 1080,
+        "viewport_width": 1280,
+        "viewport_height": 720
+      },
+      "locale_geo": {
+        "expected": {
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "country": "US"
+        },
+        "observed": {
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "country": "US"
+        }
+      },
+      "fonts": {
+        "status": "pass",
+        "metrics_hash": "sha256:fixture"
+      },
+      "webrtc": {
+        "status": "pass",
+        "public_ip_leak": false
+      },
+      "transport": {
+        "tls": {
+          "status": "unsupported",
+          "reason": "controlled capture not configured"
+        },
+        "http2": {
+          "status": "unsupported",
+          "reason": "controlled capture not configured"
+        }
+      }
+    },
+    {
+      "contexts": {
+        "main": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        },
+        "worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        },
+        "shared_worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        },
+        "service_worker": {
+          "status": "pass",
+          "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/148.0.0.0",
+          "platform": "Linux x86_64",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "hardware_concurrency": 8,
+          "timezone": "America/New_York"
+        }
+      },
+      "ua_ch": {
+        "status": "pass",
+        "platform": "Linux",
+        "full_versions": [
+          {
+            "brand": "Chromium",
+            "version": "148.0.0.0"
+          }
+        ]
+      },
+      "gpu": {
+        "webgl": {
+          "status": "pass",
+          "adapter_class": "software"
+        },
+        "webgpu": {
+          "status": "unsupported",
+          "reason": "headless adapter unavailable"
+        }
+      },
+      "screen": {
+        "width": 1920,
+        "height": 1080,
+        "viewport_width": 1280,
+        "viewport_height": 720
+      },
+      "locale_geo": {
+        "expected": {
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "country": "US"
+        },
+        "observed": {
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "country": "DE"
+        }
+      },
+      "fonts": {
+        "status": "pass",
+        "metrics_hash": "sha256:fixture"
+      },
+      "webrtc": {
+        "status": "pass",
+        "public_ip_leak": false
+      },
+      "transport": {
+        "tls": {
+          "status": "unsupported",
+          "reason": "controlled capture not configured"
+        },
+        "http2": {
+          "status": "unsupported",
+          "reason": "controlled capture not configured"
+        }
+      }
+    }
+  ]
+}
