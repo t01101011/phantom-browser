@@ -15,7 +15,14 @@ if not (CAMOUFOX_BROWSER / "camoufox.exe").is_file() and not (CAMOUFOX_BROWSER /
 datas = [(str(CAMOUFOX_BROWSER), "camoufox")]
 binaries = []
 hiddenimports = []
-for package in ("camoufox", "browserforge", "playwright", "fastapi", "uvicorn", "mcp"):
+for package in ("camoufox", "browserforge", "playwright", "fastapi", "uvicorn"):
+    package_datas, package_bins, package_hidden = collect_all(package)
+    datas += package_datas
+    binaries += package_bins
+    hiddenimports += package_hidden
+# MCP's optional CLI imports typer and exits when CLI extras are absent. The
+# server runtime only needs these namespaces; importing all mcp.* is unsafe.
+for package in ("mcp.server", "mcp.shared", "mcp.types"):
     package_datas, package_bins, package_hidden = collect_all(package)
     datas += package_datas
     binaries += package_bins
