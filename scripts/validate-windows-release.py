@@ -37,7 +37,7 @@ if archive:
     require(archive.is_file(), f"archive not found: {archive}")
     if archive.is_file():
         with zipfile.ZipFile(archive) as z:
-            names = set(z.namelist())
+            names = {"/" + n.replace("\\", "/").lstrip("/") for n in z.namelist()}
             for alternatives in (("/Phantom Browser.exe",), ("/phantom-sidecar/phantom-sidecar.exe",), ("/phantom-sidecar/_internal/camoufox/camoufox.exe", "/phantom-sidecar/_internal/camoufox/camoufox-bin.exe"), ("/phantom-sidecar/_internal/camoufox/version.json",)):
                 require(any(n.endswith(suffix) for n in names for suffix in alternatives), f"portable archive missing one of {alternatives}")
 if errors:
