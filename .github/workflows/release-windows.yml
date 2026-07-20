@@ -120,8 +120,8 @@ jobs:
         shell: pwsh
         run: |
           $installer = Get-Item tauri-app\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe | Select-Object -First 1
-          $install = Join-Path $env:RUNNER_TEMP 'Phantom-Browser-installed'
-          $p = Start-Process $installer.FullName -ArgumentList @('/S', "/D=$install") -PassThru -Wait
+          $install = Join-Path $env:LOCALAPPDATA 'Phantom Browser'
+          $p = Start-Process $installer.FullName -ArgumentList '/S' -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "NSIS install failed: $($p.ExitCode)" }
           ./scripts/smoke-windows.ps1 -BundleRoot $install -SkipBrowserSession
           Copy-Item $installer.FullName artifacts\
