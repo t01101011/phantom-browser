@@ -5,7 +5,9 @@ import os
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metadata
 
-ROOT = Path(SPECPATH).resolve().parent.parent
+# PyInstaller executes this spec with the repository root as cwd. SPECPATH is
+# version-dependent (and may already be the repo root), so do not parent-hop it.
+ROOT = Path.cwd().resolve()
 CAMOUFOX_BROWSER = Path(os.environ.get("PHANTOM_CAMOUFOX_DIR", ROOT / "build" / "camoufox"))
 if not (CAMOUFOX_BROWSER / "version.json").is_file():
     raise SystemExit(f"Camoufox browser data missing: {CAMOUFOX_BROWSER / 'version.json'}")
