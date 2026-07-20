@@ -49,7 +49,6 @@ jobs:
           npm run build
           Pop-Location
           python scripts/validate-windows-release.py
-          cargo test --manifest-path tauri-app/src-tauri/Cargo.toml --target $env:RUST_TARGET
 
       - name: Task16 controlled stealth coherence gate
         shell: pwsh
@@ -84,6 +83,10 @@ jobs:
           if (!(Test-Path dist\phantom-sidecar\phantom-sidecar.exe)) { throw 'PyInstaller output missing' }
           if (!(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox.exe)) { throw 'Camoufox asset missing from onedir' }
           dist\phantom-sidecar\phantom-sidecar.exe --help | Out-Null
+
+      - name: Validate Rust sources with bundled resources
+        shell: pwsh
+        run: cargo test --manifest-path tauri-app/src-tauri/Cargo.toml --target $env:RUST_TARGET
 
       - name: Build NSIS bundle
         working-directory: tauri-app

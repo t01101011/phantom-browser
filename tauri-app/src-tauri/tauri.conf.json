@@ -27,13 +27,20 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "appimage", "deb"],
+    "targets": [
+      "nsis"
+    ],
     "resources": {
       "../../dist/phantom-sidecar": "phantom-sidecar"
     },
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
-      "nsis": { "installMode": "currentUser" }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser"
+      }
     },
     "icon": [
       "icons/32x32.png",
