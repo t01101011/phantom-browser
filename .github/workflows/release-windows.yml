@@ -85,6 +85,16 @@ jobs:
           if (!(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox.exe) -and !(Test-Path dist\phantom-sidecar\_internal\camoufox\camoufox-bin.exe)) { throw 'Camoufox asset missing from onedir' }
           dist\phantom-sidecar\phantom-sidecar.exe --help | Out-Null
 
+      - name: Smoke packaged sidecar before desktop build
+        shell: pwsh
+        run: |
+          $stage = 'artifacts\sidecar-smoke'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item -Recurse dist\phantom-sidecar "$stage\phantom-sidecar"
+          New-Item -ItemType File -Force "$stage\Phantom Browser.exe" | Out-Null
+          ./scripts/smoke-windows.ps1 -BundleRoot $stage -SidecarOnly
+          Remove-Item $stage -Recurse -Force
+
       - name: Validate Rust sources with bundled resources
         shell: pwsh
         run: cargo test --manifest-path tauri-app/src-tauri/Cargo.toml --target $env:RUST_TARGET
