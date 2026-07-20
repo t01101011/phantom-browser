@@ -24,11 +24,11 @@ try {
     if ($process.HasExited) { throw "Sidecar exited early: $($process.ExitCode)" }
     if (Test-Path $tokenPath) { $token = (Get-Content -Raw $tokenPath).Trim() }
     if ($token) {
-      try { $ready = Invoke-RestMethod "http://127.0.0.1:$port/readyz" -Headers @{Authorization="Bearer $token"}; if ($ready.status -eq 'ok') { break } } catch {}
+      try { $ready = Invoke-RestMethod "http://127.0.0.1:$port/readyz" -Headers @{Authorization="Bearer $token"}; if ($ready.status -eq 'ready') { break } } catch {}
     }
     Start-Sleep -Milliseconds 200
   } while ((Get-Date) -lt $deadline)
-  if (!$token -or $ready.status -ne 'ok') { throw 'Authenticated /readyz timeout' }
+  if (!$token -or $ready.status -ne 'ready') { throw 'Authenticated /readyz timeout' }
   $headers = @{Authorization="Bearer $token"; 'Content-Type'='application/json'}
   $body = @{name='windows-ci-smoke'; platform_tag='custom'; proxy_host=''; proxy_port=0} | ConvertTo-Json
   $profile = Invoke-RestMethod "http://127.0.0.1:$port/v1/profiles" -Method Post -Headers $headers -Body $body
