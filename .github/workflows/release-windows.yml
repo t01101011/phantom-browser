@@ -109,7 +109,7 @@ jobs:
         run: |
           $stage = 'artifacts\Phantom-Browser-portable'
           New-Item -ItemType Directory -Force $stage | Out-Null
-          Copy-Item tauri-app\src-tauri\target\x86_64-pc-windows-msvc\release\tauri-app.exe "$stage\Phantom Browser.exe"
+          Copy-Item 'tauri-app\src-tauri\target\x86_64-pc-windows-msvc\release\Phantom Browser.exe' "$stage\Phantom Browser.exe"
           Copy-Item -Recurse dist\phantom-sidecar "$stage\phantom-sidecar"
           python scripts/test-windows-release-config.py "$stage\Phantom Browser.exe"
           ./scripts/smoke-windows.ps1 -BundleRoot $stage
