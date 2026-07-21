@@ -124,7 +124,7 @@ SĐT khi nhiều acc cùng IP. TMĐT chống multi-acc bằng SĐT/địa chỉ/
 
 **⚠️ EXECUTION UPDATE 2026-07-20 —** Task 12 hoàn thành migration GUI từ command-per-process sang HTTP REST/SSE. UI có sidebar/folder filter, search, profile create/edit/clone/delete, proxy create/test/delete, start/stop, session capabilities/log drawer; token chỉ qua Tauri IPC/in-memory, không URL/storage/log. Rust boot một loopback child, authenticated readiness, kill/wait khi drop. Audit sửa Camoufox context-manager lifecycle, direct-profile empty proxy và SSE CRLF/malformed/reconnect handling. Verification: frontend **5/5**, Python **210/210**, Rust **3/3**, Vite/TSC/Tauri debug build PASS; live Xvfb API + Camoufox session đạt `ready`, stop/cleanup không orphan. WebView binary boot verified; interactive browser chỉ inspect Vite shell do browser ngoài Tauri không có IPC. Task 13 chưa triển khai: cần native `windows-latest`, không claim Windows từ Linux.
 
-**⚠️ EXECUTION UPDATE 2026-07-20 —** Task 13 **IMPLEMENTED / PENDING WINDOWS CI** (giữ nguyên, không claim native Windows). Task 14 **DONE ON LINUX** với authenticated Docker smoke thật: fix `PHANTOM_DATA_DIR=/data`, named-volume root bootstrap capabilities, token `/data/runtime/.api_token` user 10001, healthy container, smoke PASS và `/proc` cleanup 0 orphan; AppImage/DEB local chưa chạy. Task 15 **DONE** bằng TDD probe + raw checksummed runs trên stock Chromium, Clearcote và fingerprint-chromium Linux; ADR chọn Clearcote chỉ experimental sau Task 16, Camoufox vẫn default, không auto-fallback và không claim Windows/TLS gate. Full Python **213/213 PASS**. **Task 16 là next.**
+**⚠️ EXECUTION UPDATE 2026-07-20 —** Task 13 **DONE / NATIVE WINDOWS ACCEPTED**: `release-windows.yml` run `29781059924` xanh toàn bộ 18 steps trên `windows-latest`; packaged sidecar smoke, MSVC/NSIS build, portable smoke, NSIS install smoke, checksums và artifact upload đều PASS. Artifact `phantom-browser-windows-x64` tồn tại, không expired, kích thước 1,038,990,400 bytes; Task 16 Windows evidence cũng được upload. Task 14 **DONE ON LINUX** với authenticated Docker smoke thật: fix `PHANTOM_DATA_DIR=/data`, named-volume root bootstrap capabilities, token `/data/runtime/.api_token` user 10001, healthy container, smoke PASS và `/proc` cleanup 0 orphan; AppImage/DEB local chưa chạy. Tasks 15–16 DONE ON LINUX; Task 16 Windows CI gate cũng PASS nhưng unsupported surfaces vẫn giữ nguyên unsupported, không relabel thành pass. Full Python baseline gần nhất **225/225 PASS**.
 
 **CURRENT PLAN — Phantom 2.0 (research synthesis 2026-07-19):**
 `.hermes/plans/2026-07-19_132233-phantom-browser-2-agent-first.md` là implementation plan authoritative. Các phase cũ bên dưới chỉ là lịch sử của prototype v0.1.
@@ -143,12 +143,12 @@ SĐT khi nhiều acc cùng IP. TMĐT chống multi-acc bằng SĐT/địa chỉ/
 ### Roadmap Phantom 2.0
 
 - [x] **P0 — Safety/control plane:** characterization tests; cross-platform paths; schema migrations; FastAPI health/auth; profile/folder/proxy CRUD.
-- [x] **P1 — Runtime:** engine adapter; structured worker protocol [Task 6]; ProcessRegistry; crash recovery; Windows Job Objects + Linux process-group/cgroup cleanup [Task 7]. Linux verified; native Windows smoke pending.
+- [x] **P1 — Runtime:** engine adapter; structured worker protocol [Task 6]; ProcessRegistry; crash recovery; Windows Job Objects + Linux process-group/cgroup cleanup [Task 7]. Linux verified; native Windows packaged launch/stop/process-cleanup smoke accepted in Task 13 CI.
 - [x] **P2 — Sessions/agents:** persistent sessions + SSE; instant sessions; leases/TTL/idempotency; screenshots/cookies/storage; indexed snapshots/actions; MCP; VPS viewer + human takeover cho login challenge.
 - [x] **P3 — Product GUI:** React dùng HTTP control plane; folders, profile edit/clone/import, proxy health, session/log views.
-- [ ] **P4 — Native releases:** Task 14 Linux runtime DONE; Task 13 Windows pipeline IMPLEMENTED/PENDING WINDOWS CI; AppImage/deb local chưa chạy.
+- [ ] **P4 — Native releases:** Task 13 Windows pipeline DONE/native CI accepted; Task 14 Linux runtime DONE; AppImage/deb local chưa chạy.
 - [x] **P5 — Chromium spike:** stock/Clearcote/fingerprint-chromium probe + ADR; Clearcote experimental only, không auto-fallback.
-- [ ] **P6 — Stealth gate (Task 16 NEXT):** worker/main, UA-CH, WebGL/WebGPU, fonts, WebRTC, locale/geo, TLS/HTTP2 coherence checks block release.
+- [x] **P6 — Stealth gate:** worker/main, UA-CH, WebGL/WebGPU, fonts, WebRTC, locale/geo, TLS/HTTP2 coherence checks wired into release; Windows evidence uploaded, unsupported surfaces remain explicit.
 
 ### Deferred
 

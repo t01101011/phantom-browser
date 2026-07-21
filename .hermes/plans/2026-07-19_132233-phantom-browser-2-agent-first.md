@@ -326,7 +326,9 @@
 
 ---
 
-### Task 13: Windows release pipeline native
+### Task 13: Windows release pipeline native ✅ DONE 2026-07-20
+
+**Execution result:** Native `windows-latest` run `29781059924` xanh toàn bộ 18 steps: source/tests + Task 16 gate, native Camoufox fetch, PyInstaller onedir sidecar, packaged-sidecar readiness smoke, Rust/MSVC validation, NSIS build, portable cold-start/API/browser-session smoke, NSIS install smoke, checksums và artifact upload. Artifact `phantom-browser-windows-x64` tồn tại, không expired, kích thước 1,038,990,400 bytes; `task16-stealth-windows` cũng được upload. Các vòng RED trước đó bắt và sửa readiness contract `ready`/`ok`, hidden PyInstaller startup/import failures, và thêm fail-fast sidecar smoke trước NSIS để feedback loop ngắn hơn. Python baseline gần nhất 225/225 PASS.
 
 **Objective:** Installer và portable artifact thực sự được test trên Windows.
 
