@@ -281,6 +281,21 @@ class TestCamoufoxEngine:
         kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
         assert kwargs["executable_path"] == str(browser)
 
+    def test_frozen_bundle_discovers_browser_under_meipass(self, profile_dict, monkeypatch, tmp_path):
+        from phantom.engines.camoufox import CamoufoxEngine
+
+        browser_root = tmp_path / "camoufox"
+        browser_root.mkdir()
+        browser = browser_root / "camoufox.exe"
+        browser.write_bytes(b"MZ")
+        monkeypatch.delenv("PHANTOM_CAMOUFOX_DIR", raising=False)
+        monkeypatch.setattr("phantom.engines.camoufox.sys.frozen", True, raising=False)
+        monkeypatch.setattr("phantom.engines.camoufox.sys._MEIPASS", str(tmp_path), raising=False)
+        monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Windows")
+        monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
+        kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
+        assert kwargs["executable_path"] == str(browser)
+
 
 # ── Worker event protocol tests ───────────────────────────────────────────────
 

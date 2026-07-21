@@ -108,6 +108,10 @@ class CamoufoxEngine(BaseEngine):
         # ``_internal/camoufox`` rather than Camoufox's user-cache/version
         # layout.  Bypass pkgman's cache resolver with the explicit executable.
         bundled_browser = os.environ.get("PHANTOM_CAMOUFOX_DIR")
+        if not bundled_browser and getattr(sys, "frozen", False):
+            meipass = getattr(sys, "_MEIPASS", None)
+            if meipass:
+                bundled_browser = str(Path(meipass) / "camoufox")
         if bundled_browser:
             browser_root = Path(bundled_browser)
             candidates = (
