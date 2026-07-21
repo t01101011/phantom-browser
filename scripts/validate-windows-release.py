@@ -19,6 +19,7 @@ for token in ("permissions:\n  contents: read", "SHA256SUMS", "smoke-windows.ps1
     require(token in workflow or token in json.dumps(conf), f"missing release contract: {token}")
 require("COLLECT(" in spec and ("camoufox.exe" in spec or "camoufox-bin.exe" in spec) and "version.json" in spec, "spec must be onedir and require browser data")
 require('"apify_fingerprint_datapoints"' in spec and "collect_all(package)" in spec, "spec must collect BrowserForge's apify fingerprint datapoint archives")
+require('"language_tags"' in spec and "collect_all(package)" in spec, "spec must collect language-tags JSON registry data used by BrowserForge")
 for token in ("/readyz", "/v1/profiles", "/v1/sessions/instant", "taskkill.exe", "Get-CimInstance", "phantom-sidecar.exe", "Phantom Browser.exe"):
     require(token in smoke, f"smoke missing {token}")
 require("$ready.status -eq 'ready'" in smoke, "smoke must accept the /readyz contract status=ready")

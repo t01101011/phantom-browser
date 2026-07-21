@@ -17,7 +17,7 @@ if not (CAMOUFOX_BROWSER / "camoufox.exe").is_file() and not (CAMOUFOX_BROWSER /
 datas = [(str(CAMOUFOX_BROWSER), "camoufox")]
 binaries = []
 hiddenimports = []
-for package in ("camoufox", "browserforge", "apify_fingerprint_datapoints", "playwright", "fastapi", "uvicorn"):
+for package in ("camoufox", "browserforge", "apify_fingerprint_datapoints", "playwright", "fastapi", "uvicorn", "language_tags"):
     package_datas, package_bins, package_hidden = collect_all(package)
     datas += package_datas
     binaries += package_bins
