@@ -215,7 +215,18 @@ def cmd_serve(args):
     from phantom.api.app import create_app
     app = create_app()
     print(f"[+] Starting Phantom control plane at http://{host}:{args.port}")
-    uvicorn.run(app, host=host, port=args.port, log_level=args.log_level or "info")
+    # PyInstaller builds the sidecar with ``console=False``.  In that mode
+    # sys.stdout/sys.stderr can be None, while Uvicorn's default formatter
+    # unconditionally calls sys.stdout.isatty().  Use Uvicorn's internal
+    # defaults without dictConfig so the packaged sidecar can start headless.
+    uvicorn.run(
+        app,
+        host=host,
+        port=args.port,
+        log_level=args.log_level or "info",
+        log_config=None,
+        access_log=False,
+    )
 
 
 def cmd_delete(args):

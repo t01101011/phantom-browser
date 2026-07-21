@@ -4,7 +4,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
-use std::{net::TcpListener, path::{Path, PathBuf}, process::{Child, Command, Stdio}, sync::Mutex, thread, time::{Duration, Instant}};
+use std::{fs::{self, OpenOptions}, net::TcpListener, path::{Path, PathBuf}, process::{Child, Command, Stdio}, sync::Mutex, thread, time::{Duration, Instant}};
 
 fn repo_root() -> PathBuf {
     if let Ok(p) = std::env::var("PHANTOM_REPO") { return PathBuf::from(p); }
@@ -63,9 +63,15 @@ fn start_control_plane() -> Result<ControlPlaneState, String> {
     let token_path=data.join("runtime/.api_token"); drop(listener);
     let mut args=sidecar.prefix_args.clone();
     args.extend(["serve".into(),"--host".into(),"127.0.0.1".into(),"--port".into(),port.to_string(),"--log-level".into(),"warning".into()]);
+    fs::create_dir_all(data.join("runtime")).map_err(|e| format!("Không thể tạo thư mục runtime: {e}"))?;
+    let log_path = data.join("runtime/control-plane.log");
+    let log = OpenOptions::new().create(true).append(true).open(&log_path)
+        .map_err(|e| format!("Không thể mở control-plane.log: {e}"))?;
+    let err_log = log.try_clone().map_err(|e| format!("Không thể mở log control plane: {e}"))?;
     let mut child=Command::new(&sidecar.executable).args(args).current_dir(&sidecar.working_dir)
-        .env("PHANTOM_DATA_DIR", &data).env("PHANTOM_CAMOUFOX_DIR", sidecar.executable.parent().unwrap_or(&root).join("_internal/camoufox"))
-        .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().map_err(|e|format!("Không thể khởi động control plane: {e}"))?;
+        .env("PHANTOM_DATA_DIR", &data).env("PHANTOM_BUNDLE_ROOT", sidecar.executable.parent().unwrap_or(&root))
+        .env("PHANTOM_CAMOUFOX_DIR", sidecar.executable.parent().unwrap_or(&root).join("_internal/camoufox"))
+        .stdin(Stdio::null()).stdout(Stdio::from(log)).stderr(Stdio::from(err_log)).spawn().map_err(|e|format!("Không thể khởi động control plane: {e}"))?;
     let deadline=Instant::now()+Duration::from_secs(30); let mut token=String::new();
     while Instant::now()<deadline {
         if let Ok(Some(status))=child.try_wait(){return Err(format!("Control plane đã thoát sớm: {status}"));}
