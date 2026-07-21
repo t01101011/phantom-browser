@@ -104,6 +104,22 @@ class CamoufoxEngine(BaseEngine):
             persistent_context=True,
             user_data_dir=str(udd),
         )
+        # Frozen releases stage the browser directly under
+        # ``_internal/camoufox`` rather than Camoufox's user-cache/version
+        # layout.  Bypass pkgman's cache resolver with the explicit executable.
+        bundled_browser = os.environ.get("PHANTOM_CAMOUFOX_DIR")
+        if bundled_browser:
+            browser_root = Path(bundled_browser)
+            candidates = (
+                [browser_root / "camoufox.exe", browser_root / "camoufox-bin.exe"]
+                if platform.system() == "Windows"
+                else [browser_root / "camoufox-bin"]
+            )
+            executable = next((path for path in candidates if path.is_file()), None)
+            if executable is None:
+                raise FileNotFoundError(f"bundled Camoufox executable missing in {browser_root}")
+            self._kwargs["executable_path"] = str(executable)
+
         # Camoufox rejects an empty proxy URL. GeoIP matching is meaningful only
         # when an actual proxy is configured.
         if self._profile.get("proxy_host") and self._profile.get("proxy_port"):

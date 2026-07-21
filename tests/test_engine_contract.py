@@ -270,6 +270,17 @@ class TestCamoufoxEngine:
         monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Linux")
         assert engine.prepare()["kwargs"]["headless"] == "virtual"
 
+    def test_bundled_browser_uses_explicit_executable(self, profile_dict, monkeypatch, tmp_path):
+        from phantom.engines.camoufox import CamoufoxEngine
+
+        browser = tmp_path / "camoufox.exe"
+        browser.write_bytes(b"MZ")
+        monkeypatch.setenv("PHANTOM_CAMOUFOX_DIR", str(tmp_path))
+        monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Windows")
+        monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
+        kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
+        assert kwargs["executable_path"] == str(browser)
+
 
 # ── Worker event protocol tests ───────────────────────────────────────────────
 
