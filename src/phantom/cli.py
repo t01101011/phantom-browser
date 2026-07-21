@@ -229,6 +229,20 @@ def cmd_serve(args):
     )
 
 
+def cmd_worker(args):
+    """Internal frozen-sidecar entry point for one browser worker."""
+    from phantom.workers.main import main as worker_main
+
+    argv = ["--profile-id", str(args.profile_id)]
+    if args.data_dir:
+        argv += ["--data-dir", args.data_dir]
+    if args.headless is not None:
+        argv += ["--headless", args.headless]
+    if args.url:
+        argv += ["--url", args.url]
+    worker_main(argv)
+
+
 def cmd_delete(args):
     from . import db
     pid = resolve_profile_id(args.profile)
@@ -298,6 +312,13 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--allow-remote", action="store_true",
                    help="Allow binding to 0.0.0.0 (dangerous without firewall)")
     c.set_defaults(func=cmd_serve)
+
+    c = sub.add_parser("worker", help=argparse.SUPPRESS)
+    c.add_argument("--profile-id", type=int, required=True)
+    c.add_argument("--data-dir", default=None)
+    c.add_argument("--headless", default=None)
+    c.add_argument("--url", default=None)
+    c.set_defaults(func=cmd_worker)
 
     return p
 

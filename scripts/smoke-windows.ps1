@@ -55,7 +55,16 @@ try {
     $instantBody = @{profile_id=$profile.id; ttl_seconds=30} | ConvertTo-Json
     $instant = Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/instant" -Method Post -Headers $headers -Body $instantBody
     if (!$instant.session.id) { throw 'Instant session did not return an id' }
-    Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/$($instant.session.id)" -Method Delete -Headers $headers | Out-Null
+    $sessionId = $instant.session.id
+    $sessionDeadline = (Get-Date).AddSeconds(90)
+    do {
+      $current = Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/$sessionId" -Headers $headers
+      if ($current.status -eq 'ready') { break }
+      if ($current.status -eq 'crashed') { throw "Browser worker crashed before ready: $($current.exit_reason)" }
+      Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $sessionDeadline)
+    if ($current.status -ne 'ready') { throw "Browser worker stayed $($current.status) instead of reaching ready" }
+    Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/$sessionId" -Method Delete -Headers $headers | Out-Null
   }
   Write-Host 'PASS: packaged Windows health/profile/instant smoke'
 } finally {

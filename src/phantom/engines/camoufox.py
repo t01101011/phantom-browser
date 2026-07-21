@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import sys
 import time
 from pathlib import Path
@@ -92,8 +93,9 @@ class CamoufoxEngine(BaseEngine):
         self._fp_obj, self._config = self._build_launch_config()
         udd = self._ensure_user_data_dir()
 
+        default_headless: str | bool = False if platform.system() == "Windows" else "virtual"
         self._kwargs = dict(
-            headless=config.get("headless", "virtual") if config else "virtual",
+            headless=config.get("headless", default_headless) if config else default_headless,
             fingerprint=self._fp_obj,
             i_know_what_im_doing=True,
             block_webrtc=True,

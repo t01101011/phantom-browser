@@ -11,6 +11,22 @@ from phantom.api.app import create_app
 from phantom.services.session_service import SessionService
 
 
+def test_packaged_worker_command_reenters_sidecar(monkeypatch):
+    monkeypatch.setattr("phantom.services.session_service.sys.executable", r"C:\\Phantom\\phantom-sidecar.exe")
+    monkeypatch.setattr("phantom.services.session_service.sys.frozen", True, raising=False)
+    assert SessionService._worker_command(7) == [
+        r"C:\\Phantom\\phantom-sidecar.exe", "worker", "--profile-id", "7"
+    ]
+
+
+def test_source_worker_command_uses_python_module(monkeypatch):
+    monkeypatch.delattr("phantom.services.session_service.sys.frozen", raising=False)
+    monkeypatch.setattr("phantom.services.session_service.sys.executable", "/venv/bin/python")
+    assert SessionService._worker_command(7) == [
+        "/venv/bin/python", "-m", "phantom.workers.main", "--profile-id", "7"
+    ]
+
+
 class NoProcessSessionService(SessionService):
     def _launch(self, sid: str, profile_id: int) -> None:
         # Deterministic contract test: worker integration belongs to runtime tests.

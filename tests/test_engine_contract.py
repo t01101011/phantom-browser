@@ -258,6 +258,18 @@ class TestCamoufoxEngine:
         assert result["kwargs"]["geoip"] is True
         assert result["kwargs"]["block_webrtc"] is True
 
+    def test_default_headless_mode_is_platform_appropriate(self, profile_dict, monkeypatch):
+        from phantom.engines.camoufox import CamoufoxEngine
+
+        monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
+        engine = CamoufoxEngine(profile_dict)
+        monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Windows")
+        assert engine.prepare()["kwargs"]["headless"] is False
+
+        engine = CamoufoxEngine(profile_dict)
+        monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Linux")
+        assert engine.prepare()["kwargs"]["headless"] == "virtual"
+
 
 # ── Worker event protocol tests ───────────────────────────────────────────────
 

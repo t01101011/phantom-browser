@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Phantom Browser worker")
     parser.add_argument("--profile-id", type=int, required=True, help="Profile ID to run")
     parser.add_argument("--data-dir", default=None, help="PHANTOM_DATA_DIR override")
-    parser.add_argument("--headless", default="virtual", help="headless mode")
+    parser.add_argument("--headless", default=None, help="headless mode override")
     parser.add_argument("--url", default=None, help="Start URL")
     args = parser.parse_args(argv)
 
@@ -82,7 +82,8 @@ def main(argv: list[str] | None = None) -> None:
 
     try:
         # Prepare + start
-        engine.prepare({"headless": args.headless})
+        launch_config = {"headless": args.headless} if args.headless is not None else None
+        engine.prepare(launch_config)
         emit(Event("prepared", data={"status": "prepared"}))
 
         engine.start()

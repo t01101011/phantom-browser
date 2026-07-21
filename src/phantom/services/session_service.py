@@ -48,9 +48,17 @@ class SessionService:
         self.reconcile()
 
     @staticmethod
+    def _worker_command(profile_id: int) -> list[str]:
+        if getattr(sys, "frozen", False):
+            # A PyInstaller executable cannot run ``-m phantom.workers.main``:
+            # re-enter the frozen sidecar through its explicit worker command.
+            return [sys.executable, "worker", "--profile-id", str(profile_id)]
+        return [sys.executable, "-m", "phantom.workers.main", "--profile-id", str(profile_id)]
+
+    @staticmethod
     def _spawn_worker(profile_id: int) -> subprocess.Popen[str]:
         return subprocess.Popen(
-            [sys.executable, "-m", "phantom.workers.main", "--profile-id", str(profile_id)],
+            SessionService._worker_command(profile_id),
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.PIPE, text=True, bufsize=1,
             start_new_session=(os.name != "nt"),
         )
