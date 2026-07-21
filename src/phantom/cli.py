@@ -229,6 +229,33 @@ def cmd_serve(args):
     )
 
 
+def cmd_runtime_info(args):
+    """Internal packaging diagnostic; reports booleans and basenames only."""
+    import json
+    import os
+    import sys
+    from pathlib import Path
+
+    executable_root = Path(sys.executable).resolve().parent
+    meipass = Path(getattr(sys, "_MEIPASS", executable_root))
+    roots = [
+        Path(os.environ["PHANTOM_CAMOUFOX_DIR"]) if os.environ.get("PHANTOM_CAMOUFOX_DIR") else None,
+        meipass / "camoufox",
+        executable_root / "_internal" / "camoufox",
+        executable_root / "camoufox",
+    ]
+    names = ("camoufox.exe", "camoufox-bin.exe", "camoufox-bin")
+    print(json.dumps({
+        "frozen": bool(getattr(sys, "frozen", False)),
+        "executable_name": Path(sys.executable).name,
+        "roots": [
+            {"source": index, "exists": bool(root and root.is_dir()),
+             "files": [name for name in names if root and (root / name).is_file()]}
+            for index, root in enumerate(roots)
+        ],
+    }))
+
+
 def cmd_worker(args):
     """Internal frozen-sidecar entry point for one browser worker."""
     from phantom.workers.main import main as worker_main
@@ -319,6 +346,9 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--headless", default=None)
     c.add_argument("--url", default=None)
     c.set_defaults(func=cmd_worker)
+
+    c = sub.add_parser("runtime-info", help=argparse.SUPPRESS)
+    c.set_defaults(func=cmd_runtime_info)
 
     return p
 

@@ -123,11 +123,15 @@ class CamoufoxEngine(BaseEngine):
 
         executable: Path | None = None
         for browser_root in dict.fromkeys(browser_roots):
-            candidates = (
-                [browser_root / "camoufox.exe", browser_root / "camoufox-bin.exe"]
-                if platform.system() == "Windows"
-                else [browser_root / "camoufox-bin"]
-            )
+            # Do not gate this on platform detection. Frozen applications can
+            # inherit stale build-time modules/constants; inspect every filename
+            # the release contract permits and use what is physically present.
+            candidates = [
+                browser_root / "camoufox.exe",
+                browser_root / "camoufox-bin.exe",
+                browser_root / "camoufox-bin",
+                browser_root / "Camoufox.app" / "Contents" / "MacOS" / "camoufox",
+            ]
             executable = next((path for path in candidates if path.is_file()), None)
             if executable is not None:
                 break

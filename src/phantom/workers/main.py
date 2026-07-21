@@ -74,6 +74,25 @@ def main(argv: list[str] | None = None) -> None:
         }))
         sys.exit(1)
 
+    # The same frozen executable is re-entered as a worker. Runtime-hook state
+    # is not a reliable contract across that child boundary, so derive and set
+    # the packaged browser root explicitly before constructing the engine.
+    if getattr(sys, "frozen", False):
+        executable_root = os.path.dirname(os.path.abspath(sys.executable))
+        bundled_roots = (
+            os.path.join(executable_root, "_internal", "camoufox"),
+            os.path.join(executable_root, "camoufox"),
+        )
+        bundled_root = next(
+            (
+                root for root in bundled_roots
+                if any(os.path.isfile(os.path.join(root, name)) for name in ("camoufox.exe", "camoufox-bin.exe"))
+            ),
+            None,
+        )
+        if bundled_root:
+            os.environ["PHANTOM_CAMOUFOX_DIR"] = bundled_root
+
     # Build engine
     from phantom.engines.camoufox import CamoufoxEngine
     engine = CamoufoxEngine(profile)

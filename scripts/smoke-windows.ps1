@@ -14,6 +14,9 @@ if (!(Test-Path $sidecar)) { throw "Missing packaged sidecar: $sidecar" }
 if (!(Test-Path (Join-Path $root 'phantom-sidecar\_internal\camoufox\camoufox.exe'))) { throw 'Missing Camoufox browser asset' }
 if (!(Test-Path $app)) { throw "Missing desktop executable: $app" }
 if (!$webview -and !(Test-Path (Join-Path $root 'WebView2Loader.dll'))) { Write-Warning 'WebView2 runtime registry key not found; loader may be embedded statically' }
+$runtimeInfo = (& $sidecar runtime-info | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "Packaged runtime-info failed with exit $LASTEXITCODE" }
+Write-Host "Packaged runtime info: $runtimeInfo"
 
 $data = Join-Path $env:RUNNER_TEMP ("phantom-smoke-" + [guid]::NewGuid())
 $port = 52100 + (Get-Random -Maximum 1000)
