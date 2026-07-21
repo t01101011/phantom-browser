@@ -141,10 +141,16 @@ def main(argv: list[str] | None = None) -> None:
         emit(Event("error", data={}, error={
             "code": "ENGINE_ERROR",
             "message": str(exc),
+            "exception_type": type(exc).__name__,
         }))
+        exit_code = 1
+    else:
+        exit_code = 0
     finally:
         result = engine.stop()
         emit(Event("stopped", data=result))
+    if exit_code:
+        raise SystemExit(exit_code)
 
 
 if __name__ == "__main__":

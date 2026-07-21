@@ -60,7 +60,10 @@ try {
     do {
       $current = Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/$sessionId" -Headers $headers
       if ($current.status -eq 'ready') { break }
-      if ($current.status -eq 'crashed') { throw "Browser worker crashed before ready: $($current.exit_reason)" }
+      if ($current.status -eq 'crashed') {
+        $events = try { (Invoke-RestMethod "http://127.0.0.1:$port/v1/sessions/$sessionId/events" -Headers $headers | ConvertTo-Json -Depth 12 -Compress) } catch { "events unavailable: $($_.Exception.Message)" }
+        throw "Browser worker crashed before ready: $($current.exit_reason); events=$events"
+      }
       Start-Sleep -Milliseconds 500
     } while ((Get-Date) -lt $sessionDeadline)
     if ($current.status -ne 'ready') { throw "Browser worker stayed $($current.status) instead of reaching ready" }
