@@ -137,6 +137,18 @@ class CamoufoxEngine(BaseEngine):
                 break
         if executable is not None:
             self._kwargs["executable_path"] = str(executable)
+            version_file = executable.parent / "version.json"
+            if not version_file.is_file():
+                raise FileNotFoundError(f"bundled Camoufox version metadata missing: {version_file}")
+            try:
+                version_data = json.loads(version_file.read_text(encoding="utf-8"))
+                firefox_version = str(version_data["version"])
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise ValueError(f"invalid bundled Camoufox version metadata: {version_file}") from exc
+            # Camoufox otherwise calls installed_verstr(), which only understands
+            # its user-cache/multiversion layout and rejects an explicit packaged
+            # executable as "not installed".
+            self._kwargs["ff_version"] = firefox_version
         elif getattr(sys, "frozen", False):
             checked = ", ".join(str(path) for path in dict.fromkeys(browser_roots))
             raise FileNotFoundError(f"bundled Camoufox executable missing; checked: {checked}")

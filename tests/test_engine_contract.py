@@ -275,11 +275,13 @@ class TestCamoufoxEngine:
 
         browser = tmp_path / "camoufox.exe"
         browser.write_bytes(b"MZ")
+        (tmp_path / "version.json").write_text('{"version":"135.0","release":"beta.20"}')
         monkeypatch.setenv("PHANTOM_CAMOUFOX_DIR", str(tmp_path))
         monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Windows")
         monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
         kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
         assert kwargs["executable_path"] == str(browser)
+        assert kwargs["ff_version"] == "135.0"
 
     def test_frozen_bundle_discovers_browser_under_meipass(self, profile_dict, monkeypatch, tmp_path):
         from phantom.engines.camoufox import CamoufoxEngine
@@ -288,6 +290,7 @@ class TestCamoufoxEngine:
         browser_root.mkdir()
         browser = browser_root / "camoufox.exe"
         browser.write_bytes(b"MZ")
+        (browser_root / "version.json").write_text('{"version":"135.0","release":"beta.20"}')
         monkeypatch.delenv("PHANTOM_CAMOUFOX_DIR", raising=False)
         monkeypatch.setattr("phantom.engines.camoufox.sys.frozen", True, raising=False)
         monkeypatch.setattr("phantom.engines.camoufox.sys._MEIPASS", str(tmp_path), raising=False)
@@ -295,6 +298,7 @@ class TestCamoufoxEngine:
         monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
         kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
         assert kwargs["executable_path"] == str(browser)
+        assert kwargs["ff_version"] == "135.0"
 
     def test_frozen_bundle_falls_back_from_stale_env_to_executable_layout(self, profile_dict, monkeypatch, tmp_path):
         from phantom.engines.camoufox import CamoufoxEngine
@@ -304,6 +308,7 @@ class TestCamoufoxEngine:
         browser_root.mkdir(parents=True)
         browser = browser_root / "camoufox.exe"
         browser.write_bytes(b"MZ")
+        (browser_root / "version.json").write_text('{"version":"135.0","release":"beta.20"}')
         monkeypatch.setenv("PHANTOM_CAMOUFOX_DIR", str(tmp_path / "stale-build-path"))
         monkeypatch.setattr("phantom.engines.camoufox.sys.frozen", True, raising=False)
         monkeypatch.setattr("phantom.engines.camoufox.sys._MEIPASS", str(tmp_path / "wrong-meipass"), raising=False)
@@ -312,6 +317,7 @@ class TestCamoufoxEngine:
         monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
         kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
         assert kwargs["executable_path"] == str(browser)
+        assert kwargs["ff_version"] == "135.0"
 
 
 # ── Worker event protocol tests ───────────────────────────────────────────────
