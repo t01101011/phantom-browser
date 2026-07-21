@@ -107,22 +107,35 @@ class CamoufoxEngine(BaseEngine):
         # Frozen releases stage the browser directly under
         # ``_internal/camoufox`` rather than Camoufox's user-cache/version
         # layout.  Bypass pkgman's cache resolver with the explicit executable.
-        bundled_browser = os.environ.get("PHANTOM_CAMOUFOX_DIR")
-        if not bundled_browser and getattr(sys, "frozen", False):
-            meipass = getattr(sys, "_MEIPASS", None)
-            if meipass:
-                bundled_browser = str(Path(meipass) / "camoufox")
-        if bundled_browser:
-            browser_root = Path(bundled_browser)
+        browser_roots: list[Path] = []
+        configured_root = os.environ.get("PHANTOM_CAMOUFOX_DIR")
+        if configured_root:
+            browser_roots.append(Path(configured_root))
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            browser_roots.append(Path(meipass) / "camoufox")
+        if getattr(sys, "frozen", False):
+            executable_root = Path(sys.executable).resolve().parent
+            browser_roots.extend((
+                executable_root / "_internal" / "camoufox",
+                executable_root / "camoufox",
+            ))
+
+        executable: Path | None = None
+        for browser_root in dict.fromkeys(browser_roots):
             candidates = (
                 [browser_root / "camoufox.exe", browser_root / "camoufox-bin.exe"]
                 if platform.system() == "Windows"
                 else [browser_root / "camoufox-bin"]
             )
             executable = next((path for path in candidates if path.is_file()), None)
-            if executable is None:
-                raise FileNotFoundError(f"bundled Camoufox executable missing in {browser_root}")
+            if executable is not None:
+                break
+        if executable is not None:
             self._kwargs["executable_path"] = str(executable)
+        elif getattr(sys, "frozen", False):
+            checked = ", ".join(str(path) for path in dict.fromkeys(browser_roots))
+            raise FileNotFoundError(f"bundled Camoufox executable missing; checked: {checked}")
 
         # Camoufox rejects an empty proxy URL. GeoIP matching is meaningful only
         # when an actual proxy is configured.

@@ -296,6 +296,23 @@ class TestCamoufoxEngine:
         kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
         assert kwargs["executable_path"] == str(browser)
 
+    def test_frozen_bundle_falls_back_from_stale_env_to_executable_layout(self, profile_dict, monkeypatch, tmp_path):
+        from phantom.engines.camoufox import CamoufoxEngine
+
+        executable_root = tmp_path / "app"
+        browser_root = executable_root / "_internal" / "camoufox"
+        browser_root.mkdir(parents=True)
+        browser = browser_root / "camoufox.exe"
+        browser.write_bytes(b"MZ")
+        monkeypatch.setenv("PHANTOM_CAMOUFOX_DIR", str(tmp_path / "stale-build-path"))
+        monkeypatch.setattr("phantom.engines.camoufox.sys.frozen", True, raising=False)
+        monkeypatch.setattr("phantom.engines.camoufox.sys._MEIPASS", str(tmp_path / "wrong-meipass"), raising=False)
+        monkeypatch.setattr("phantom.engines.camoufox.sys.executable", str(executable_root / "phantom-sidecar.exe"))
+        monkeypatch.setattr("phantom.engines.camoufox.platform.system", lambda: "Windows")
+        monkeypatch.setattr("phantom.identity.build_launch_config", lambda p: (MagicMock(), {}))
+        kwargs = CamoufoxEngine(profile_dict).prepare()["kwargs"]
+        assert kwargs["executable_path"] == str(browser)
+
 
 # ── Worker event protocol tests ───────────────────────────────────────────────
 
