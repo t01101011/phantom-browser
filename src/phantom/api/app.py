@@ -80,7 +80,15 @@ def create_app() -> FastAPI:
     # mandatory and credentials are never accepted through cookies.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:1420", "http://127.0.0.1:1420", "tauri://localhost"],
+        allow_origins=[
+            "http://localhost:1420",
+            "http://127.0.0.1:1420",
+            "tauri://localhost",
+            # On Windows, Tauri's production custom protocol is exposed to
+            # WebView2 as this synthetic HTTP(S) origin rather than tauri://.
+            "http://tauri.localhost",
+            "https://tauri.localhost",
+        ],
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "Last-Event-ID"],

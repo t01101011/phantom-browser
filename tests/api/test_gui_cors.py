@@ -7,18 +7,24 @@ from phantom.api.auth import load_or_generate_token
 
 def test_tauri_and_vite_origins_get_exact_cors_headers():
     with TestClient(create_app()) as client:
-        response = client.options(
-            "/v1/profiles",
-            headers={
-                "Origin": "tauri://localhost",
-                "Access-Control-Request-Method": "GET",
-                "Access-Control-Request-Headers": "authorization,last-event-id",
-            },
-        )
-    assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == "tauri://localhost"
-    assert "Authorization" in response.headers["access-control-allow-headers"]
-    assert response.headers.get("access-control-allow-credentials") != "true"
+        for origin in (
+            "tauri://localhost",
+            "http://tauri.localhost",
+            "https://tauri.localhost",
+            "http://localhost:1420",
+        ):
+            response = client.options(
+                "/v1/profiles",
+                headers={
+                    "Origin": origin,
+                    "Access-Control-Request-Method": "GET",
+                    "Access-Control-Request-Headers": "authorization,last-event-id",
+                },
+            )
+            assert response.status_code == 200
+            assert response.headers["access-control-allow-origin"] == origin
+            assert "Authorization" in response.headers["access-control-allow-headers"]
+            assert response.headers.get("access-control-allow-credentials") != "true"
 
 
 def test_untrusted_origin_is_not_cors_enabled():
