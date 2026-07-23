@@ -43,9 +43,11 @@ const DEFAULTS: AppSettings = {
   theme: "dark",
   mcpHttpEnabled: true,
   mcpHttpPort: 7777,
-  // Prefer CloakBrowser as the primary runtime. Chrome for Testing stays
-  // available as a compatibility fallback from Settings.
-  browserEngine: "cloakbrowser",
+  // Use Chrome for Testing for the baseline: it is an official, reproducible
+  // runtime and avoids silently making a proprietary stealth binary the
+  // default before redistribution terms are cleared. CloakBrowser remains an
+  // explicit opt-in from Settings for internal evaluation only.
+  browserEngine: "cft",
   autoUpdate: true,
   // Opt-in. Never phone home unless the user explicitly turns this on.
   usageReporting: false,
