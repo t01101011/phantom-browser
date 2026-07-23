@@ -27,7 +27,7 @@ import type { AppSettings } from "@multizen/settings-store";
  * PHANTOM_RESEARCH_TELEMETRY_ENDPOINT.
  */
 
-// No first-party telemetry backend is configured for Phantom Research.
+// No first-party telemetry backend is configured for Phantom Browser.
 // Usage reporting remains dormant unless a local/private endpoint is supplied.
 const DEFAULT_ENDPOINT = "";
 const POST_LAUNCH_DELAY_MS = 12_000; // let first-run + window settle first

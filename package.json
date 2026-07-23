@@ -1,7 +1,7 @@
 {
-  "name": "phantom-research",
+  "name": "phantom-browser",
   "version": "0.3.0",
-  "productName": "Phantom Research",
+  "productName": "Phantom Browser",
   "private": true,
   "description": "AI-native browser for agents and operators — desktop app + MCP server with anti-detect Chromium",
   "homepage": "https://getmultizen.com",

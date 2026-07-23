@@ -19,22 +19,22 @@ function expect(condition, message) {
   if (!condition) failures.push(message);
 }
 
-expect(files.rootPackage.name === "phantom-research", "root package name must be phantom-research");
-expect(files.rootPackage.productName === "Phantom Research", "root package must expose Phantom Research productName");
+expect(files.rootPackage.name === "phantom-browser", "root package name must be phantom-browser");
+expect(files.rootPackage.productName === "Phantom Browser", "root package must expose Phantom Browser productName");
 expect(files.desktopPackage.name === "@multizen/desktop", "desktop workspace package identity must remain compatible with internal imports");
-expect(files.desktopPackage.productName === "Phantom Research", "desktop productName must be Phantom Research");
-expect(files.builder.includes("appId: com.tk.phantom.research"), "bundle id must be com.tk.phantom.research");
-expect(files.builder.includes("productName: Phantom Research"), "builder productName must be Phantom Research");
-expect(files.runtime.includes('app.setName("Phantom Research")'), "runtime identity must use Phantom Research");
-expect(files.updater.includes("t01101011/multizen-browser/releases"), "updater must use the fork release feed");
+expect(files.desktopPackage.productName === "Phantom Browser", "desktop productName must be Phantom Browser");
+expect(files.builder.includes("appId: com.tk.phantom.browser"), "bundle id must be com.tk.phantom.browser");
+expect(files.builder.includes("productName: Phantom Browser"), "builder productName must be Phantom Browser");
+expect(files.runtime.includes('app.setName("Phantom Browser")'), "runtime identity must use Phantom Browser");
+expect(files.updater.includes("t01101011/phantom-research-browser/releases"), "updater must use this fork release feed");
 expect(!files.updater.includes("multizenteam/multizen-browser"), "updater must not use the upstream release feed");
 expect(!files.telemetry.includes("getmultizen.com"), "telemetry must not target the upstream endpoint");
-expect(files.html.includes("<title>Phantom Research</title>"), "renderer title must use Phantom Research");
-expect(files.topBar.includes(">Phantom Research</span>"), "top bar must use Phantom Research");
-expect(files.companion.includes('"name": "Phantom Research Companion"'), "companion extension must use Phantom Research");
+expect(files.html.includes("<title>Phantom Browser</title>"), "renderer title must use Phantom Browser");
+expect(files.topBar.includes(">Phantom Browser</span>"), "top bar must use Phantom Browser");
+expect(files.companion.includes('"name": "Phantom Browser Companion"'), "companion extension must use Phantom Browser");
 
 if (failures.length) {
   console.error(failures.map((failure) => `FAIL: ${failure}`).join("\n"));
   process.exit(1);
 }
-console.log("Phantom Research rebrand acceptance: PASS");
+console.log("Phantom Browser rebrand acceptance: PASS");

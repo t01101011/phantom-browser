@@ -109,9 +109,9 @@ function createWindow(): void {
 
 // Name must be set BEFORE app.whenReady() so the dock and menu bar pick
 // it up — otherwise macOS shows "Electron" until app fully loads.
-app.setName("Phantom Research");
+app.setName("Phantom Browser");
 app.setAboutPanelOptions({
-  applicationName: "Phantom Research",
+  applicationName: "Phantom Browser",
   applicationVersion: app.getVersion(),
 });
 

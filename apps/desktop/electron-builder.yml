@@ -1,5 +1,5 @@
-appId: com.tk.phantom.research
-productName: Phantom Research
+appId: com.tk.phantom.browser
+productName: Phantom Browser
 # Pinned to the version in package.json devDependencies so electron-builder
 # does not need to introspect node_modules. Bump in sync when upgrading.
 electronVersion: 33.2.0
@@ -43,7 +43,7 @@ asarUnpack:
   - "**/*.node"
   - "node_modules/better-sqlite3/**/*"
 
-# Bundled first-party "companion" extension (injects the "Add to Phantom Research"
+# Bundled first-party "companion" extension (injects the "Add to Phantom Browser"
 # button on Web Store pages). Copied verbatim into <resources>/companion so the
 # driver can pass it to --load-extension for every profile.
 extraResources:

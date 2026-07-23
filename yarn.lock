@@ -5131,9 +5131,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"phantom-research@workspace:.":
+"phantom-browser@workspace:.":
   version: 0.0.0-use.local
-  resolution: "phantom-research@workspace:."
+  resolution: "phantom-browser@workspace:."
   dependencies:
     "@types/node": "npm:^22.10.0"
     prettier: "npm:^3.4.0"

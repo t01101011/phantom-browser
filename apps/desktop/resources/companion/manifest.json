@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Phantom Research Companion",
+  "name": "Phantom Browser Companion",
   "version": "1.0.0",
-  "description": "Adds an \"Add to Phantom Research\" button on Chrome Web Store pages.",
+  "description": "Adds an \"Add to Phantom Browser\" button on Chrome Web Store pages.",
   "content_scripts": [
     {
       "matches": ["https://chromewebstore.google.com/detail/*"],
