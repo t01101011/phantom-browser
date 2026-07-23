@@ -1,0 +1,93 @@
+# Phase 0 — Source, license, and runtime audit
+
+Audit date: 2026-07-23
+
+## Pinned sources
+
+| Component | Source | Pinned revision | License finding |
+| --- | --- | --- | --- |
+| MultiZen app | `multizenteam/multizen-browser` | `0871ad373c0e16244276a5ecf0105f4cde86e014` | Root app source is MIT (`LICENSE`, copyright 2023 oboshto). Preserve the notice in copies/substantial portions. |
+| CloakBrowser wrapper | `CloakHQ/CloakBrowser` | `36390b535988ae911c2b09f93acc3cf5ee080d8d` | Wrapper source is MIT, but this does not license the compiled browser binary. |
+| CloakBrowser binary | Official CloakHQ release assets selected by `apps/desktop/src/main/ChromiumBootstrap.ts` | Runtime-selected release | Proprietary `BINARY-LICENSE.md` v1.3. It permits internal use but forbids redistribution, repackaging, inclusion in a distributed product, and modification without a separate license. Latest-major access may require a paid subscription. |
+| Chrome for Testing | Google CFT manifest/CDN | Runtime-selected Stable | Official Google binary fallback, not the stealth engine. It needs its own notices/redistribution review before any third-party release. |
+
+This is an engineering audit, not legal advice.
+
+## Critical finding
+
+MultiZen's README says its patched Chromium engine is open source, but the current runtime path downloads the compiled CloakBrowser binary from CloakHQ GitHub Releases. CloakBrowser's repository separates the MIT wrapper from the proprietary binary license. The binary license explicitly says:
+
+- the grant is non-transferable and non-sublicensable;
+- the binary may not be redistributed, repackaged, modified, or included in a product distributed to third parties;
+- bundling/embedding/customer-controlled API use requires a separate OEM/SaaS license;
+- merely listing it as a dependency is allowed when end users download it directly from official CloakHQ channels.
+
+Therefore the current app may be evaluated for tk's own internal use, and a future installer may direct the user to an official download path, but **Phantom Research must not bundle or redistribute CloakBrowser release assets without a separate written license**. Do not present MultiZen's MIT license as covering that binary.
+
+## Runtime and product evidence
+
+The source contains working implementations for the baseline capabilities, subject to live Windows acceptance:
+
+- Persistent profiles: each profile has a dedicated Chromium user-data directory via the profile manager and browser driver.
+- Proxy support: HTTP/SOCKS profile fields, proxy authentication, a SOCKS5 bridge, and proxy geolocation alignment are implemented.
+- Extensions: extension catalog/install/load plumbing exists under `apps/desktop/src/main/extensions/` and the driver passes extension directories to Chromium.
+- Normal browser lifecycle: `ChromiumBrowserDriver.ts` launches real browser processes; CDP and main-process code track pages/windows and shutdown. Popup/close-last/restore behavior still needs an actual Windows smoke.
+- Local agent surface: MCP uses a bearer token and binds locally. It is not evidence that exposing a CloakBrowser-backed service to third parties is licensed.
+- Runtime downloads: `ChromiumBootstrap.ts` downloads either Google Chrome for Testing or CloakBrowser release assets, verifies available checksums, extracts them under app user data, and launches the cached binary.
+- Updater: Electron updater/GitHub releases are wired and must be repointed or disabled before rebranding.
+- Usage reporting: telemetry is opt-in/default-off, but `UsageReporting.ts` can send a daily version/OS/random-nonce payload to `https://ping.getmultizen.com/ping`; the repo also contains a Redis-backed ingest service. README's broad “no telemetry” wording is therefore inaccurate as an absence claim.
+- Extension downloads: Chrome Web Store CRX installation calls Google's update endpoint directly; the source itself labels this a Google-ToS grey area. Treat it as an unresolved distribution/product-policy item.
+
+## Dependency and attribution gate
+
+The root package declares MIT, but a package-level declaration is not an SBOM. Before external distribution:
+
+1. Generate an SPDX/CycloneDX SBOM from the immutable Yarn lockfile.
+2. Resolve every production dependency's license and flag unknown, unlicensed, copyleft, source-available, native, and binary-only entries.
+3. Produce `THIRD_PARTY_NOTICES` from the resolved production graph.
+4. Audit Electron/Chromium notices separately from npm dependencies.
+5. Review bundled companion-extension assets and extension catalog metadata/icons for redistribution rights.
+
+Until those steps pass, only internal development builds are approved.
+
+## Baseline build evidence
+
+On the pinned MultiZen revision in `/root/projects/phantom-research`:
+
+- Node `v22.22.3`
+- Yarn `4.5.0`
+- `yarn install --immutable` completed with peer/TypeScript patch warnings.
+- `yarn typecheck` passed.
+- `yarn build` passed and produced `apps/desktop/release/linux-unpacked`.
+
+This verifies the unmodified Linux build path only. It does not satisfy the Windows runtime gate.
+
+## Phase 0 decision matrix
+
+| Item | Decision | Reason / next proof |
+| --- | --- | --- |
+| Fork MultiZen app source | Proceed | MIT source, pinned upstream, separate fork/workspace. Preserve attribution. |
+| Internal CloakBrowser evaluation | Proceed cautiously | Allowed for internal use subject to binary terms and any applicable subscription. Download only from official channels. |
+| Bundle CloakBrowser in Phantom Research | Blocked | Separate written redistribution/OEM license required. |
+| Auto-download CloakBrowser for each end user | Conditional | Potentially viable because users fetch from official channels, but subscription/version UX and terms must be reviewed; never proxy or rehost the asset. |
+| Stock Chrome for Testing baseline | Proceed for engineering smoke | Not stealth-equivalent. Complete notices/redistribution review before shipping. |
+| Rebrand/UI work | Deferred | First pass a Windows baseline smoke and finish dependency/SBOM attribution. |
+| Donut-inspired features | Deferred | Classify each feature independently; do not copy proprietary code/services/branding or bypass entitlements. |
+
+## Windows exit gate
+
+Phase 0 is not complete until a native Windows run proves all of the following on the pinned source revision:
+
+1. Build or install the unmodified baseline without bundling an unlicensed browser binary.
+2. Download the selected browser from its official channel and record version + SHA-256.
+3. Launch one profile; close and relaunch it; verify cookies/localStorage/IndexedDB persist.
+4. Load a test extension.
+5. Exercise create/activate/close tab, popup, close-last-window, and relaunch/restore behavior.
+6. Test authenticated HTTP and SOCKS5 proxies; verify DNS and WebRTC do not leak the host route.
+7. Confirm timezone/locale/geolocation align with the proxy egress.
+8. Capture outbound network destinations to validate updater, usage reporting, engine downloads, and the README's privacy claims.
+9. Record process-tree cleanup after stopping the app.
+
+## Current blocker summary
+
+The source workspace and Linux build are healthy. The immediate release blocker is licensing, not code: CloakBrowser's compiled binary is not MIT and cannot be redistributed with our product under the published binary terms. The first Windows build must remain an internal baseline using an official end-user download, or use Chrome for Testing while a clean redistributable patched-Chromium engine is selected.
