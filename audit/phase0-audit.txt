@@ -35,7 +35,8 @@ The source contains working implementations for the baseline capabilities, subje
 - Local agent surface: MCP uses a bearer token and binds locally. It is not evidence that exposing a CloakBrowser-backed service to third parties is licensed.
 - Runtime downloads: `ChromiumBootstrap.ts` downloads either Google Chrome for Testing or CloakBrowser release assets, verifies available checksums, extracts them under app user data, and launches the cached binary.
 - Updater: Electron updater/GitHub releases are wired and must be repointed or disabled before rebranding.
-- Usage reporting: source includes `UsageReporting.ts`; README's broad “no telemetry” claim must be checked against defaults and network behavior before release.
+- Usage reporting: telemetry is opt-in/default-off, but `UsageReporting.ts` can send a daily version/OS/random-nonce payload to `https://ping.getmultizen.com/ping`; the repo also contains a Redis-backed ingest service. README's broad “no telemetry” wording is therefore inaccurate as an absence claim.
+- Extension downloads: Chrome Web Store CRX installation calls Google's update endpoint directly; the source itself labels this a Google-ToS grey area. Treat it as an unresolved distribution/product-policy item.
 
 ## Dependency and attribution gate
 
