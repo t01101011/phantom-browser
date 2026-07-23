@@ -12,7 +12,7 @@ const { autoUpdater } = electronUpdater;
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4h
 const POST_LAUNCH_DELAY_MS = 8_000; // let first-run + window settle first
-const RELEASES = "https://github.com/t01101011/phantom-research-browser/releases";
+const RELEASES = "https://github.com/t01101011/phantom-browser/releases";
 
 interface UpdaterEvents {
   status: (status: UpdateStatus) => void;

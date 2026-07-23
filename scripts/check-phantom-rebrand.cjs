@@ -26,7 +26,7 @@ expect(files.desktopPackage.productName === "Phantom Browser", "desktop productN
 expect(files.builder.includes("appId: com.tk.phantom.browser"), "bundle id must be com.tk.phantom.browser");
 expect(files.builder.includes("productName: Phantom Browser"), "builder productName must be Phantom Browser");
 expect(files.runtime.includes('app.setName("Phantom Browser")'), "runtime identity must use Phantom Browser");
-expect(files.updater.includes("t01101011/phantom-research-browser/releases"), "updater must use this fork release feed");
+expect(files.updater.includes("t01101011/phantom-browser/releases"), "updater must use this fork release feed");
 expect(!files.updater.includes("multizenteam/multizen-browser"), "updater must not use the upstream release feed");
 expect(!files.telemetry.includes("getmultizen.com"), "telemetry must not target the upstream endpoint");
 expect(files.html.includes("<title>Phantom Browser</title>"), "renderer title must use Phantom Browser");
