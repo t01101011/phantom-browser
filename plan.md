@@ -1,7 +1,8 @@
 # Phantom Browser — Plan
 
 > Antidetect browser với profile manager GUI, tự host, để nuôi/quản lý multi-account.
-> Status: Phase 2 hand-off ready · Priority: Low · Deadline: 2026-07-24 · TAG: TK (side project)
+> Status: SHELVED 2026-07-23 · Priority: Low · TAG: TK (historical prototype)
+> Active roadmap moved to `PLAN.md`: Matrix Research Browser / MultiZen fork. The historical Phantom 2.0 checklists below are evidence only and do not define current work.
 > Notion project: `399539c8-7ba9-811c-9b07-d0f19fb583ce`
 > Discord: `#phantom-browser` (category PERSONAL, channel `1525126316662198404`)
 
@@ -145,7 +146,8 @@ SĐT khi nhiều acc cùng IP. TMĐT chống multi-acc bằng SĐT/địa chỉ/
 - [x] **P0 — Safety/control plane:** characterization tests; cross-platform paths; schema migrations; FastAPI health/auth; profile/folder/proxy CRUD.
 - [x] **P1 — Runtime:** engine adapter; structured worker protocol [Task 6]; ProcessRegistry; crash recovery; Windows Job Objects + Linux process-group/cgroup cleanup [Task 7]. Linux verified; native Windows packaged launch/stop/process-cleanup smoke accepted in Task 13 CI.
 - [x] **P2 — Sessions/agents:** persistent sessions + SSE; instant sessions; leases/TTL/idempotency; screenshots/cookies/storage; indexed snapshots/actions; MCP; VPS viewer + human takeover cho login challenge.
-- [x] **P3 — Product GUI:** React dùng HTTP control plane; folders, profile edit/clone/import, proxy health, session/log views.
+- [x] **P3 — Product GUI foundation:** React dùng HTTP control plane; folders, profile edit/clone/import, proxy health, session/log views.
+- [ ] **P3.5 — GUI/UX redesign:** Collaborative task. Chốt information architecture, design system và mockup trước; triển khai core screens/states; sau các feature UI-heavy (profile groups/bulk actions, proxy import, cookie import/export) chạy final visual polish + functional verification trên Windows WebView. Phải hoàn thành trước Windows acceptance cuối.
 - [ ] **P4 — Native releases:** Task 13 Windows pipeline DONE/native CI accepted; Task 14 Linux runtime DONE; AppImage/deb local chưa chạy.
 - [x] **P5 — Chromium spike:** stock/Clearcote/fingerprint-chromium probe + ADR; Clearcote experimental only, không auto-fallback.
 - [x] **P6 — Stealth gate:** worker/main, UA-CH, WebGL/WebGPU, fonts, WebRTC, locale/geo, TLS/HTTP2 coherence checks wired into release; Windows evidence uploaded, unsupported surfaces remain explicit.
