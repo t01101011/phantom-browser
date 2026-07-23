@@ -60,6 +60,7 @@ export function Constellation({
 }: Props): JSX.Element {
   const [filter, setFilter] = useState<FilterChip["id"]>("all");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = usePersistedState<ViewMode>("profilesView", "grid");
 
   const tileData: TileData[] = useMemo(
@@ -92,9 +93,24 @@ export function Constellation({
   }, [tileData, filter, activeTag]);
 
   const aiCount = counts.ai;
-  const bulkLabel = activeTag ? `group ${activeTag}` : "visible profiles";
-  const launchIds = filtered.filter((p) => !p.isRunning).map((p) => p.id);
-  const stopIds = filtered.filter((p) => p.isRunning).map((p) => p.id);
+  const selected = filtered.filter((profile) => selectedIds.has(profile.id));
+  const bulkTargets = selected.length > 0 ? selected : filtered;
+  const bulkLabel = selected.length > 0
+    ? "selected profiles"
+    : activeTag
+      ? `group ${activeTag}`
+      : "visible profiles";
+  const launchIds = bulkTargets.filter((p) => !p.isRunning).map((p) => p.id);
+  const stopIds = bulkTargets.filter((p) => p.isRunning).map((p) => p.id);
+
+  function toggleSelected(id: string): void {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -105,31 +121,6 @@ export function Constellation({
           ·  {profiles.length} total · {counts.running + counts.ai} running
           {aiCount > 0 && ` · ${aiCount} driven by Claude`}
         </div>
-        <div className="flex-1" />
-        {launchIds.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onLaunchMany(launchIds, bulkLabel)}
-            className="flex items-center gap-1.5 rounded-[9px] text-[12px] px-2.5 py-[7px] text-emerald-300 hover:text-emerald-200"
-            style={{ background: "rgba(52,211,153,0.08)", boxShadow: "inset 0 0 0 1px rgba(52,211,153,0.18)" }}
-            title={`Launch ${bulkLabel}`}
-          >
-            <Play size={12} />
-            Launch {launchIds.length}
-          </button>
-        )}
-        {stopIds.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onStopMany(stopIds, bulkLabel)}
-            className="flex items-center gap-1.5 rounded-[9px] text-[12px] px-2.5 py-[7px] text-amber-300 hover:text-amber-200"
-            style={{ background: "rgba(251,191,36,0.08)", boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.18)" }}
-            title={`Stop ${bulkLabel}`}
-          >
-            <Square size={11} />
-            Stop {stopIds.length}
-          </button>
-        )}
         <div className="flex-1" />
         <div
           className="flex gap-1 p-[3px] rounded-lg"
@@ -171,6 +162,40 @@ export function Constellation({
             <List size={13} strokeWidth={1.5} />
           </button>
         </div>
+        {selected.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set())}
+            className="mono text-[11px] px-2 py-[7px] text-purple-300 hover:text-purple-200"
+            title="Clear selection"
+          >
+            {selected.length} selected
+          </button>
+        )}
+        {launchIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onLaunchMany(launchIds, bulkLabel)}
+            className="flex items-center gap-1 rounded-[9px] text-[12px] px-2.5 py-[7px] text-emerald-300 hover:text-emerald-200"
+            style={{ background: "rgba(52,211,153,0.08)", boxShadow: "inset 0 0 0 1px rgba(52,211,153,0.18)" }}
+            title={`Launch ${bulkLabel}`}
+          >
+            <Play size={12} fill="currentColor" strokeWidth={0} />
+            {launchIds.length}
+          </button>
+        )}
+        {stopIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onStopMany(stopIds, bulkLabel)}
+            className="flex items-center gap-1 rounded-[9px] text-[12px] px-2.5 py-[7px] text-amber-300 hover:text-amber-200"
+            style={{ background: "rgba(251,191,36,0.08)", boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.18)" }}
+            title={`Stop ${bulkLabel}`}
+          >
+            <Square size={10} fill="currentColor" strokeWidth={0} />
+            {stopIds.length}
+          </button>
+        )}
         <button
           type="button"
           onClick={onCreate}
@@ -254,6 +279,8 @@ export function Constellation({
         ) : viewMode === "list" ? (
           <ProfileTable
             profiles={filtered}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelected}
             closingIds={closingIds}
             onSelect={onSelect}
             onLaunch={onLaunch}
@@ -273,6 +300,8 @@ export function Constellation({
                 key={p.id}
                 profile={p}
                 terminating={closingIds?.has(p.id) ?? false}
+                selected={selectedIds.has(p.id)}
+                onToggleSelect={() => toggleSelected(p.id)}
                 onOpen={() => onSelect(p.id)}
                 onLaunch={() => onLaunch(p.id)}
                 onStop={() => onStop(p.id)}

@@ -243,16 +243,13 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // Chromium parses it as ["en-US", "en;q=0.9"] and then re-adds q's,
     // producing the malformed "en-US,en;q=0.9;q=0.9" we saw on browserscan.
     const acceptLangPlain = fp.languages.join(",");
+    const restorableSession = await hasRestorableSession(browserDataDir);
     const args = [
       `--user-data-dir=${browserDataDir}`,
       `--remote-debugging-port=${port}`,
       "--no-first-run",
       "--no-default-browser-check",
-      // Force-restore the previous session's tabs at startup. Combined
-      // with the Preferences flip in ensureSessionRestore() and our
-      // CDP-based graceful shutdown on close, this makes tab persistence
-      // reliable across stop/launch even after a crash.
-      "--restore-last-session",
+      ...(restorableSession ? ["--restore-last-session"] : []),
       "--disable-features=Translate,MediaRouter",
       // Don't back Chromium's "Safe Storage" key with the OS keychain/keyring.
       // Two reasons: (1) our engine bundle is ad-hoc signed, so on macOS the
@@ -412,13 +409,10 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       DYLD_FALLBACK_FRAMEWORK_PATH: process.env.DYLD_FALLBACK_FRAMEWORK_PATH ?? "",
     };
     // Start page (positional URL) — only on first run, i.e. when there is no
-    // restorable session. With `--restore-last-session` a returning profile
-    // reopens its real tabs, so we must NOT stack an extra tab; on first launch
-    // there's nothing to restore, so the command-line URL becomes the initial
-    // tab (verified on CloakBrowser 145 — pref `startup_urls` is ignored there,
-    // a positional URL works). Defaults to DuckDuckGo when the profile has no
-    // explicit start page. Must be the LAST argv entry (positional).
-    if (!(await hasRestorableSession(browserDataDir))) {
+    // restorable session. Returning profiles get --restore-last-session instead.
+    // Passing both restore + a positional URL can make Chromium create two
+    // windows/tabs during startup, so these paths are deliberately exclusive.
+    if (!restorableSession) {
       // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
       // Chromium would treat as switches) → falls back to the default.
       args.push(sanitizeStartUrl(profile.startUrl));
