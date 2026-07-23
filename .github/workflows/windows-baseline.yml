@@ -53,8 +53,8 @@ jobs:
           }
           node scripts/check-phantom-rebrand.cjs
 
-      - name: Bulk lifecycle tests
-        run: node --test --experimental-strip-types apps/desktop/src/renderer/src/lib/bulkLifecycle.test.ts
+      - name: Bulk lifecycle and session startup tests
+        run: node --test --experimental-strip-types apps/desktop/src/renderer/src/lib/bulkLifecycle.test.ts apps/desktop/src/main/sessionStartup.test.ts
 
       - name: Build Windows unpacked app and NSIS installer
         run: yarn workspace @multizen/desktop build:win

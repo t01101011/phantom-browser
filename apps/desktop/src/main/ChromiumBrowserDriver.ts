@@ -22,6 +22,7 @@ import { probeProxyGeo } from "./proxyGeo";
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl } from "./startPage";
+import { sessionStartupPlan } from "./sessionStartup";
 
 interface RunningProcess {
   child: ChildProcess;
@@ -216,14 +217,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       });
     }
 
-    // Make Chromium reopen last-session tabs on every launch — what
-    // Multilogin / AdsPower / GoLogin do by default. The setting is
-    // `session.restore_on_startup = 1` in the Default profile's
-    // Preferences JSON. We mutate it before spawn (Chrome must be off
-    // to avoid corruption).
-    await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
-      console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
-    });
+    const restorableSession = await hasRestorableSession(browserDataDir);
+    const startupPlan = sessionStartupPlan(restorableSession);
+    // Only force restore preferences when real session files exist. On a fresh
+    // profile, setting restore_on_startup=1 makes Chromium create its own default
+    // window in addition to the positional start URL window.
+    if (startupPlan.writeRestorePreference) {
+      await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
+        console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
+      });
+    }
 
     // Best-effort: suppress CFT's "is only for automated testing" infobar
     // via the macOS managed-preference. Idempotent — only prompts for
@@ -243,13 +246,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // Chromium parses it as ["en-US", "en;q=0.9"] and then re-adds q's,
     // producing the malformed "en-US,en;q=0.9;q=0.9" we saw on browserscan.
     const acceptLangPlain = fp.languages.join(",");
-    const restorableSession = await hasRestorableSession(browserDataDir);
     const args = [
       `--user-data-dir=${browserDataDir}`,
       `--remote-debugging-port=${port}`,
       "--no-first-run",
       "--no-default-browser-check",
-      ...(restorableSession ? ["--restore-last-session"] : []),
+      ...(startupPlan.restoreLastSession ? ["--restore-last-session"] : []),
       "--disable-features=Translate,MediaRouter",
       // Don't back Chromium's "Safe Storage" key with the OS keychain/keyring.
       // Two reasons: (1) our engine bundle is ad-hoc signed, so on macOS the
@@ -412,7 +414,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // restorable session. Returning profiles get --restore-last-session instead.
     // Passing both restore + a positional URL can make Chromium create two
     // windows/tabs during startup, so these paths are deliberately exclusive.
-    if (!restorableSession) {
+    if (startupPlan.openStartPage) {
       // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
       // Chromium would treat as switches) → falls back to the default.
       args.push(sanitizeStartUrl(profile.startUrl));
