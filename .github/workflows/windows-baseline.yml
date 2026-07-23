@@ -1,0 +1,76 @@
+name: Windows baseline
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    env:
+      MULTIZEN_NO_TELEMETRY: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare yarn@4.5.0 --activate
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Typecheck must precede the desktop packaging script: that script strips
+      # workspace symlinks after bundling so electron-builder cannot follow them
+      # outside apps/desktop. Reinstall before any later typecheck.
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Assert safe baseline defaults
+        shell: pwsh
+        run: |
+          $settings = Get-Content packages/settings-store/src/index.ts -Raw
+          if ($settings -notmatch 'browserEngine:\s*"cft"') {
+            throw "Chrome for Testing is not the baseline browser engine"
+          }
+          if ($settings -notmatch 'usageReporting:\s*false') {
+            throw "Usage reporting must remain opt-in/default-off"
+          }
+
+      - name: Build Windows unpacked app and NSIS installer
+        run: yarn workspace @multizen/desktop build:win
+
+      - name: Static package acceptance
+        shell: pwsh
+        run: ./scripts/smoke-windows-package.ps1
+
+      - name: Cold-start packaged desktop
+        shell: pwsh
+        run: ./scripts/smoke-windows-desktop.ps1
+
+      - name: Upload Windows baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multizen-windows-baseline-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/win-unpacked/**
+            artifacts/windows-smoke/**
