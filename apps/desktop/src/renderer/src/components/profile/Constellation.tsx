@@ -1,5 +1,5 @@
 import { useMemo, useState, type JSX } from "react";
-import { Grid3x3, List, Plus } from "lucide-react";
+import { Grid3x3, List, Plus, Play, Square } from "lucide-react";
 import type { ProfileSummary, ActivityEvent } from "../../types";
 import { Kbd } from "../atoms";
 import { ProfileTile, deriveTileState, type TileData, type TileState } from "./ProfileTile";
@@ -39,6 +39,8 @@ interface Props {
   onCreate: () => void;
   onLaunch: (id: string) => void;
   onStop: (id: string) => void;
+  onLaunchMany: (ids: string[], label: string) => void;
+  onStopMany: (ids: string[], label: string) => void;
   onExport: (id: string) => void;
   onDelete: (id: string) => void;
 }
@@ -51,6 +53,8 @@ export function Constellation({
   onCreate,
   onLaunch,
   onStop,
+  onLaunchMany,
+  onStopMany,
   onExport,
   onDelete,
 }: Props): JSX.Element {
@@ -88,6 +92,9 @@ export function Constellation({
   }, [tileData, filter, activeTag]);
 
   const aiCount = counts.ai;
+  const bulkLabel = activeTag ? `group ${activeTag}` : "visible profiles";
+  const launchIds = filtered.filter((p) => !p.isRunning).map((p) => p.id);
+  const stopIds = filtered.filter((p) => p.isRunning).map((p) => p.id);
 
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -98,6 +105,31 @@ export function Constellation({
           ·  {profiles.length} total · {counts.running + counts.ai} running
           {aiCount > 0 && ` · ${aiCount} driven by Claude`}
         </div>
+        <div className="flex-1" />
+        {launchIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onLaunchMany(launchIds, bulkLabel)}
+            className="flex items-center gap-1.5 rounded-[9px] text-[12px] px-2.5 py-[7px] text-emerald-300 hover:text-emerald-200"
+            style={{ background: "rgba(52,211,153,0.08)", boxShadow: "inset 0 0 0 1px rgba(52,211,153,0.18)" }}
+            title={`Launch ${bulkLabel}`}
+          >
+            <Play size={12} />
+            Launch {launchIds.length}
+          </button>
+        )}
+        {stopIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onStopMany(stopIds, bulkLabel)}
+            className="flex items-center gap-1.5 rounded-[9px] text-[12px] px-2.5 py-[7px] text-amber-300 hover:text-amber-200"
+            style={{ background: "rgba(251,191,36,0.08)", boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.18)" }}
+            title={`Stop ${bulkLabel}`}
+          >
+            <Square size={11} />
+            Stop {stopIds.length}
+          </button>
+        )}
         <div className="flex-1" />
         <div
           className="flex gap-1 p-[3px] rounded-lg"
