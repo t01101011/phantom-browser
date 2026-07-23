@@ -1,0 +1,39 @@
+# Dependency and feature audit — MultiZen baseline
+
+Audit date: 2026-07-23
+
+## SBOM evidence
+
+- Source: MultiZen fork `t01101011/multizen-browser`, revision `c385ae7`.
+- Command: `npx @cyclonedx/cdxgen@12.8.1 -t js --required-only --profile license-compliance --evidence --license-ref --json-pretty -o sbom.cdx.json .`
+- Output: `sbom.cdx.json`, CycloneDX 1.7, 521 required components.
+- License classifications resolved: MIT 399, ISC 73, BlueOak-1.0.0 11, Apache-2.0 10, BSD-3-Clause 8, BSD-2-Clause 6, plus smaller permissive/weak-copyleft expressions.
+- Five first-party workspace packages have no license metadata in the generated component records: `@multizen/cdp-driver`, `@multizen/desktop`, `@multizen/mcp-server`, `@multizen/profile-manager`, `@multizen/settings-store`. They inherit the repository MIT license in practice, but package-level metadata should be made explicit before publishing.
+- SBOM is an inventory, not final legal clearance. Need a generated `THIRD_PARTY_NOTICES` file and review of binary/runtime assets (Electron, CFT, optional CloakBrowser, companion extension, downloaded CRX files).
+- The cdxgen run emitted a root-privilege warning because this host runs the command as root. Do not treat that warning as a dependency finding; rerun in CI/non-root when making a release artifact.
+
+## Feature ownership classification
+
+| Capability | Decision | Implementation path / boundary |
+| --- | --- | --- |
+| Isolated local profiles | Implement independently | Existing profile manager + per-profile user-data dirs; keep behavior, replace branding. |
+| Persistent cookies/localStorage/IndexedDB | Implement independently | Chromium profile directories; add explicit relaunch persistence smoke. |
+| HTTP/SOCKS proxy + auth bridge | Implement independently | Existing local SOCKS bridge and proxy schema; test DNS/WebRTC behavior on Windows. |
+| Normal tabs/windows/popups/restore | Implement independently | Existing CDP/browser-driver lifecycle; manual Windows acceptance remains open. |
+| Extension loading/assignment | Implement independently | Existing local unpacked/CRX pipeline; retain user-supplied extensions only. Chrome Web Store automation remains a policy/ToS review item. |
+| Local authenticated MCP | Implement independently | Existing loopback bearer-token MCP; keep capability allowlist and avoid fake CDP/remote claims. |
+| Local REST control plane | Defer until MCP/profile lifecycle baseline is accepted | Add only if a concrete GUI/agent gap remains; keep loopback auth and audit events. |
+| Profile groups/bulk launch-stop | Implement independently | New local data model/UI feature after baseline manual smoke. No hosted service dependency. |
+| Cookie import/export | Implement independently with security review | Existing archive path can be hardened; explicit confirmation, redaction, encryption, and no secret leakage in logs. |
+| Extension manager | Implement independently | Use local files/folders and clear license metadata. Defer automated Web Store scraping/download until ToS decision. |
+| Self-hosted encrypted sync | Defer | Not required for single-machine baseline; design after local storage/backup semantics settle. |
+| Profile synchronizer | Defer | Needs lifecycle, conflict, encryption, and threat-model review. |
+| Per-profile TOTP vault | Defer to Phase 3 | Use DPAPI/OS credential protection; never expose secrets to renderer/MCP/logs/screenshots. |
+| Wayfern/Donut hosted services, entitlement checks, branding/assets | Do not reuse | No hosted endpoints, tokens, subscription bypasses, proprietary binaries, or copied branding. |
+
+## Current next gate
+
+1. tk manually reviews the Windows artifact: profile create/launch, tabs/popups/restore, persistence, extension, and proxy/leak behavior.
+2. Add explicit MIT license metadata to first-party workspace manifests.
+3. Generate `THIRD_PARTY_NOTICES` from `sbom.cdx.json`, with separate runtime notices and unresolved-item list.
+4. Only after that review starts Matrix rebrand and local profile-group/bulk lifecycle work.

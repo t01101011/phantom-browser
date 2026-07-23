@@ -1,0 +1,2091 @@
+MultiZen third-party dependency inventory
+Generated from sbom.cdx.json. This inventory does not replace the full license text
+or runtime notices supplied by Electron, Chromium/CFT, optional browser engines,
+extensions, or downloaded CRX packages.
+
+Components: 521
+Unresolved license entries: 0
+
+@babel/code-frame@7.29.0
+  License: MIT
+  PURL: pkg:npm/%40babel/code-frame@7.29.0
+
+@babel/compat-data@7.29.0
+  License: MIT
+  PURL: pkg:npm/%40babel/compat-data@7.29.0
+
+@babel/core@7.29.0
+  License: MIT
+  PURL: pkg:npm/%40babel/core@7.29.0
+
+@babel/generator@7.29.1
+  License: MIT
+  PURL: pkg:npm/%40babel/generator@7.29.1
+
+@babel/helper-compilation-targets@7.28.6
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-compilation-targets@7.28.6
+
+@babel/helper-globals@7.28.0
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-globals@7.28.0
+
+@babel/helper-module-imports@7.28.6
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-module-imports@7.28.6
+
+@babel/helper-module-transforms@7.28.6
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-module-transforms@7.28.6
+
+@babel/helper-plugin-utils@7.28.6
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-plugin-utils@7.28.6
+
+@babel/helper-string-parser@7.27.1
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-string-parser@7.27.1
+
+@babel/helper-validator-identifier@7.28.5
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-validator-identifier@7.28.5
+
+@babel/helper-validator-option@7.27.1
+  License: MIT
+  PURL: pkg:npm/%40babel/helper-validator-option@7.27.1
+
+@babel/helpers@7.29.2
+  License: MIT
+  PURL: pkg:npm/%40babel/helpers@7.29.2
+
+@babel/parser@7.29.2
+  License: MIT
+  PURL: pkg:npm/%40babel/parser@7.29.2
+
+@babel/plugin-transform-arrow-functions@7.27.1
+  License: MIT
+  PURL: pkg:npm/%40babel/plugin-transform-arrow-functions@7.27.1
+
+@babel/plugin-transform-react-jsx-self@7.27.1
+  License: MIT
+  PURL: pkg:npm/%40babel/plugin-transform-react-jsx-self@7.27.1
+
+@babel/plugin-transform-react-jsx-source@7.27.1
+  License: MIT
+  PURL: pkg:npm/%40babel/plugin-transform-react-jsx-source@7.27.1
+
+@babel/template@7.28.6
+  License: MIT
+  PURL: pkg:npm/%40babel/template@7.28.6
+
+@babel/traverse@7.29.0
+  License: MIT
+  PURL: pkg:npm/%40babel/traverse@7.29.0
+
+@babel/types@7.29.0
+  License: MIT
+  PURL: pkg:npm/%40babel/types@7.29.0
+
+@electron/asar@3.4.1
+  License: MIT
+  PURL: pkg:npm/%40electron/asar@3.4.1
+
+@electron/get@2.0.3
+  License: MIT
+  PURL: pkg:npm/%40electron/get@2.0.3
+
+@electron/notarize@2.5.0
+  License: MIT
+  PURL: pkg:npm/%40electron/notarize@2.5.0
+
+@electron/osx-sign@1.3.1
+  License: BSD-2-Clause
+  PURL: pkg:npm/%40electron/osx-sign@1.3.1
+
+@electron/rebuild@3.6.1
+  License: MIT
+  PURL: pkg:npm/%40electron/rebuild@3.6.1
+
+@electron/universal@2.0.1
+  License: MIT
+  PURL: pkg:npm/%40electron/universal@2.0.1
+
+@emoji-mart/data@1.2.1
+  License: MIT
+  PURL: pkg:npm/%40emoji-mart/data@1.2.1
+
+@emoji-mart/react@1.1.1
+  License: MIT
+  PURL: pkg:npm/%40emoji-mart/react@1.1.1
+
+@gar/promisify@1.1.3
+  License: MIT
+  PURL: pkg:npm/%40gar/promisify@1.1.3
+
+@hono/node-server@1.19.14
+  License: MIT
+  PURL: pkg:npm/%40hono/node-server@1.19.14
+
+@isaacs/cliui@8.0.2
+  License: ISC
+  PURL: pkg:npm/%40isaacs/cliui@8.0.2
+
+@isaacs/fs-minipass@4.0.1
+  License: ISC
+  PURL: pkg:npm/%40isaacs/fs-minipass@4.0.1
+
+@jridgewell/gen-mapping@0.3.13
+  License: MIT
+  PURL: pkg:npm/%40jridgewell/gen-mapping@0.3.13
+
+@jridgewell/remapping@2.3.5
+  License: MIT
+  PURL: pkg:npm/%40jridgewell/remapping@2.3.5
+
+@jridgewell/resolve-uri@3.1.2
+  License: MIT
+  PURL: pkg:npm/%40jridgewell/resolve-uri@3.1.2
+
+@jridgewell/sourcemap-codec@1.5.5
+  License: MIT
+  PURL: pkg:npm/%40jridgewell/sourcemap-codec@1.5.5
+
+@jridgewell/trace-mapping@0.3.31
+  License: MIT
+  PURL: pkg:npm/%40jridgewell/trace-mapping@0.3.31
+
+@malept/cross-spawn-promise@2.0.0
+  License: Apache-2.0
+  PURL: pkg:npm/%40malept/cross-spawn-promise@2.0.0
+
+@malept/flatpak-bundler@0.4.0
+  License: MIT
+  PURL: pkg:npm/%40malept/flatpak-bundler@0.4.0
+
+@modelcontextprotocol/sdk@1.29.0
+  License: MIT
+  PURL: pkg:npm/%40modelcontextprotocol/sdk@1.29.0
+
+@multizen/cdp-driver@0.2.9
+  License: MIT (repository license)
+  PURL: pkg:npm/%40multizen/cdp-driver@0.2.9
+
+@multizen/desktop@0.3.0
+  License: MIT (repository license)
+  PURL: pkg:npm/%40multizen/desktop@0.3.0
+
+@multizen/mcp-server@0.2.9
+  License: MIT (repository license)
+  PURL: pkg:npm/%40multizen/mcp-server@0.2.9
+
+@multizen/profile-manager@0.2.9
+  License: MIT (repository license)
+  PURL: pkg:npm/%40multizen/profile-manager@0.2.9
+
+@multizen/settings-store@0.2.9
+  License: MIT (repository license)
+  PURL: pkg:npm/%40multizen/settings-store@0.2.9
+
+@npmcli/fs@2.1.2
+  License: ISC
+  PURL: pkg:npm/%40npmcli/fs@2.1.2
+
+@npmcli/move-file@2.0.1
+  License: MIT
+  PURL: pkg:npm/%40npmcli/move-file@2.0.1
+
+@pkgjs/parseargs@0.11.0
+  License: MIT
+  PURL: pkg:npm/%40pkgjs/parseargs@0.11.0
+
+@rolldown/pluginutils@1.0.0-beta.27
+  License: MIT
+  PURL: pkg:npm/%40rolldown/pluginutils@1.0.0-beta.27
+
+@sindresorhus/is@4.6.0
+  License: MIT
+  PURL: pkg:npm/%40sindresorhus/is@4.6.0
+
+@szmarczak/http-timer@4.0.6
+  License: MIT
+  PURL: pkg:npm/%40szmarczak/http-timer@4.0.6
+
+@tailwindcss/node@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/node@4.2.4
+
+@tailwindcss/oxide@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide@4.2.4
+
+@tailwindcss/oxide-android-arm64@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-android-arm64@4.2.4
+
+@tailwindcss/oxide-darwin-arm64@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-darwin-arm64@4.2.4
+
+@tailwindcss/oxide-darwin-x64@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-darwin-x64@4.2.4
+
+@tailwindcss/oxide-freebsd-x64@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-freebsd-x64@4.2.4
+
+@tailwindcss/oxide-linux-arm-gnueabihf@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-linux-arm-gnueabihf@4.2.4
+
+@tailwindcss/oxide-linux-arm64-gnu@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-linux-arm64-gnu@4.2.4
+
+@tailwindcss/oxide-linux-arm64-musl@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-linux-arm64-musl@4.2.4
+
+@tailwindcss/oxide-linux-x64-gnu@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-linux-x64-gnu@4.2.4
+
+@tailwindcss/oxide-linux-x64-musl@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-linux-x64-musl@4.2.4
+
+@tailwindcss/oxide-wasm32-wasi@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-wasm32-wasi@4.2.4
+
+@tailwindcss/oxide-win32-arm64-msvc@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-win32-arm64-msvc@4.2.4
+
+@tailwindcss/oxide-win32-x64-msvc@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/oxide-win32-x64-msvc@4.2.4
+
+@tailwindcss/vite@4.2.4
+  License: MIT
+  PURL: pkg:npm/%40tailwindcss/vite@4.2.4
+
+@tootallnate/once@2.0.0
+  License: MIT
+  PURL: pkg:npm/%40tootallnate/once@2.0.0
+
+@types/better-sqlite3@7.6.13
+  License: MIT
+  PURL: pkg:npm/%40types/better-sqlite3@7.6.13
+
+@types/cacheable-request@6.0.3
+  License: MIT
+  PURL: pkg:npm/%40types/cacheable-request@6.0.3
+
+@types/chrome-remote-interface@0.31.14
+  License: MIT
+  PURL: pkg:npm/%40types/chrome-remote-interface@0.31.14
+
+@types/debug@4.1.13
+  License: MIT
+  PURL: pkg:npm/%40types/debug@4.1.13
+
+@types/fs-extra@9.0.13
+  License: MIT
+  PURL: pkg:npm/%40types/fs-extra@9.0.13
+
+@types/http-cache-semantics@4.2.0
+  License: MIT
+  PURL: pkg:npm/%40types/http-cache-semantics@4.2.0
+
+@types/keyv@3.1.4
+  License: MIT
+  PURL: pkg:npm/%40types/keyv@3.1.4
+
+@types/ms@2.1.0
+  License: MIT
+  PURL: pkg:npm/%40types/ms@2.1.0
+
+@types/plist@3.0.5
+  License: MIT
+  PURL: pkg:npm/%40types/plist@3.0.5
+
+@types/react@19.2.14
+  License: MIT
+  PURL: pkg:npm/%40types/react@19.2.14
+
+@types/react-dom@19.2.3
+  License: MIT
+  PURL: pkg:npm/%40types/react-dom@19.2.3
+
+@types/responselike@1.0.3
+  License: MIT
+  PURL: pkg:npm/%40types/responselike@1.0.3
+
+@types/uuid@10.0.0
+  License: MIT
+  PURL: pkg:npm/%40types/uuid@10.0.0
+
+@types/ws@8.18.1
+  License: MIT
+  PURL: pkg:npm/%40types/ws@8.18.1
+
+@types/yauzl@2.10.3
+  License: MIT
+  PURL: pkg:npm/%40types/yauzl@2.10.3
+
+@vitejs/plugin-react@4.7.0
+  License: MIT
+  PURL: pkg:npm/%40vitejs/plugin-react@4.7.0
+
+@xmldom/xmldom@0.9.10
+  License: MIT
+  PURL: pkg:npm/%40xmldom/xmldom@0.9.10
+
+7zip-bin@5.2.0
+  License: MIT
+  PURL: pkg:npm/7zip-bin@5.2.0
+
+abbrev@1.1.1
+  License: ISC
+  PURL: pkg:npm/abbrev@1.1.1
+
+abbrev@4.0.0
+  License: ISC
+  PURL: pkg:npm/abbrev@4.0.0
+
+accepts@2.0.0
+  License: MIT
+  PURL: pkg:npm/accepts@2.0.0
+
+agent-base@6.0.2
+  License: MIT
+  PURL: pkg:npm/agent-base@6.0.2
+
+agent-base@7.1.4
+  License: MIT
+  PURL: pkg:npm/agent-base@7.1.4
+
+agent-base@9.0.0
+  License: MIT
+  PURL: pkg:npm/agent-base@9.0.0
+
+agentkeepalive@4.6.0
+  License: MIT
+  PURL: pkg:npm/agentkeepalive@4.6.0
+
+aggregate-error@3.1.0
+  License: MIT
+  PURL: pkg:npm/aggregate-error@3.1.0
+
+ajv@6.15.0
+  License: MIT
+  PURL: pkg:npm/ajv@6.15.0
+
+ajv@8.20.0
+  License: MIT
+  PURL: pkg:npm/ajv@8.20.0
+
+ajv-formats@3.0.1
+  License: MIT
+  PURL: pkg:npm/ajv-formats@3.0.1
+
+ajv-keywords@3.5.2
+  License: MIT
+  PURL: pkg:npm/ajv-keywords@3.5.2
+
+ansi-regex@5.0.1
+  License: MIT
+  PURL: pkg:npm/ansi-regex@5.0.1
+
+ansi-regex@6.2.2
+  License: MIT
+  PURL: pkg:npm/ansi-regex@6.2.2
+
+ansi-styles@4.3.0
+  License: MIT
+  PURL: pkg:npm/ansi-styles@4.3.0
+
+ansi-styles@6.2.3
+  License: MIT
+  PURL: pkg:npm/ansi-styles@6.2.3
+
+app-builder-bin@5.0.0-alpha.10
+  License: MIT
+  PURL: pkg:npm/app-builder-bin@5.0.0-alpha.10
+
+app-builder-lib@25.1.8
+  License: MIT
+  PURL: pkg:npm/app-builder-lib@25.1.8
+
+aproba@2.1.0
+  License: ISC
+  PURL: pkg:npm/aproba@2.1.0
+
+are-we-there-yet@3.0.1
+  License: ISC
+  PURL: pkg:npm/are-we-there-yet@3.0.1
+
+argparse@2.0.1
+  License: Python-2.0
+  PURL: pkg:npm/argparse@2.0.1
+
+async@3.2.6
+  License: MIT
+  PURL: pkg:npm/async@3.2.6
+
+async-exit-hook@2.0.1
+  License: MIT
+  PURL: pkg:npm/async-exit-hook@2.0.1
+
+async-function@1.0.0
+  License: MIT
+  PURL: pkg:npm/async-function@1.0.0
+
+async-generator-function@1.0.0
+  License: MIT
+  PURL: pkg:npm/async-generator-function@1.0.0
+
+asynckit@0.4.0
+  License: MIT
+  PURL: pkg:npm/asynckit@0.4.0
+
+at-least-node@1.0.0
+  License: ISC
+  PURL: pkg:npm/at-least-node@1.0.0
+
+balanced-match@1.0.2
+  License: MIT
+  PURL: pkg:npm/balanced-match@1.0.2
+
+balanced-match@4.0.4
+  License: MIT
+  PURL: pkg:npm/balanced-match@4.0.4
+
+base64-js@1.5.1
+  License: MIT
+  PURL: pkg:npm/base64-js@1.5.1
+
+baseline-browser-mapping@2.10.24
+  License: Apache-2.0
+  PURL: pkg:npm/baseline-browser-mapping@2.10.24
+
+better-sqlite3@11.10.0
+  License: MIT
+  PURL: pkg:npm/better-sqlite3@11.10.0
+
+bindings@1.5.0
+  License: MIT
+  PURL: pkg:npm/bindings@1.5.0
+
+bl@4.1.0
+  License: MIT
+  PURL: pkg:npm/bl@4.1.0
+
+bluebird@3.7.2
+  License: MIT
+  PURL: pkg:npm/bluebird@3.7.2
+
+bluebird-lst@1.0.9
+  License: MIT
+  PURL: pkg:npm/bluebird-lst@1.0.9
+
+body-parser@2.2.2
+  License: MIT
+  PURL: pkg:npm/body-parser@2.2.2
+
+boolean@3.2.0
+  License: MIT
+  PURL: pkg:npm/boolean@3.2.0
+
+brace-expansion@1.1.14
+  License: MIT
+  PURL: pkg:npm/brace-expansion@1.1.14
+
+brace-expansion@2.1.0
+  License: MIT
+  PURL: pkg:npm/brace-expansion@2.1.0
+
+brace-expansion@5.0.5
+  License: MIT
+  PURL: pkg:npm/brace-expansion@5.0.5
+
+browserslist@4.28.2
+  License: MIT
+  PURL: pkg:npm/browserslist@4.28.2
+
+buffer@5.7.1
+  License: MIT
+  PURL: pkg:npm/buffer@5.7.1
+
+buffer-crc32@0.2.13
+  License: MIT
+  PURL: pkg:npm/buffer-crc32@0.2.13
+
+buffer-from@1.1.2
+  License: MIT
+  PURL: pkg:npm/buffer-from@1.1.2
+
+builder-util@25.1.7
+  License: MIT
+  PURL: pkg:npm/builder-util@25.1.7
+
+builder-util-runtime@9.2.10
+  License: MIT
+  PURL: pkg:npm/builder-util-runtime@9.2.10
+
+builder-util-runtime@9.7.0
+  License: MIT
+  PURL: pkg:npm/builder-util-runtime@9.7.0
+
+bytes@3.1.2
+  License: MIT
+  PURL: pkg:npm/bytes@3.1.2
+
+cac@6.7.14
+  License: MIT
+  PURL: pkg:npm/cac@6.7.14
+
+cacache@16.1.3
+  License: ISC
+  PURL: pkg:npm/cacache@16.1.3
+
+cacheable-lookup@5.0.4
+  License: MIT
+  PURL: pkg:npm/cacheable-lookup@5.0.4
+
+cacheable-request@7.0.4
+  License: MIT
+  PURL: pkg:npm/cacheable-request@7.0.4
+
+call-bind-apply-helpers@1.0.2
+  License: MIT
+  PURL: pkg:npm/call-bind-apply-helpers@1.0.2
+
+call-bound@1.0.4
+  License: MIT
+  PURL: pkg:npm/call-bound@1.0.4
+
+caniuse-lite@1.0.30001791
+  License: CC-BY-4.0
+  PURL: pkg:npm/caniuse-lite@1.0.30001791
+
+chalk@4.1.2
+  License: MIT
+  PURL: pkg:npm/chalk@4.1.2
+
+chownr@1.1.4
+  License: ISC
+  PURL: pkg:npm/chownr@1.1.4
+
+chownr@2.0.0
+  License: ISC
+  PURL: pkg:npm/chownr@2.0.0
+
+chownr@3.0.0
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/chownr@3.0.0
+
+chrome-remote-interface@0.33.3
+  License: MIT
+  PURL: pkg:npm/chrome-remote-interface@0.33.3
+
+chromium-pickle-js@0.2.0
+  License: MIT
+  PURL: pkg:npm/chromium-pickle-js@0.2.0
+
+ci-info@3.9.0
+  License: MIT
+  PURL: pkg:npm/ci-info@3.9.0
+
+clean-stack@2.2.0
+  License: MIT
+  PURL: pkg:npm/clean-stack@2.2.0
+
+cli-cursor@3.1.0
+  License: MIT
+  PURL: pkg:npm/cli-cursor@3.1.0
+
+cli-spinners@2.9.2
+  License: MIT
+  PURL: pkg:npm/cli-spinners@2.9.2
+
+cliui@8.0.1
+  License: ISC
+  PURL: pkg:npm/cliui@8.0.1
+
+clone@1.0.4
+  License: MIT
+  PURL: pkg:npm/clone@1.0.4
+
+clone-response@1.0.3
+  License: MIT
+  PURL: pkg:npm/clone-response@1.0.3
+
+color-convert@2.0.1
+  License: MIT
+  PURL: pkg:npm/color-convert@2.0.1
+
+color-name@1.1.4
+  License: MIT
+  PURL: pkg:npm/color-name@1.1.4
+
+color-support@1.1.3
+  License: ISC
+  PURL: pkg:npm/color-support@1.1.3
+
+combined-stream@1.0.8
+  License: MIT
+  PURL: pkg:npm/combined-stream@1.0.8
+
+commander@2.11.0
+  License: MIT
+  PURL: pkg:npm/commander@2.11.0
+
+commander@5.1.0
+  License: MIT
+  PURL: pkg:npm/commander@5.1.0
+
+compare-version@0.1.2
+  License: MIT
+  PURL: pkg:npm/compare-version@0.1.2
+
+concat-map@0.0.1
+  License: MIT
+  PURL: pkg:npm/concat-map@0.0.1
+
+config-file-ts@0.2.8-rc1
+  License: MIT
+  PURL: pkg:npm/config-file-ts@0.2.8-rc1
+
+console-control-strings@1.1.0
+  License: ISC
+  PURL: pkg:npm/console-control-strings@1.1.0
+
+content-disposition@1.1.0
+  License: MIT
+  PURL: pkg:npm/content-disposition@1.1.0
+
+content-type@1.0.5
+  License: MIT
+  PURL: pkg:npm/content-type@1.0.5
+
+convert-source-map@2.0.0
+  License: MIT
+  PURL: pkg:npm/convert-source-map@2.0.0
+
+cookie@0.7.2
+  License: MIT
+  PURL: pkg:npm/cookie@0.7.2
+
+cookie-signature@1.2.2
+  License: MIT
+  PURL: pkg:npm/cookie-signature@1.2.2
+
+cors@2.8.6
+  License: MIT
+  PURL: pkg:npm/cors@2.8.6
+
+cross-spawn@7.0.6
+  License: MIT
+  PURL: pkg:npm/cross-spawn@7.0.6
+
+debug@4.4.3
+  License: MIT
+  PURL: pkg:npm/debug@4.4.3
+
+decompress-response@6.0.0
+  License: MIT
+  PURL: pkg:npm/decompress-response@6.0.0
+
+deep-extend@0.6.0
+  License: MIT
+  PURL: pkg:npm/deep-extend@0.6.0
+
+defaults@1.0.4
+  License: MIT
+  PURL: pkg:npm/defaults@1.0.4
+
+defer-to-connect@2.0.1
+  License: MIT
+  PURL: pkg:npm/defer-to-connect@2.0.1
+
+define-data-property@1.1.4
+  License: MIT
+  PURL: pkg:npm/define-data-property@1.1.4
+
+define-properties@1.2.1
+  License: MIT
+  PURL: pkg:npm/define-properties@1.2.1
+
+delayed-stream@1.0.0
+  License: MIT
+  PURL: pkg:npm/delayed-stream@1.0.0
+
+delegates@1.0.0
+  License: MIT
+  PURL: pkg:npm/delegates@1.0.0
+
+depd@2.0.0
+  License: MIT
+  PURL: pkg:npm/depd@2.0.0
+
+detect-libc@2.1.2
+  License: Apache-2.0
+  PURL: pkg:npm/detect-libc@2.1.2
+
+detect-node@2.1.0
+  License: MIT
+  PURL: pkg:npm/detect-node@2.1.0
+
+dir-compare@4.2.0
+  License: MIT
+  PURL: pkg:npm/dir-compare@4.2.0
+
+dmg-builder@25.1.8
+  License: MIT
+  PURL: pkg:npm/dmg-builder@25.1.8
+
+dmg-license@1.0.11
+  License: MIT
+  PURL: pkg:npm/dmg-license@1.0.11
+
+dotenv@16.6.1
+  License: BSD-2-Clause
+  PURL: pkg:npm/dotenv@16.6.1
+
+dotenv-expand@11.0.7
+  License: BSD-2-Clause
+  PURL: pkg:npm/dotenv-expand@11.0.7
+
+dunder-proto@1.0.1
+  License: MIT
+  PURL: pkg:npm/dunder-proto@1.0.1
+
+eastasianwidth@0.2.0
+  License: MIT
+  PURL: pkg:npm/eastasianwidth@0.2.0
+
+ee-first@1.1.1
+  License: MIT
+  PURL: pkg:npm/ee-first@1.1.1
+
+ejs@3.1.10
+  License: Apache-2.0
+  PURL: pkg:npm/ejs@3.1.10
+
+electron@33.4.11
+  License: MIT
+  PURL: pkg:npm/electron@33.4.11
+
+electron-publish@25.1.7
+  License: MIT
+  PURL: pkg:npm/electron-publish@25.1.7
+
+electron-to-chromium@1.5.345
+  License: ISC
+  PURL: pkg:npm/electron-to-chromium@1.5.345
+
+electron-updater@6.8.9
+  License: MIT
+  PURL: pkg:npm/electron-updater@6.8.9
+
+electron-vite@2.3.0
+  License: MIT
+  PURL: pkg:npm/electron-vite@2.3.0
+
+emoji-mart@5.6.0
+  License: MIT
+  PURL: pkg:npm/emoji-mart@5.6.0
+
+emoji-regex@8.0.0
+  License: MIT
+  PURL: pkg:npm/emoji-regex@8.0.0
+
+emoji-regex@9.2.2
+  License: MIT
+  PURL: pkg:npm/emoji-regex@9.2.2
+
+encodeurl@2.0.0
+  License: MIT
+  PURL: pkg:npm/encodeurl@2.0.0
+
+encoding@0.1.13
+  License: MIT
+  PURL: pkg:npm/encoding@0.1.13
+
+end-of-stream@1.4.5
+  License: MIT
+  PURL: pkg:npm/end-of-stream@1.4.5
+
+enhanced-resolve@5.21.0
+  License: MIT
+  PURL: pkg:npm/enhanced-resolve@5.21.0
+
+env-paths@2.2.1
+  License: MIT
+  PURL: pkg:npm/env-paths@2.2.1
+
+err-code@2.0.3
+  License: MIT
+  PURL: pkg:npm/err-code@2.0.3
+
+es-define-property@1.0.1
+  License: MIT
+  PURL: pkg:npm/es-define-property@1.0.1
+
+es-errors@1.3.0
+  License: MIT
+  PURL: pkg:npm/es-errors@1.3.0
+
+es-object-atoms@1.1.1
+  License: MIT
+  PURL: pkg:npm/es-object-atoms@1.1.1
+
+es-set-tostringtag@2.1.0
+  License: MIT
+  PURL: pkg:npm/es-set-tostringtag@2.1.0
+
+es6-error@4.1.1
+  License: MIT
+  PURL: pkg:npm/es6-error@4.1.1
+
+esbuild@0.21.5
+  License: MIT
+  PURL: pkg:npm/esbuild@0.21.5
+
+esbuild@0.25.12
+  License: MIT
+  PURL: pkg:npm/esbuild@0.25.12
+
+esbuild@0.27.7
+  License: MIT
+  PURL: pkg:npm/esbuild@0.27.7
+
+escalade@3.2.0
+  License: MIT
+  PURL: pkg:npm/escalade@3.2.0
+
+escape-html@1.0.3
+  License: MIT
+  PURL: pkg:npm/escape-html@1.0.3
+
+escape-string-regexp@4.0.0
+  License: MIT
+  PURL: pkg:npm/escape-string-regexp@4.0.0
+
+etag@1.8.1
+  License: MIT
+  PURL: pkg:npm/etag@1.8.1
+
+eventsource@3.0.7
+  License: MIT
+  PURL: pkg:npm/eventsource@3.0.7
+
+eventsource-parser@3.0.8
+  License: MIT
+  PURL: pkg:npm/eventsource-parser@3.0.8
+
+expand-template@2.0.3
+  License: MIT OR WTFPL
+  PURL: pkg:npm/expand-template@2.0.3
+
+exponential-backoff@3.1.3
+  License: Apache-2.0
+  PURL: pkg:npm/exponential-backoff@3.1.3
+
+express@5.2.1
+  License: MIT
+  PURL: pkg:npm/express@5.2.1
+
+express-rate-limit@8.4.1
+  License: MIT
+  PURL: pkg:npm/express-rate-limit@8.4.1
+
+extract-zip@2.0.1
+  License: BSD-2-Clause
+  PURL: pkg:npm/extract-zip@2.0.1
+
+fast-deep-equal@3.1.3
+  License: MIT
+  PURL: pkg:npm/fast-deep-equal@3.1.3
+
+fast-json-stable-stringify@2.1.0
+  License: MIT
+  PURL: pkg:npm/fast-json-stable-stringify@2.1.0
+
+fast-uri@3.1.0
+  License: BSD-3-Clause
+  PURL: pkg:npm/fast-uri@3.1.0
+
+fd-slicer@1.1.0
+  License: MIT
+  PURL: pkg:npm/fd-slicer@1.1.0
+
+fdir@6.5.0
+  License: MIT
+  PURL: pkg:npm/fdir@6.5.0
+
+file-uri-to-path@1.0.0
+  License: MIT
+  PURL: pkg:npm/file-uri-to-path@1.0.0
+
+filelist@1.0.6
+  License: Apache-2.0
+  PURL: pkg:npm/filelist@1.0.6
+
+finalhandler@2.1.1
+  License: MIT
+  PURL: pkg:npm/finalhandler@2.1.1
+
+foreground-child@3.3.1
+  License: ISC
+  PURL: pkg:npm/foreground-child@3.3.1
+
+form-data@4.0.5
+  License: MIT
+  PURL: pkg:npm/form-data@4.0.5
+
+forwarded@0.2.0
+  License: MIT
+  PURL: pkg:npm/forwarded@0.2.0
+
+fresh@2.0.0
+  License: MIT
+  PURL: pkg:npm/fresh@2.0.0
+
+fs-constants@1.0.0
+  License: MIT
+  PURL: pkg:npm/fs-constants@1.0.0
+
+fs-extra@10.1.0
+  License: MIT
+  PURL: pkg:npm/fs-extra@10.1.0
+
+fs-extra@11.3.4
+  License: MIT
+  PURL: pkg:npm/fs-extra@11.3.4
+
+fs-extra@8.1.0
+  License: MIT
+  PURL: pkg:npm/fs-extra@8.1.0
+
+fs-extra@9.1.0
+  License: MIT
+  PURL: pkg:npm/fs-extra@9.1.0
+
+fs-minipass@2.1.0
+  License: ISC
+  PURL: pkg:npm/fs-minipass@2.1.0
+
+fs.realpath@1.0.0
+  License: ISC
+  PURL: pkg:npm/fs.realpath@1.0.0
+
+fsevents@2.3.3
+  License: MIT
+  PURL: pkg:npm/fsevents@2.3.3
+
+function-bind@1.1.2
+  License: MIT
+  PURL: pkg:npm/function-bind@1.1.2
+
+gauge@4.0.4
+  License: ISC
+  PURL: pkg:npm/gauge@4.0.4
+
+generator-function@2.0.1
+  License: MIT
+  PURL: pkg:npm/generator-function@2.0.1
+
+gensync@1.0.0-beta.2
+  License: MIT
+  PURL: pkg:npm/gensync@1.0.0-beta.2
+
+get-caller-file@2.0.5
+  License: ISC
+  PURL: pkg:npm/get-caller-file@2.0.5
+
+get-intrinsic@1.3.1
+  License: MIT
+  PURL: pkg:npm/get-intrinsic@1.3.1
+
+get-proto@1.0.1
+  License: MIT
+  PURL: pkg:npm/get-proto@1.0.1
+
+get-stream@5.2.0
+  License: MIT
+  PURL: pkg:npm/get-stream@5.2.0
+
+get-tsconfig@4.14.0
+  License: MIT
+  PURL: pkg:npm/get-tsconfig@4.14.0
+
+github-from-package@0.0.0
+  License: MIT
+  PURL: pkg:npm/github-from-package@0.0.0
+
+glob@10.5.0
+  License: ISC
+  PURL: pkg:npm/glob@10.5.0
+
+glob@7.2.3
+  License: ISC
+  PURL: pkg:npm/glob@7.2.3
+
+glob@8.1.0
+  License: ISC
+  PURL: pkg:npm/glob@8.1.0
+
+global-agent@3.0.0
+  License: BSD-3-Clause
+  PURL: pkg:npm/global-agent@3.0.0
+
+globalthis@1.0.4
+  License: MIT
+  PURL: pkg:npm/globalthis@1.0.4
+
+gopd@1.2.0
+  License: MIT
+  PURL: pkg:npm/gopd@1.2.0
+
+got@11.8.6
+  License: MIT
+  PURL: pkg:npm/got@11.8.6
+
+graceful-fs@4.2.11
+  License: ISC
+  PURL: pkg:npm/graceful-fs@4.2.11
+
+has-flag@4.0.0
+  License: MIT
+  PURL: pkg:npm/has-flag@4.0.0
+
+has-property-descriptors@1.0.2
+  License: MIT
+  PURL: pkg:npm/has-property-descriptors@1.0.2
+
+has-symbols@1.1.0
+  License: MIT
+  PURL: pkg:npm/has-symbols@1.1.0
+
+has-tostringtag@1.0.2
+  License: MIT
+  PURL: pkg:npm/has-tostringtag@1.0.2
+
+has-unicode@2.0.1
+  License: ISC
+  PURL: pkg:npm/has-unicode@2.0.1
+
+hasown@2.0.3
+  License: MIT
+  PURL: pkg:npm/hasown@2.0.3
+
+hono@4.12.16
+  License: MIT
+  PURL: pkg:npm/hono@4.12.16
+
+hosted-git-info@4.1.0
+  License: ISC
+  PURL: pkg:npm/hosted-git-info@4.1.0
+
+http-cache-semantics@4.2.0
+  License: BSD-2-Clause
+  PURL: pkg:npm/http-cache-semantics@4.2.0
+
+http-errors@2.0.1
+  License: MIT
+  PURL: pkg:npm/http-errors@2.0.1
+
+http-proxy-agent@5.0.0
+  License: MIT
+  PURL: pkg:npm/http-proxy-agent@5.0.0
+
+http-proxy-agent@7.0.2
+  License: MIT
+  PURL: pkg:npm/http-proxy-agent@7.0.2
+
+http2-wrapper@1.0.3
+  License: MIT
+  PURL: pkg:npm/http2-wrapper@1.0.3
+
+https-proxy-agent@5.0.1
+  License: MIT
+  PURL: pkg:npm/https-proxy-agent@5.0.1
+
+https-proxy-agent@7.0.6
+  License: MIT
+  PURL: pkg:npm/https-proxy-agent@7.0.6
+
+https-proxy-agent@9.0.0
+  License: MIT
+  PURL: pkg:npm/https-proxy-agent@9.0.0
+
+humanize-ms@1.2.1
+  License: MIT
+  PURL: pkg:npm/humanize-ms@1.2.1
+
+iconv-lite@0.6.3
+  License: MIT
+  PURL: pkg:npm/iconv-lite@0.6.3
+
+iconv-lite@0.7.2
+  License: MIT
+  PURL: pkg:npm/iconv-lite@0.7.2
+
+ieee754@1.2.1
+  License: BSD-3-Clause
+  PURL: pkg:npm/ieee754@1.2.1
+
+imurmurhash@0.1.4
+  License: MIT
+  PURL: pkg:npm/imurmurhash@0.1.4
+
+indent-string@4.0.0
+  License: MIT
+  PURL: pkg:npm/indent-string@4.0.0
+
+infer-owner@1.0.4
+  License: ISC
+  PURL: pkg:npm/infer-owner@1.0.4
+
+inflight@1.0.6
+  License: ISC
+  PURL: pkg:npm/inflight@1.0.6
+
+inherits@2.0.4
+  License: ISC
+  PURL: pkg:npm/inherits@2.0.4
+
+ini@1.3.8
+  License: ISC
+  PURL: pkg:npm/ini@1.3.8
+
+ip-address@10.1.0
+  License: MIT
+  PURL: pkg:npm/ip-address@10.1.0
+
+ip-address@10.1.1
+  License: MIT
+  PURL: pkg:npm/ip-address@10.1.1
+
+ipaddr.js@1.9.1
+  License: MIT
+  PURL: pkg:npm/ipaddr.js@1.9.1
+
+is-ci@3.0.1
+  License: MIT
+  PURL: pkg:npm/is-ci@3.0.1
+
+is-fullwidth-code-point@3.0.0
+  License: MIT
+  PURL: pkg:npm/is-fullwidth-code-point@3.0.0
+
+is-interactive@1.0.0
+  License: MIT
+  PURL: pkg:npm/is-interactive@1.0.0
+
+is-lambda@1.0.1
+  License: MIT
+  PURL: pkg:npm/is-lambda@1.0.1
+
+is-promise@4.0.0
+  License: MIT
+  PURL: pkg:npm/is-promise@4.0.0
+
+is-unicode-supported@0.1.0
+  License: MIT
+  PURL: pkg:npm/is-unicode-supported@0.1.0
+
+isbinaryfile@4.0.10
+  License: MIT
+  PURL: pkg:npm/isbinaryfile@4.0.10
+
+isbinaryfile@5.0.7
+  License: MIT
+  PURL: pkg:npm/isbinaryfile@5.0.7
+
+isexe@2.0.0
+  License: ISC
+  PURL: pkg:npm/isexe@2.0.0
+
+isexe@4.0.0
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/isexe@4.0.0
+
+jackspeak@3.4.3
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/jackspeak@3.4.3
+
+jake@10.9.4
+  License: Apache-2.0
+  PURL: pkg:npm/jake@10.9.4
+
+jiti@2.6.1
+  License: MIT
+  PURL: pkg:npm/jiti@2.6.1
+
+jose@6.2.3
+  License: MIT
+  PURL: pkg:npm/jose@6.2.3
+
+js-tokens@4.0.0
+  License: MIT
+  PURL: pkg:npm/js-tokens@4.0.0
+
+js-yaml@4.1.1
+  License: MIT
+  PURL: pkg:npm/js-yaml@4.1.1
+
+jsesc@3.1.0
+  License: MIT
+  PURL: pkg:npm/jsesc@3.1.0
+
+json-buffer@3.0.1
+  License: MIT
+  PURL: pkg:npm/json-buffer@3.0.1
+
+json-schema-traverse@0.4.1
+  License: MIT
+  PURL: pkg:npm/json-schema-traverse@0.4.1
+
+json-schema-traverse@1.0.0
+  License: MIT
+  PURL: pkg:npm/json-schema-traverse@1.0.0
+
+json-stringify-safe@5.0.1
+  License: ISC
+  PURL: pkg:npm/json-stringify-safe@5.0.1
+
+json5@2.2.3
+  License: MIT
+  PURL: pkg:npm/json5@2.2.3
+
+jsonfile@4.0.0
+  License: MIT
+  PURL: pkg:npm/jsonfile@4.0.0
+
+jsonfile@6.2.1
+  License: MIT
+  PURL: pkg:npm/jsonfile@6.2.1
+
+keyv@4.5.4
+  License: MIT
+  PURL: pkg:npm/keyv@4.5.4
+
+lazy-val@1.0.5
+  License: MIT
+  PURL: pkg:npm/lazy-val@1.0.5
+
+lightningcss@1.32.0
+  License: MPL-2.0
+  PURL: pkg:npm/lightningcss@1.32.0
+
+lodash@4.18.1
+  License: MIT
+  PURL: pkg:npm/lodash@4.18.1
+
+lodash.escaperegexp@4.1.2
+  License: MIT
+  PURL: pkg:npm/lodash.escaperegexp@4.1.2
+
+lodash.isequal@4.5.0
+  License: MIT
+  PURL: pkg:npm/lodash.isequal@4.5.0
+
+log-symbols@4.1.0
+  License: MIT
+  PURL: pkg:npm/log-symbols@4.1.0
+
+lowercase-keys@2.0.0
+  License: MIT
+  PURL: pkg:npm/lowercase-keys@2.0.0
+
+lru-cache@10.4.3
+  License: ISC
+  PURL: pkg:npm/lru-cache@10.4.3
+
+lru-cache@5.1.1
+  License: ISC
+  PURL: pkg:npm/lru-cache@5.1.1
+
+lru-cache@6.0.0
+  License: ISC
+  PURL: pkg:npm/lru-cache@6.0.0
+
+lru-cache@7.18.3
+  License: ISC
+  PURL: pkg:npm/lru-cache@7.18.3
+
+lucide-react@0.469.0
+  License: ISC
+  PURL: pkg:npm/lucide-react@0.469.0
+
+magic-string@0.30.21
+  License: MIT
+  PURL: pkg:npm/magic-string@0.30.21
+
+make-fetch-happen@10.2.1
+  License: ISC
+  PURL: pkg:npm/make-fetch-happen@10.2.1
+
+matcher@3.0.0
+  License: MIT
+  PURL: pkg:npm/matcher@3.0.0
+
+math-intrinsics@1.1.0
+  License: MIT
+  PURL: pkg:npm/math-intrinsics@1.1.0
+
+media-typer@1.1.0
+  License: MIT
+  PURL: pkg:npm/media-typer@1.1.0
+
+merge-descriptors@2.0.0
+  License: MIT
+  PURL: pkg:npm/merge-descriptors@2.0.0
+
+mime@2.6.0
+  License: MIT
+  PURL: pkg:npm/mime@2.6.0
+
+mime-db@1.52.0
+  License: MIT
+  PURL: pkg:npm/mime-db@1.52.0
+
+mime-db@1.54.0
+  License: MIT
+  PURL: pkg:npm/mime-db@1.54.0
+
+mime-types@2.1.35
+  License: MIT
+  PURL: pkg:npm/mime-types@2.1.35
+
+mime-types@3.0.2
+  License: MIT
+  PURL: pkg:npm/mime-types@3.0.2
+
+mimic-fn@2.1.0
+  License: MIT
+  PURL: pkg:npm/mimic-fn@2.1.0
+
+mimic-response@1.0.1
+  License: MIT
+  PURL: pkg:npm/mimic-response@1.0.1
+
+mimic-response@3.1.0
+  License: MIT
+  PURL: pkg:npm/mimic-response@3.1.0
+
+minimatch@10.2.5
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/minimatch@10.2.5
+
+minimatch@3.1.5
+  License: ISC
+  PURL: pkg:npm/minimatch@3.1.5
+
+minimatch@5.1.9
+  License: ISC
+  PURL: pkg:npm/minimatch@5.1.9
+
+minimatch@9.0.9
+  License: ISC
+  PURL: pkg:npm/minimatch@9.0.9
+
+minimist@1.2.8
+  License: MIT
+  PURL: pkg:npm/minimist@1.2.8
+
+minipass@3.3.6
+  License: ISC
+  PURL: pkg:npm/minipass@3.3.6
+
+minipass@5.0.0
+  License: ISC
+  PURL: pkg:npm/minipass@5.0.0
+
+minipass@7.1.3
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/minipass@7.1.3
+
+minipass-collect@1.0.2
+  License: ISC
+  PURL: pkg:npm/minipass-collect@1.0.2
+
+minipass-fetch@2.1.2
+  License: MIT
+  PURL: pkg:npm/minipass-fetch@2.1.2
+
+minipass-flush@1.0.7
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/minipass-flush@1.0.7
+
+minipass-pipeline@1.2.4
+  License: ISC
+  PURL: pkg:npm/minipass-pipeline@1.2.4
+
+minipass-sized@1.0.3
+  License: ISC
+  PURL: pkg:npm/minipass-sized@1.0.3
+
+minizlib@2.1.2
+  License: MIT
+  PURL: pkg:npm/minizlib@2.1.2
+
+minizlib@3.1.0
+  License: MIT
+  PURL: pkg:npm/minizlib@3.1.0
+
+mkdirp@1.0.4
+  License: MIT
+  PURL: pkg:npm/mkdirp@1.0.4
+
+mkdirp-classic@0.5.3
+  License: MIT
+  PURL: pkg:npm/mkdirp-classic@0.5.3
+
+motion-dom@12.38.0
+  License: MIT
+  PURL: pkg:npm/motion-dom@12.38.0
+
+motion-utils@12.36.0
+  License: MIT
+  PURL: pkg:npm/motion-utils@12.36.0
+
+ms@2.1.3
+  License: MIT
+  PURL: pkg:npm/ms@2.1.3
+
+nanoid@3.3.11
+  License: MIT
+  PURL: pkg:npm/nanoid@3.3.11
+
+napi-build-utils@2.0.0
+  License: MIT
+  PURL: pkg:npm/napi-build-utils@2.0.0
+
+negotiator@0.6.4
+  License: MIT
+  PURL: pkg:npm/negotiator@0.6.4
+
+negotiator@1.0.0
+  License: MIT
+  PURL: pkg:npm/negotiator@1.0.0
+
+node-abi@3.89.0
+  License: MIT
+  PURL: pkg:npm/node-abi@3.89.0
+
+node-api-version@0.2.1
+  License: MIT
+  PURL: pkg:npm/node-api-version@0.2.1
+
+node-gyp@12.3.0
+  License: MIT
+  PURL: pkg:npm/node-gyp@12.3.0
+
+node-gyp@9.4.1
+  License: MIT
+  PURL: pkg:npm/node-gyp@9.4.1
+
+nopt@6.0.0
+  License: ISC
+  PURL: pkg:npm/nopt@6.0.0
+
+nopt@9.0.0
+  License: ISC
+  PURL: pkg:npm/nopt@9.0.0
+
+normalize-url@6.1.0
+  License: MIT
+  PURL: pkg:npm/normalize-url@6.1.0
+
+npmlog@6.0.2
+  License: ISC
+  PURL: pkg:npm/npmlog@6.0.2
+
+object-assign@4.1.1
+  License: MIT
+  PURL: pkg:npm/object-assign@4.1.1
+
+object-inspect@1.13.4
+  License: MIT
+  PURL: pkg:npm/object-inspect@1.13.4
+
+object-keys@1.1.1
+  License: MIT
+  PURL: pkg:npm/object-keys@1.1.1
+
+on-finished@2.4.1
+  License: MIT
+  PURL: pkg:npm/on-finished@2.4.1
+
+once@1.4.0
+  License: ISC
+  PURL: pkg:npm/once@1.4.0
+
+onetime@5.1.2
+  License: MIT
+  PURL: pkg:npm/onetime@5.1.2
+
+ora@5.4.1
+  License: MIT
+  PURL: pkg:npm/ora@5.4.1
+
+p-cancelable@2.1.1
+  License: MIT
+  PURL: pkg:npm/p-cancelable@2.1.1
+
+p-limit@3.1.0
+  License: MIT
+  PURL: pkg:npm/p-limit@3.1.0
+
+p-map@4.0.0
+  License: MIT
+  PURL: pkg:npm/p-map@4.0.0
+
+package-json-from-dist@1.0.1
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/package-json-from-dist@1.0.1
+
+parseurl@1.3.3
+  License: MIT
+  PURL: pkg:npm/parseurl@1.3.3
+
+path-is-absolute@1.0.1
+  License: MIT
+  PURL: pkg:npm/path-is-absolute@1.0.1
+
+path-key@3.1.1
+  License: MIT
+  PURL: pkg:npm/path-key@3.1.1
+
+path-scurry@1.11.1
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/path-scurry@1.11.1
+
+path-to-regexp@8.4.2
+  License: MIT
+  PURL: pkg:npm/path-to-regexp@8.4.2
+
+pe-library@0.4.1
+  License: MIT
+  PURL: pkg:npm/pe-library@0.4.1
+
+pend@1.2.0
+  License: MIT
+  PURL: pkg:npm/pend@1.2.0
+
+picocolors@1.1.1
+  License: ISC
+  PURL: pkg:npm/picocolors@1.1.1
+
+picomatch@4.0.4
+  License: MIT
+  PURL: pkg:npm/picomatch@4.0.4
+
+pkce-challenge@5.0.1
+  License: MIT
+  PURL: pkg:npm/pkce-challenge@5.0.1
+
+plist@3.1.1
+  License: MIT
+  PURL: pkg:npm/plist@3.1.1
+
+postcss@8.5.12
+  License: MIT
+  PURL: pkg:npm/postcss@8.5.12
+
+proc-log@6.1.0
+  License: ISC
+  PURL: pkg:npm/proc-log@6.1.0
+
+progress@2.0.3
+  License: MIT
+  PURL: pkg:npm/progress@2.0.3
+
+promise-inflight@1.0.1
+  License: ISC
+  PURL: pkg:npm/promise-inflight@1.0.1
+
+promise-retry@2.0.1
+  License: MIT
+  PURL: pkg:npm/promise-retry@2.0.1
+
+proxy-addr@2.0.7
+  License: MIT
+  PURL: pkg:npm/proxy-addr@2.0.7
+
+pump@3.0.4
+  License: MIT
+  PURL: pkg:npm/pump@3.0.4
+
+punycode@2.3.1
+  License: MIT
+  PURL: pkg:npm/punycode@2.3.1
+
+qs@6.15.1
+  License: BSD-3-Clause
+  PURL: pkg:npm/qs@6.15.1
+
+quick-lru@5.1.1
+  License: MIT
+  PURL: pkg:npm/quick-lru@5.1.1
+
+range-parser@1.2.1
+  License: MIT
+  PURL: pkg:npm/range-parser@1.2.1
+
+raw-body@3.0.2
+  License: MIT
+  PURL: pkg:npm/raw-body@3.0.2
+
+rc@1.2.8
+  License: BSD-2-Clause OR MIT OR Apache-2.0
+  PURL: pkg:npm/rc@1.2.8
+
+react@19.2.5
+  License: MIT
+  PURL: pkg:npm/react@19.2.5
+
+react-dom@19.2.5
+  License: MIT
+  PURL: pkg:npm/react-dom@19.2.5
+
+read-binary-file-arch@1.0.6
+  License: MIT
+  PURL: pkg:npm/read-binary-file-arch@1.0.6
+
+readable-stream@3.6.2
+  License: MIT
+  PURL: pkg:npm/readable-stream@3.6.2
+
+require-directory@2.1.1
+  License: MIT
+  PURL: pkg:npm/require-directory@2.1.1
+
+require-from-string@2.0.2
+  License: MIT
+  PURL: pkg:npm/require-from-string@2.0.2
+
+resedit@1.7.2
+  License: MIT
+  PURL: pkg:npm/resedit@1.7.2
+
+resolve-alpn@1.2.1
+  License: MIT
+  PURL: pkg:npm/resolve-alpn@1.2.1
+
+resolve-pkg-maps@1.0.0
+  License: MIT
+  PURL: pkg:npm/resolve-pkg-maps@1.0.0
+
+responselike@2.0.1
+  License: MIT
+  PURL: pkg:npm/responselike@2.0.1
+
+restore-cursor@3.1.0
+  License: MIT
+  PURL: pkg:npm/restore-cursor@3.1.0
+
+retry@0.12.0
+  License: MIT
+  PURL: pkg:npm/retry@0.12.0
+
+rimraf@3.0.2
+  License: ISC
+  PURL: pkg:npm/rimraf@3.0.2
+
+roarr@2.15.4
+  License: BSD-3-Clause
+  PURL: pkg:npm/roarr@2.15.4
+
+rollup@4.60.2
+  License: MIT
+  PURL: pkg:npm/rollup@4.60.2
+
+router@2.2.0
+  License: MIT
+  PURL: pkg:npm/router@2.2.0
+
+safe-buffer@5.2.1
+  License: MIT
+  PURL: pkg:npm/safe-buffer@5.2.1
+
+safer-buffer@2.1.2
+  License: MIT
+  PURL: pkg:npm/safer-buffer@2.1.2
+
+sanitize-filename@1.6.4
+  License: WTFPL OR ISC
+  PURL: pkg:npm/sanitize-filename@1.6.4
+
+sax@1.6.0
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/sax@1.6.0
+
+scheduler@0.27.0
+  License: MIT
+  PURL: pkg:npm/scheduler@0.27.0
+
+semver@6.3.1
+  License: ISC
+  PURL: pkg:npm/semver@6.3.1
+
+semver@7.7.4
+  License: ISC
+  PURL: pkg:npm/semver@7.7.4
+
+semver-compare@1.0.0
+  License: MIT
+  PURL: pkg:npm/semver-compare@1.0.0
+
+send@1.2.1
+  License: MIT
+  PURL: pkg:npm/send@1.2.1
+
+serialize-error@7.0.1
+  License: MIT
+  PURL: pkg:npm/serialize-error@7.0.1
+
+serve-static@2.2.1
+  License: MIT
+  PURL: pkg:npm/serve-static@2.2.1
+
+set-blocking@2.0.0
+  License: ISC
+  PURL: pkg:npm/set-blocking@2.0.0
+
+setprototypeof@1.2.0
+  License: ISC
+  PURL: pkg:npm/setprototypeof@1.2.0
+
+shebang-command@2.0.0
+  License: MIT
+  PURL: pkg:npm/shebang-command@2.0.0
+
+shebang-regex@3.0.0
+  License: MIT
+  PURL: pkg:npm/shebang-regex@3.0.0
+
+side-channel@1.1.0
+  License: MIT
+  PURL: pkg:npm/side-channel@1.1.0
+
+side-channel-list@1.0.1
+  License: MIT
+  PURL: pkg:npm/side-channel-list@1.0.1
+
+side-channel-map@1.0.1
+  License: MIT
+  PURL: pkg:npm/side-channel-map@1.0.1
+
+side-channel-weakmap@1.0.2
+  License: MIT
+  PURL: pkg:npm/side-channel-weakmap@1.0.2
+
+signal-exit@3.0.7
+  License: ISC
+  PURL: pkg:npm/signal-exit@3.0.7
+
+signal-exit@4.1.0
+  License: ISC
+  PURL: pkg:npm/signal-exit@4.1.0
+
+simple-concat@1.0.1
+  License: MIT
+  PURL: pkg:npm/simple-concat@1.0.1
+
+simple-get@4.0.1
+  License: MIT
+  PURL: pkg:npm/simple-get@4.0.1
+
+simple-update-notifier@2.0.0
+  License: MIT
+  PURL: pkg:npm/simple-update-notifier@2.0.0
+
+smart-buffer@4.2.0
+  License: MIT
+  PURL: pkg:npm/smart-buffer@4.2.0
+
+socks@2.8.8
+  License: MIT
+  PURL: pkg:npm/socks@2.8.8
+
+socks-proxy-agent@10.0.0
+  License: MIT
+  PURL: pkg:npm/socks-proxy-agent@10.0.0
+
+socks-proxy-agent@7.0.0
+  License: MIT
+  PURL: pkg:npm/socks-proxy-agent@7.0.0
+
+socks-proxy-agent@8.0.5
+  License: MIT
+  PURL: pkg:npm/socks-proxy-agent@8.0.5
+
+source-map@0.6.1
+  License: BSD-3-Clause
+  PURL: pkg:npm/source-map@0.6.1
+
+source-map-js@1.2.1
+  License: BSD-3-Clause
+  PURL: pkg:npm/source-map-js@1.2.1
+
+source-map-support@0.5.21
+  License: MIT
+  PURL: pkg:npm/source-map-support@0.5.21
+
+sprintf-js@1.1.3
+  License: BSD-3-Clause
+  PURL: pkg:npm/sprintf-js@1.1.3
+
+ssri@9.0.1
+  License: ISC
+  PURL: pkg:npm/ssri@9.0.1
+
+stat-mode@1.0.0
+  License: MIT
+  PURL: pkg:npm/stat-mode@1.0.0
+
+statuses@2.0.2
+  License: MIT
+  PURL: pkg:npm/statuses@2.0.2
+
+string_decoder@1.3.0
+  License: MIT
+  PURL: pkg:npm/string_decoder@1.3.0
+
+string-width@4.2.3
+  License: MIT
+  PURL: pkg:npm/string-width@4.2.3
+
+string-width@5.1.2
+  License: MIT
+  PURL: pkg:npm/string-width@5.1.2
+
+strip-ansi@6.0.1
+  License: MIT
+  PURL: pkg:npm/strip-ansi@6.0.1
+
+strip-ansi@7.2.0
+  License: MIT
+  PURL: pkg:npm/strip-ansi@7.2.0
+
+strip-json-comments@2.0.1
+  License: MIT
+  PURL: pkg:npm/strip-json-comments@2.0.1
+
+sumchecker@3.0.1
+  License: Apache-2.0
+  PURL: pkg:npm/sumchecker@3.0.1
+
+supports-color@7.2.0
+  License: MIT
+  PURL: pkg:npm/supports-color@7.2.0
+
+tailwindcss@4.2.4
+  License: MIT
+  PURL: pkg:npm/tailwindcss@4.2.4
+
+tapable@2.3.3
+  License: MIT
+  PURL: pkg:npm/tapable@2.3.3
+
+tar@6.2.1
+  License: ISC
+  PURL: pkg:npm/tar@6.2.1
+
+tar@7.5.13
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/tar@7.5.13
+
+tar-fs@2.1.4
+  License: MIT
+  PURL: pkg:npm/tar-fs@2.1.4
+
+tar-stream@2.2.0
+  License: MIT
+  PURL: pkg:npm/tar-stream@2.2.0
+
+temp-file@3.4.0
+  License: MIT
+  PURL: pkg:npm/temp-file@3.4.0
+
+tinyglobby@0.2.16
+  License: MIT
+  PURL: pkg:npm/tinyglobby@0.2.16
+
+tmp@0.2.5
+  License: MIT
+  PURL: pkg:npm/tmp@0.2.5
+
+tmp-promise@3.0.3
+  License: MIT
+  PURL: pkg:npm/tmp-promise@3.0.3
+
+toidentifier@1.0.1
+  License: MIT
+  PURL: pkg:npm/toidentifier@1.0.1
+
+truncate-utf8-bytes@1.0.2
+  License: WTFPL
+  PURL: pkg:npm/truncate-utf8-bytes@1.0.2
+
+tslib@2.8.1
+  License: 0BSD
+  PURL: pkg:npm/tslib@2.8.1
+
+tsx@4.21.0
+  License: MIT
+  PURL: pkg:npm/tsx@4.21.0
+
+tunnel-agent@0.6.0
+  License: Apache-2.0
+  PURL: pkg:npm/tunnel-agent@0.6.0
+
+type-is@2.0.1
+  License: MIT
+  PURL: pkg:npm/type-is@2.0.1
+
+typescript@5.9.3
+  License: Apache-2.0
+  PURL: pkg:npm/typescript@5.9.3
+
+undici@6.25.0
+  License: MIT
+  PURL: pkg:npm/undici@6.25.0
+
+unique-filename@2.0.1
+  License: ISC
+  PURL: pkg:npm/unique-filename@2.0.1
+
+unique-slug@3.0.0
+  License: ISC
+  PURL: pkg:npm/unique-slug@3.0.0
+
+universalify@0.1.2
+  License: MIT
+  PURL: pkg:npm/universalify@0.1.2
+
+universalify@2.0.1
+  License: MIT
+  PURL: pkg:npm/universalify@2.0.1
+
+unpipe@1.0.0
+  License: MIT
+  PURL: pkg:npm/unpipe@1.0.0
+
+update-browserslist-db@1.2.3
+  License: MIT
+  PURL: pkg:npm/update-browserslist-db@1.2.3
+
+uri-js@4.4.1
+  License: BSD-2-Clause
+  PURL: pkg:npm/uri-js@4.4.1
+
+utf8-byte-length@1.0.5
+  License: WTFPL OR MIT
+  PURL: pkg:npm/utf8-byte-length@1.0.5
+
+util-deprecate@1.0.2
+  License: MIT
+  PURL: pkg:npm/util-deprecate@1.0.2
+
+uuid@11.1.1
+  License: MIT
+  PURL: pkg:npm/uuid@11.1.1
+
+vary@1.1.2
+  License: MIT
+  PURL: pkg:npm/vary@1.1.2
+
+vite@6.4.2
+  License: MIT
+  PURL: pkg:npm/vite@6.4.2
+
+wcwidth@1.0.1
+  License: MIT
+  PURL: pkg:npm/wcwidth@1.0.1
+
+which@2.0.2
+  License: ISC
+  PURL: pkg:npm/which@2.0.2
+
+which@6.0.1
+  License: ISC
+  PURL: pkg:npm/which@6.0.1
+
+wide-align@1.1.5
+  License: ISC
+  PURL: pkg:npm/wide-align@1.1.5
+
+wrap-ansi@7.0.0
+  License: MIT
+  PURL: pkg:npm/wrap-ansi@7.0.0
+
+wrap-ansi@8.1.0
+  License: MIT
+  PURL: pkg:npm/wrap-ansi@8.1.0
+
+wrappy@1.0.2
+  License: ISC
+  PURL: pkg:npm/wrappy@1.0.2
+
+ws@7.5.10
+  License: MIT
+  PURL: pkg:npm/ws@7.5.10
+
+ws@8.20.0
+  License: MIT
+  PURL: pkg:npm/ws@8.20.0
+
+xmlbuilder@15.1.1
+  License: MIT
+  PURL: pkg:npm/xmlbuilder@15.1.1
+
+y18n@5.0.8
+  License: ISC
+  PURL: pkg:npm/y18n@5.0.8
+
+yallist@3.1.1
+  License: ISC
+  PURL: pkg:npm/yallist@3.1.1
+
+yallist@4.0.0
+  License: ISC
+  PURL: pkg:npm/yallist@4.0.0
+
+yallist@5.0.0
+  License: BlueOak-1.0.0
+  PURL: pkg:npm/yallist@5.0.0
+
+yargs@17.7.2
+  License: MIT
+  PURL: pkg:npm/yargs@17.7.2
+
+yargs-parser@21.1.1
+  License: ISC
+  PURL: pkg:npm/yargs-parser@21.1.1
+
+yauzl@2.10.0
+  License: MIT
+  PURL: pkg:npm/yauzl@2.10.0
+
+yocto-queue@0.1.0
+  License: MIT
+  PURL: pkg:npm/yocto-queue@0.1.0
+
+zod@3.25.76
+  License: MIT
+  PURL: pkg:npm/zod@3.25.76
+
+zod@4.4.1
+  License: MIT
+  PURL: pkg:npm/zod@4.4.1
+
+zod-to-json-schema@3.25.2
+  License: ISC
+  PURL: pkg:npm/zod-to-json-schema@3.25.2
