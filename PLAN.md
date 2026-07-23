@@ -14,13 +14,25 @@
 
 ## Phase 0 — Source and license gate
 
-- [ ] Fork/clone MultiZen into a new clean workspace; do not mix it into the old Phantom repo yet.
-- [ ] Record exact commit, MIT license, dependency SBOM, and attribution requirements.
-- [ ] Audit CloakBrowser/patched Chromium source and binaries separately; verify redistribution rights before packaging.
-- [ ] Audit Donut feature references and classify each as: implement independently, reuse compatible open-source code, or defer.
-- [ ] Confirm whether the chosen Chromium engine supports extension loading, persistent profiles, proxy auth, and normal tab/window lifecycle on Windows.
+**Implementation update — 2026-07-23**
 
-Exit gate: a written license/dependency matrix with no unclear runtime binary required for the first Windows build.
+- MultiZen fork is live at `t01101011/multizen-browser`; local workspace: `/root/projects/phantom-research`.
+- Source/runtime audit merged in PR #1 (`a544f0d`); pinned upstream MultiZen `0871ad3` and CloakBrowser wrapper `36390b5`.
+- MultiZen app source is MIT. CloakBrowser wrapper source is MIT, but its compiled browser binary has separate proprietary terms and may not be bundled/redistributed without written OEM permission.
+- Native Windows baseline merged in PR #2 (`c385ae7`). CI run `29997645879` passed install, typecheck, Windows unpacked + NSIS build, package acceptance, cold-start window, MCP token initialization, and shutdown.
+- Chrome for Testing is now the safe default. CloakBrowser remains explicit opt-in for internal evaluation only.
+- Windows artifact `multizen-windows-baseline-c704884ea99a982e5621d482df09045255dedca7` is retained until 2026-08-06 for tk's manual review.
+
+- [x] Fork/clone MultiZen into a new clean workspace; do not mix it into the old Phantom repo yet.
+- [x] Record exact commits and root/source license boundaries.
+- [ ] Generate full dependency SBOM and third-party attribution/notices.
+- [x] Audit CloakBrowser/patched Chromium source and binaries separately; block redistribution pending written rights.
+- [ ] Audit Donut feature references and classify each as: implement independently, reuse compatible open-source code, or defer.
+- [x] Confirm source support for extension loading, persistent profiles, proxy auth, and normal tab/window lifecycle.
+- [x] Produce and cold-start a native Windows CFT baseline artifact.
+- [ ] Complete tk's manual Windows smoke: profile CRUD/launch, tabs/popups/restore, persistence, extension loading, HTTP/SOCKS proxy, DNS/WebRTC leak checks.
+
+Exit gate: **partially passed**. Source/runtime license boundary and native Windows build are verified. Full SBOM/notices and tk's manual Windows behavior/proxy smoke remain open.
 
 ## Phase 1 — Clean Chromium profile baseline
 
@@ -68,10 +80,10 @@ Do not:
 
 ## Immediate next work
 
-1. Create a separate workspace for the MultiZen fork.
-2. Run the source/license/runtime audit before touching UI.
-3. Build the unmodified baseline and run the smallest Windows smoke.
-4. Only then begin cosmetic rebrand and feature changes.
+1. tk runs the downloaded Windows baseline and reviews profile CRUD/launch, tabs/popups/restore, persistence, extension loading, and proxy/leak behavior.
+2. Generate the dependency SBOM plus `THIRD_PARTY_NOTICES`; resolve unknown/copyleft/binary-only entries before external distribution.
+3. Audit Donut-inspired features into clean-room implement/reuse/defer buckets.
+4. After the manual baseline is accepted, begin product rebrand/theme and replace MultiZen updater/telemetry endpoints and identifiers.
 
 ## Shelved project
 
