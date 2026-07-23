@@ -22,7 +22,7 @@ MultiZen's README says its patched Chromium engine is open source, but the curre
 - bundling/embedding/customer-controlled API use requires a separate OEM/SaaS license;
 - merely listing it as a dependency is allowed when end users download it directly from official CloakHQ channels.
 
-Therefore the current app may be evaluated for tk's own internal use, and a future installer may direct the user to an official download path, but **Phantom Research must not bundle or redistribute CloakBrowser release assets without a separate written license**. Do not present MultiZen's MIT license as covering that binary.
+Therefore the current app may be evaluated for tk's own internal use, and a future installer may direct the user to an official download path, but **Phantom Browser must not bundle or redistribute CloakBrowser release assets without a separate written license**. Do not present MultiZen's MIT license as covering that binary.
 
 ## Runtime and product evidence
 
@@ -52,7 +52,7 @@ Until those steps pass, only internal development builds are approved.
 
 ## Baseline build evidence
 
-On the pinned MultiZen revision in `/root/projects/phantom-research`:
+On the pinned MultiZen revision in `/root/projects/phantom-browser`:
 
 - Node `v22.22.3`
 - Yarn `4.5.0`
@@ -68,7 +68,7 @@ This verifies the unmodified Linux build path only. It does not satisfy the Wind
 | --- | --- | --- |
 | Fork MultiZen app source | Proceed | MIT source, pinned upstream, separate fork/workspace. Preserve attribution. |
 | Internal CloakBrowser evaluation | Proceed cautiously | Allowed for internal use subject to binary terms and any applicable subscription. Download only from official channels. |
-| Bundle CloakBrowser in Phantom Research | Blocked | Separate written redistribution/OEM license required. |
+| Bundle CloakBrowser in Phantom Browser | Blocked | Separate written redistribution/OEM license required. |
 | Auto-download CloakBrowser for each end user | Conditional | Potentially viable because users fetch from official channels, but subscription/version UX and terms must be reviewed; never proxy or rehost the asset. |
 | Stock Chrome for Testing baseline | Proceed for engineering smoke | Not stealth-equivalent. Complete notices/redistribution review before shipping. |
 | Rebrand/UI work | Deferred | First pass a Windows baseline smoke and finish dependency/SBOM attribution. |

@@ -12,7 +12,7 @@ const { autoUpdater } = electronUpdater;
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4h
 const POST_LAUNCH_DELAY_MS = 8_000; // let first-run + window settle first
-const RELEASES = "https://github.com/multizenteam/multizen-browser/releases";
+const RELEASES = "https://github.com/t01101011/phantom-browser/releases";
 
 interface UpdaterEvents {
   status: (status: UpdateStatus) => void;
@@ -112,7 +112,7 @@ export class UpdaterService extends EventEmitter {
   downloadUrlFor(version: string): string {
     if (this.isMac) {
       const arch = process.arch === "arm64" ? "arm64" : "x64";
-      return `${RELEASES}/download/v${version}/MultiZen-mac-${arch}.dmg`;
+      return `${RELEASES}/download/v${version}/Phantom-Research-mac-${arch}.dmg`;
     }
     return `${RELEASES}/tag/v${version}`;
   }

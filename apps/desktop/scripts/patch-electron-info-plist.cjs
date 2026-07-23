@@ -14,10 +14,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const APP_NAME = "MultiZen";
-// Distinct from the production bundle id (`com.multizen.app`) so dev and
+const APP_NAME = "Phantom Browser";
+// Distinct from the production bundle id (`com.tk.phantom.browser`) so dev and
 // prod keep separate macOS preferences / Launch Services entries.
-const APP_ID = "com.multizen.dev";
+const APP_ID = "com.tk.phantom.browser.dev";
 const repoRoot = path.resolve(__dirname, "..", "..", "..");
 const candidates = [
   // Hoisted at desktop workspace level (yarn 4 node-modules linker is unpredictable).
