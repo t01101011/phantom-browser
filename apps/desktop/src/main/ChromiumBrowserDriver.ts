@@ -23,6 +23,7 @@ import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl } from "./startPage";
 import { sessionStartupPlan } from "./sessionStartup";
+import { parseChromiumVersion } from "./chromiumVersion";
 
 interface RunningProcess {
   child: ChildProcess;
@@ -123,11 +124,14 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     const chromiumPath = this.bootstrap.resolveBinaryPath();
     const engine: BrowserEngine = this.bootstrap.getEngine();
     const browserDataDir = browserDataDirForEngine(profile.dataDir, engine);
-    // Read the actual Chromium binary's version and reconcile the
-    // profile's spoofed UA against it. Detection vendors fingerprint the
-    // JS engine and compare against the claimed UA — claiming Chrome
-    // 148 while running 147 is an instant flag.
-    const actualVersion = await detectChromiumVersion(chromiumPath);
+    // Reuse the verified version from ChromiumBootstrap. Never probe by running
+    // `<browser> --version`: on Windows, chrome.exe is a GUI-subsystem binary,
+    // so that probe visibly opens and closes a throwaway Chrome window.
+    const bootstrapStatus = this.bootstrap.getStatus();
+    const actualVersion =
+      bootstrapStatus.kind === "ready"
+        ? parseChromiumVersion(bootstrapStatus.version)
+        : null;
     // Reconcile (1) device family to host OS (claiming Win on a Mac
     //   binary is detected via V8/CSS feature signatures), then
     //   (2) Chrome version to the actual binary version. Both run
@@ -1576,45 +1580,6 @@ const WEBRTC_BLOCK_SCRIPT = `
  * spawn — Chromium must NOT be running, otherwise we'll corrupt its
  * pref file (Chromium writes Preferences atomically with no flock).
  */
-/**
- * Run `chromium --version` and parse the version triple. Returns null
- * if the probe fails — the caller should then trust whatever version is
- * baked into the profile.
- */
-async function detectChromiumVersion(
-  binaryPath: string,
-): Promise<{ major: number; full: string } | null> {
-  return new Promise((resolve) => {
-    let resolved = false;
-    const done = (v: { major: number; full: string } | null): void => {
-      if (resolved) return;
-      resolved = true;
-      resolve(v);
-    };
-    try {
-      const p = spawn(binaryPath, ["--version"], {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      let out = "";
-      p.stdout?.on("data", (c: Buffer) => {
-        out += c.toString("utf8");
-      });
-      p.on("close", () => {
-        const m = out.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-        if (!m) return done(null);
-        done({ major: Number(m[1]), full: `${m[1]}.${m[2]}.${m[3]}.${m[4]}` });
-      });
-      p.on("error", () => done(null));
-      setTimeout(() => {
-        p.kill();
-        done(null);
-      }, 2000);
-    } catch {
-      done(null);
-    }
-  });
-}
-
 /**
  * Rewrite the version-bearing fields of a fingerprint to match the
  * actual Chromium binary. Returns a new object — does NOT persist; if
