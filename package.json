@@ -1,12 +1,13 @@
 {
-  "name": "multizen",
+  "name": "phantom-research",
   "version": "0.3.0",
+  "productName": "Phantom Research",
   "private": true,
   "description": "AI-native browser for agents and operators — desktop app + MCP server with anti-detect Chromium",
   "homepage": "https://getmultizen.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/multizenteam/multizen-browser.git"
+    "url": "https://github.com/t01101011/multizen-browser.git"
   },
   "license": "MIT",
   "workspaces": [

@@ -1,5 +1,5 @@
-appId: com.multizen.desktop
-productName: MultiZen
+appId: com.tk.phantom.research
+productName: Phantom Research
 # Pinned to the version in package.json devDependencies so electron-builder
 # does not need to introspect node_modules. Bump in sync when upgrading.
 electronVersion: 33.2.0
@@ -43,7 +43,7 @@ asarUnpack:
   - "**/*.node"
   - "node_modules/better-sqlite3/**/*"
 
-# Bundled first-party "companion" extension (injects the "Add to MultiZen"
+# Bundled first-party "companion" extension (injects the "Add to Phantom Research"
 # button on Web Store pages). Copied verbatim into <resources>/companion so the
 # driver can pass it to --load-extension for every profile.
 extraResources:
@@ -53,10 +53,10 @@ extraResources:
 # Stable artifact names — no version baked in. The GitHub Releases page
 # still surfaces the version (from package.json) in the release title,
 # but the asset URLs stay predictable:
-#   /releases/latest/download/MultiZen-mac-arm64.dmg
-#   /releases/latest/download/MultiZen-mac-x64.dmg
-#   /releases/latest/download/MultiZen-win-x64.exe
-#   /releases/latest/download/MultiZen-linux-x86_64.AppImage
+#   /releases/latest/download/Phantom-Research-mac-arm64.dmg
+#   /releases/latest/download/Phantom-Research-mac-x64.dmg
+#   /releases/latest/download/Phantom-Research-win-x64.exe
+#   /releases/latest/download/Phantom-Research-linux-x86_64.AppImage
 #     (electron-builder hardcodes the x86_64 suffix on AppImage,
 #      regardless of artifactName — the landing links to that exact name)
 # This lets the landing page hardcode links that never need updating.
@@ -109,7 +109,7 @@ nsis:
 
 publish:
   provider: github
-  owner: multizenteam
+  owner: t01101011
   repo: multizen-browser
   # Cut a published release (not draft) directly from CI. Default is
   # draft which means /releases/latest redirector misses it until a

@@ -4836,16 +4836,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multizen@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "multizen@workspace:."
-  dependencies:
-    "@types/node": "npm:^22.10.0"
-    prettier: "npm:^3.4.0"
-    typescript: "npm:^5.7.0"
-  languageName: unknown
-  linkType: soft
-
 "nanoid@npm:^3.3.11":
   version: 3.3.11
   resolution: "nanoid@npm:3.3.11"
@@ -5140,6 +5130,16 @@ __metadata:
   checksum: 10c0/8a87e63f7a4afcfb0f9f77b39bb92374afc723418b9cb716ee4257689224171002e07768eeade4ecd0e86f1fa3d8f022994219fb45634f2dbd78c6803e452458
   languageName: node
   linkType: hard
+
+"phantom-research@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "phantom-research@workspace:."
+  dependencies:
+    "@types/node": "npm:^22.10.0"
+    prettier: "npm:^3.4.0"
+    typescript: "npm:^5.7.0"
+  languageName: unknown
+  linkType: soft
 
 "picocolors@npm:^1.0.1, picocolors@npm:^1.1.1":
   version: 1.1.1

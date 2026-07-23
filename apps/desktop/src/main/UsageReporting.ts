@@ -10,7 +10,7 @@ import type { AppSettings } from "@multizen/settings-store";
  *
  *   - OFF by default. Nothing is ever sent unless the user turns it on in
  *     Settings (an anti-detect browser must not phone home silently).
- *   - The MULTIZEN_NO_TELEMETRY env var force-disables it regardless of the
+ *   - The PHANTOM_RESEARCH_NO_TELEMETRY env var force-disables it regardless of the
  *     setting (CI / enterprise / paranoid kill switch, à la Homebrew).
  *   - At most ONE ping per local calendar day. The only persisted state is the
  *     last-ping date, which is NEVER sent.
@@ -24,10 +24,12 @@ import type { AppSettings } from "@multizen/settings-store";
  * NOTE: the ingest endpoint is not deployed yet. Because the feature is
  * opt-in/default-off, the code is dormant until both (a) the user enables it and
  * (b) the server exists. Override the endpoint for testing with
- * MULTIZEN_TELEMETRY_ENDPOINT.
+ * PHANTOM_RESEARCH_TELEMETRY_ENDPOINT.
  */
 
-const DEFAULT_ENDPOINT = "https://ping.getmultizen.com/ping";
+// No first-party telemetry backend is configured for Phantom Research.
+// Usage reporting remains dormant unless a local/private endpoint is supplied.
+const DEFAULT_ENDPOINT = "";
 const POST_LAUNCH_DELAY_MS = 12_000; // let first-run + window settle first
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 5_000;
@@ -55,9 +57,9 @@ export class UsageReporting {
   constructor(opts: UsageReportingOptions) {
     this.getSettings = opts.getSettings;
     this.statePath = opts.statePath;
-    this.endpoint = process.env.MULTIZEN_TELEMETRY_ENDPOINT || DEFAULT_ENDPOINT;
+    this.endpoint = process.env.PHANTOM_RESEARCH_TELEMETRY_ENDPOINT || DEFAULT_ENDPOINT;
     // Homebrew-style hard kill switch: any truthy value disables telemetry.
-    this.enabledByEnv = !process.env.MULTIZEN_NO_TELEMETRY;
+    this.enabledByEnv = !process.env.PHANTOM_RESEARCH_NO_TELEMETRY;
   }
 
   /** Begin the daily heartbeat loop. Safe to call once at startup. */
@@ -68,7 +70,8 @@ export class UsageReporting {
     // is indistinguishable from a real user and would silently inflate the
     // numbers. A dev explicitly testing telemetry can still opt in by setting
     // MULTIZEN_TELEMETRY_ENDPOINT to a test server.
-    if (!app.isPackaged && !process.env.MULTIZEN_TELEMETRY_ENDPOINT) return;
+    if (!this.endpoint) return;
+    if (!app.isPackaged && !process.env.PHANTOM_RESEARCH_TELEMETRY_ENDPOINT) return;
     if (this.startTimer || this.timer) return;
     this.startTimer = setTimeout(() => {
       this.startTimer = null;

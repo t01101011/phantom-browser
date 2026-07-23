@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $repo = Split-Path -Parent $PSScriptRoot
-$appExe = Join-Path $repo "apps/desktop/release/win-unpacked/MultiZen.exe"
+$appExe = Join-Path $repo "apps/desktop/release/win-unpacked/Phantom Research.exe"
 $artifactDir = Join-Path $repo "artifacts/windows-smoke"
 $stdout = Join-Path $artifactDir "desktop.stdout.log"
 $stderr = Join-Path $artifactDir "desktop.stderr.log"
