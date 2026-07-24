@@ -88,6 +88,22 @@ Do not:
 - Encrypted `.mzar` archive hardening merged in PR #6 (`6bdba3d`): explicit secret-content warning, stronger new-export passphrases, malformed archive validation, and failed-import rollback.
 - Full GUI rebrand cleanup **merged** in PR #7 (`212effd`) after tk acceptance: remaining user-visible copy, native dialogs, updater/MCP/extension surfaces, neutral MIT attribution, fork release target, and Windows artifact label are updated while compatibility internals remain unchanged. The Windows shell now uses one compact 44px custom titlebar with native caption controls, platform-aware insets, and corrected Phantom Browser brand alignment. tk's supplied transparent logo is the canonical source for app/installer/renderer/companion icons. Windows EXE icon embedding is enforced with multi-size `build/icon.ico`, `signAndEditExecutable: true`, and a native smoke that extracts the icon from `Phantom Browser.exe` and pixel-compares it with the canonical ICO. Final native Windows run `30090079128` passed; accepted artifact: `phantom-browser-windows-ae19000ec73dab1fbfce261c72521361a4c561da` (221,329,104 bytes).
 - Phantom Research design-system slice **merged** in PR #8 (`2dd2bb4`) after tk acceptance: linted `DESIGN.md`, near-black/spectral-green tokens, typography/surface rules, app-shell navigation, title/search bar, flat primary action, profile toolbar/table/default view/row-selection treatment, and renderer-wide removal of legacy purple/pink accents. CI recursively scans renderer TSX/CSS and blocks regressions. Final native Windows run `30093778155` passed; accepted artifact: `phantom-browser-windows-a28e92374d38cc8000f3c33d988ccbed928fae84`.
+- Primary-action shortcut cleanup **merged** in PR #9 (`1e9aaa1`) after tk acceptance: removed the visually awkward Command/Ctrl+N badge from `New profile` while preserving the actual keyboard shortcut. Final native Windows run `30095822894` passed; accepted artifact: `phantom-browser-windows-2fd16544e67acad3b32df5c5d3f29b0959125258`.
+
+### Next-session handoff
+
+Start with **Phase 4A — remaining-screen design-system rollout** in `/root/projects/phantom-research` from current `master` (`1e9aaa1`). Create a fresh feature branch and a new Notion task under project `399539c8-7ba9-811c-9b07-d0f19fb583ce`; do not reopen the completed PR #8/#9 tasks.
+
+Scope the next PR to visual consistency only—no extension-manager feature work yet:
+
+1. Audit profile grid/detail/create/edit flows, Proxy, Extensions, MCP, Settings, onboarding, dialogs, and loading/empty/error states against root `DESIGN.md`.
+2. Replace one-off inline colors, radii, borders, and focus treatments with shared Phantom tokens/classes while preserving compatibility internals (`@multizen/*`, `window.multizen`, IPC/localStorage/data/archive names).
+3. Keep `#42F58D` reserved for selected/active/focus/primary states; semantic success/warning/error/info colors stay distinct. Do not reintroduce purple/pink branding, glow, or gradients.
+4. Preserve keyboard behavior and persisted preferences. Avoid decorative shortcut chips inside primary buttons unless they pass real Windows visual review.
+5. Extend `scripts/check-phantom-design-system.cjs` with a fail-first contract for each migrated surface, then run immutable install, typecheck, all acceptance checks/tests, Linux package smoke, and native Windows CI.
+6. Hand off the Windows artifact for 100% and 125% scaling review. Merge only after tk explicitly accepts it.
+
+After Phase 4A merges, proceed in order: extension manager and per-profile/group assignment; 1/10/50/100-profile benchmark; native Chromium anti-detect coverage audit; final runtime/license/release readiness.
 
 1. Continue the design-system rollout to profile grid/detail/create flows, proxy, extensions, MCP, settings, onboarding, dialogs, loading/empty/error states, and motion.
 2. Implement extension manager improvements and per-profile/group extension assignment.
