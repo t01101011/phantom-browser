@@ -16,6 +16,7 @@ import { ChromiumBootstrapModal } from "./components/onboarding/ChromiumBootstra
 import { UpdateBanner } from "./components/UpdateBanner";
 import { Modal, ConfirmHost, confirm } from "./components/atoms";
 import { readPersisted, usePersistedState, writePersisted } from "./lib/persisted";
+import { runBulkLifecycle } from "./lib/bulkLifecycle";
 import type { ActivityEvent, ChromiumStatus, ProfileSummary, SystemInfo } from "./types";
 
 type ModalState =
@@ -257,6 +258,26 @@ export function App(): JSX.Element {
     await refresh();
   }
 
+  async function runBulk(
+    ids: string[],
+    label: string,
+    verb: "launch" | "stop",
+  ): Promise<void> {
+    const action = verb === "launch"
+      ? window.multizen.profiles.launch
+      : window.multizen.profiles.close;
+    const result = await runBulkLifecycle(ids, action);
+    await refresh();
+    if (result.failed.length === 0) {
+      showToast(`${verb === "launch" ? "Launched" : "Stopped"} ${result.succeeded.length} profiles in ${label}`);
+      return;
+    }
+    const firstError = result.failed[0]?.error ?? "Unknown error";
+    showToast(
+      `${verb === "launch" ? "Launch" : "Stop"}: ${result.succeeded.length} succeeded, ${result.failed.length} failed (${firstError})`,
+    );
+  }
+
   async function importProfile(passphrase: string): Promise<void> {
     setModal({ kind: "none" });
     const result = await window.multizen.profiles.importArchive(passphrase);
@@ -395,6 +416,8 @@ export function App(): JSX.Element {
                   onCreate={() => setShowSheet(true)}
                   onLaunch={launchProfile}
                   onStop={closeProfile}
+                  onLaunchMany={(ids, label) => void runBulk(ids, label, "launch")}
+                  onStopMany={(ids, label) => void runBulk(ids, label, "stop")}
                   onExport={(id) => setModal({ kind: "export-passphrase", profileId: id })}
                   onDelete={(id) => setModal({ kind: "delete-confirm", profileId: id })}
                 />

@@ -4,6 +4,8 @@ import type { TileData } from "./ProfileTile";
 
 interface Props {
   profiles: TileData[];
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
   /** Profiles in the terminating phase (winding down, not yet exited). */
   closingIds?: Set<string>;
   onSelect: (id: string) => void;
@@ -31,6 +33,8 @@ const COLUMNS: ReadonlyArray<{ label: string; align?: "left" | "right" }> = [
 
 export function ProfileTable({
   profiles,
+  selectedIds,
+  onToggleSelect,
   closingIds,
   onSelect,
   onLaunch,
@@ -72,6 +76,11 @@ export function ProfileTable({
         <ProfileRow
           key={p.id}
           profile={p}
+          selected={selectedIds?.has(p.id) ?? false}
+          onToggleSelect={(event) => {
+            event.stopPropagation();
+            onToggleSelect?.(p.id);
+          }}
           terminating={closingIds?.has(p.id) ?? false}
           onOpen={() => onSelect(p.id)}
           onLaunch={() => onLaunch(p.id)}

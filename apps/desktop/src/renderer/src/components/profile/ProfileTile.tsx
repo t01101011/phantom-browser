@@ -54,6 +54,8 @@ interface Props {
    *  exited — show a "Terminating…" transitional state instead of "Stop". */
   terminating?: boolean;
   onOpen: () => void;
+  selected?: boolean;
+  onToggleSelect?: () => void;
   onLaunch: () => Promise<void> | void;
   onStop: () => Promise<void> | void;
   onExport: () => void;
@@ -64,6 +66,8 @@ export function ProfileTile({
   profile,
   terminating = false,
   onOpen,
+  selected = false,
+  onToggleSelect,
   onLaunch,
   onStop,
   onExport,
@@ -122,11 +126,29 @@ export function ProfileTile({
         transitionDuration: "180ms",
       }}
     >
+      {onToggleSelect && (
+        <button
+          type="button"
+          aria-label={selected ? `Deselect ${profile.name}` : `Select ${profile.name}`}
+          aria-pressed={selected}
+          onClick={onToggleSelect}
+          className="absolute top-3 right-3 z-10 w-5 h-5 rounded-md flex items-center justify-center text-[11px] transition-colors"
+          style={{
+            color: selected ? "#d8b4fe" : "#64748b",
+            background: selected ? "rgba(168,85,247,0.18)" : "rgba(15,16,22,0.82)",
+            boxShadow: selected
+              ? "inset 0 0 0 1px rgba(168,85,247,0.45)"
+              : "inset 0 0 0 1px rgba(255,255,255,0.10)",
+          }}
+        >
+          {selected ? "✓" : ""}
+        </button>
+      )}
       {/* Header — clickable, opens the edit modal (where the emoji picker lives) */}
       <button
         type="button"
         onClick={onOpen}
-        className="group flex justify-between items-start gap-2.5 cursor-pointer text-left bg-transparent border-0 p-0"
+        className="group flex justify-between items-start gap-2.5 cursor-pointer text-left bg-transparent border-0 p-0 pr-7"
       >
         <div className="flex gap-2.5 items-center min-w-0">
           <div className="relative flex-shrink-0" title="Click to set an emoji">

@@ -7,6 +7,7 @@ import { EmojiField } from "./EmojiField";
 import { BrowserSection, DEFAULT_START_URL } from "./BrowserSection";
 import type { ExtensionConfig, FingerprintConfig, ProxyConfig } from "../../types";
 import { parseProxyString } from "../../lib/parseProxy";
+import { initialProfileFingerprint } from "../../lib/initialProfileFingerprint";
 import {
   Field,
   Input,
@@ -66,11 +67,15 @@ export function NewProfileSheet({ onCancel, onCreated, onDirtyChange }: Props): 
   // Parsed tags, used both for the create call and to feed the emoji classifier.
   const tagList = tagsRaw.split(",").map((s) => s.trim()).filter(Boolean);
 
-  // Auto-generate a fingerprint preset on mount so the create call always
-  // has one and the regen button has something to replace.
+  // New profiles should have a predictable, readable UI language. Fingerprint
+  // regeneration remains random; proxy matching and manual locale selection can
+  // still replace this default before creation.
   useEffect(() => {
     if (!window.multizen) return;
-    void window.multizen.fingerprint.generate().then(setFingerprint);
+    void initialProfileFingerprint(
+      () => window.multizen.fingerprint.generate(),
+      (current, patch) => window.multizen.fingerprint.reconcile(current, patch),
+    ).then(setFingerprint);
   }, []);
 
   // Track "dirty" — anything the user typed that's not the default. The

@@ -22,6 +22,8 @@ import { probeProxyGeo } from "./proxyGeo";
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl } from "./startPage";
+import { sessionStartupPlan } from "./sessionStartup";
+import { parseChromiumVersion } from "./chromiumVersion";
 
 interface RunningProcess {
   child: ChildProcess;
@@ -122,11 +124,14 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     const chromiumPath = this.bootstrap.resolveBinaryPath();
     const engine: BrowserEngine = this.bootstrap.getEngine();
     const browserDataDir = browserDataDirForEngine(profile.dataDir, engine);
-    // Read the actual Chromium binary's version and reconcile the
-    // profile's spoofed UA against it. Detection vendors fingerprint the
-    // JS engine and compare against the claimed UA — claiming Chrome
-    // 148 while running 147 is an instant flag.
-    const actualVersion = await detectChromiumVersion(chromiumPath);
+    // Reuse the verified version from ChromiumBootstrap. Never probe by running
+    // `<browser> --version`: on Windows, chrome.exe is a GUI-subsystem binary,
+    // so that probe visibly opens and closes a throwaway Chrome window.
+    const bootstrapStatus = this.bootstrap.getStatus();
+    const actualVersion =
+      bootstrapStatus.kind === "ready"
+        ? parseChromiumVersion(bootstrapStatus.version)
+        : null;
     // Reconcile (1) device family to host OS (claiming Win on a Mac
     //   binary is detected via V8/CSS feature signatures), then
     //   (2) Chrome version to the actual binary version. Both run
@@ -216,14 +221,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       });
     }
 
-    // Make Chromium reopen last-session tabs on every launch — what
-    // Multilogin / AdsPower / GoLogin do by default. The setting is
-    // `session.restore_on_startup = 1` in the Default profile's
-    // Preferences JSON. We mutate it before spawn (Chrome must be off
-    // to avoid corruption).
-    await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
-      console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
-    });
+    const restorableSession = await hasRestorableSession(browserDataDir);
+    const startupPlan = sessionStartupPlan(restorableSession);
+    // Only force restore preferences when real session files exist. On a fresh
+    // profile, setting restore_on_startup=1 makes Chromium create its own default
+    // window in addition to the positional start URL window.
+    if (startupPlan.writeRestorePreference) {
+      await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
+        console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
+      });
+    }
 
     // Best-effort: suppress CFT's "is only for automated testing" infobar
     // via the macOS managed-preference. Idempotent — only prompts for
@@ -248,11 +255,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       `--remote-debugging-port=${port}`,
       "--no-first-run",
       "--no-default-browser-check",
-      // Force-restore the previous session's tabs at startup. Combined
-      // with the Preferences flip in ensureSessionRestore() and our
-      // CDP-based graceful shutdown on close, this makes tab persistence
-      // reliable across stop/launch even after a crash.
-      "--restore-last-session",
+      ...(startupPlan.restoreLastSession ? ["--restore-last-session"] : []),
       "--disable-features=Translate,MediaRouter",
       // Don't back Chromium's "Safe Storage" key with the OS keychain/keyring.
       // Two reasons: (1) our engine bundle is ad-hoc signed, so on macOS the
@@ -412,13 +415,10 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       DYLD_FALLBACK_FRAMEWORK_PATH: process.env.DYLD_FALLBACK_FRAMEWORK_PATH ?? "",
     };
     // Start page (positional URL) — only on first run, i.e. when there is no
-    // restorable session. With `--restore-last-session` a returning profile
-    // reopens its real tabs, so we must NOT stack an extra tab; on first launch
-    // there's nothing to restore, so the command-line URL becomes the initial
-    // tab (verified on CloakBrowser 145 — pref `startup_urls` is ignored there,
-    // a positional URL works). Defaults to DuckDuckGo when the profile has no
-    // explicit start page. Must be the LAST argv entry (positional).
-    if (!(await hasRestorableSession(browserDataDir))) {
+    // restorable session. Returning profiles get --restore-last-session instead.
+    // Passing both restore + a positional URL can make Chromium create two
+    // windows/tabs during startup, so these paths are deliberately exclusive.
+    if (startupPlan.openStartPage) {
       // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
       // Chromium would treat as switches) → falls back to the default.
       args.push(sanitizeStartUrl(profile.startUrl));
@@ -1580,45 +1580,6 @@ const WEBRTC_BLOCK_SCRIPT = `
  * spawn — Chromium must NOT be running, otherwise we'll corrupt its
  * pref file (Chromium writes Preferences atomically with no flock).
  */
-/**
- * Run `chromium --version` and parse the version triple. Returns null
- * if the probe fails — the caller should then trust whatever version is
- * baked into the profile.
- */
-async function detectChromiumVersion(
-  binaryPath: string,
-): Promise<{ major: number; full: string } | null> {
-  return new Promise((resolve) => {
-    let resolved = false;
-    const done = (v: { major: number; full: string } | null): void => {
-      if (resolved) return;
-      resolved = true;
-      resolve(v);
-    };
-    try {
-      const p = spawn(binaryPath, ["--version"], {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      let out = "";
-      p.stdout?.on("data", (c: Buffer) => {
-        out += c.toString("utf8");
-      });
-      p.on("close", () => {
-        const m = out.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-        if (!m) return done(null);
-        done({ major: Number(m[1]), full: `${m[1]}.${m[2]}.${m[3]}.${m[4]}` });
-      });
-      p.on("error", () => done(null));
-      setTimeout(() => {
-        p.kill();
-        done(null);
-      }, 2000);
-    } catch {
-      done(null);
-    }
-  });
-}
-
 /**
  * Rewrite the version-bearing fields of a fingerprint to match the
  * actual Chromium binary. Returns a new object — does NOT persist; if

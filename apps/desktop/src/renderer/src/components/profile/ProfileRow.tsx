@@ -31,6 +31,8 @@ interface Props {
   /** Chromium winding down (window closed / Stop) but not yet exited. */
   terminating?: boolean;
   onOpen: () => void;
+  selected?: boolean;
+  onToggleSelect?: (e: React.MouseEvent) => void;
   onLaunch: () => Promise<void> | void;
   onStop: () => Promise<void> | void;
   onExport: () => void;
@@ -42,6 +44,8 @@ export function ProfileRow({
   profile,
   terminating = false,
   onOpen,
+  selected = false,
+  onToggleSelect,
   onLaunch,
   onStop,
   onExport,
@@ -84,12 +88,25 @@ export function ProfileRow({
     <div
       role="row"
       onClick={onOpen}
-      className="group grid items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.025]"
+      className="group grid items-center gap-3 px-4 py-2.5 pl-7 relative cursor-pointer transition-colors hover:bg-white/[0.025]"
       style={{
         gridTemplateColumns: PROFILE_TABLE_GRID_TEMPLATE,
         borderBottom: "1px solid rgba(255,255,255,0.04)",
+        background: selected ? "rgba(168,85,247,0.07)" : undefined,
       }}
     >
+      {onToggleSelect && (
+        <button
+          type="button"
+          aria-label={selected ? `Deselect ${profile.name}` : `Select ${profile.name}`}
+          aria-pressed={selected}
+          onClick={onToggleSelect}
+          className="absolute ml-1 w-4 h-4 rounded flex items-center justify-center text-[10px]"
+          style={{ color: selected ? "#d8b4fe" : "#64748b", background: "rgba(15,16,22,0.8)" }}
+        >
+          {selected ? "✓" : ""}
+        </button>
+      )}
       {/* Name + avatar with state ring */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div
