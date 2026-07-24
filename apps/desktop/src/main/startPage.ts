@@ -13,22 +13,31 @@ export const DEFAULT_START_URL = "https://duckduckgo.com/";
 
 /**
  * Sanitize a profile's start URL into a safe positional Chromium arg. Only
- * http(s) and about: URLs are allowed; anything else (empty, schemeless like
- * `example.com`, or a `-`/`--`-prefixed token that Chromium would parse as a
+ * http(s) and about: URLs are allowed. A hostname entered without a scheme
+ * (for example `google.com`) is normalized to HTTPS. Anything else (empty,
+ * malformed text, or a `-`/`--`-prefixed token that Chromium would parse as a
  * command-line switch) falls back to the default. This closes an arg-injection
  * surface — the value can be set by MCP agents, and Chromium's CommandLine
  * treats any leading-dash token as a switch regardless of argv position.
  */
 export function sanitizeStartUrl(raw?: string): string {
   const v = (raw ?? "").trim();
-  if (!v) return DEFAULT_START_URL;
-  try {
-    const u = new URL(v);
-    if (u.protocol === "http:" || u.protocol === "https:" || u.protocol === "about:") {
-      return v;
+  if (!v || v.startsWith("-")) return DEFAULT_START_URL;
+
+  const candidates = /^[a-z][a-z\d+.-]*:/i.test(v) ? [v] : [`https://${v}`];
+  for (const candidate of candidates) {
+    try {
+      const u = new URL(candidate);
+      if (
+        (u.protocol === "http:" || u.protocol === "https:") &&
+        u.hostname.includes(".")
+      ) {
+        return u.href;
+      }
+      if (u.protocol === "about:" && candidate === v) return v;
+    } catch {
+      // Try the next candidate, then fall back to the app default.
     }
-  } catch {
-    // not a valid absolute URL
   }
   return DEFAULT_START_URL;
 }
