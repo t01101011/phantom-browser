@@ -1,5 +1,5 @@
 import { createReadStream, createWriteStream, existsSync, statSync } from "node:fs";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import {
   createHash,
@@ -11,6 +11,11 @@ import {
 } from "node:crypto";
 import { promisify } from "node:util";
 import type { Profile } from "@multizen/types";
+import {
+  assertArchiveByteLength,
+  assertExportPassphrase,
+  readFrameLength,
+} from "./archiveSecurity.js";
 
 const scrypt = promisify(scryptCb);
 
@@ -25,6 +30,8 @@ const ALGO = "aes-256-gcm";
 const KEY_LEN = 32;
 const SALT_LEN = 16;
 const IV_LEN = 12;
+const MAX_MANIFEST_BYTES = 16 * 1024 * 1024;
+const MAX_FILE_BYTES = 2 * 1024 * 1024 * 1024;
 
 interface FileMeta {
   path: string;
@@ -77,6 +84,7 @@ export async function exportProfile(
   outPath: string,
   opts: ExportOptions = {},
 ): Promise<void> {
+  assertExportPassphrase(passphrase);
   const files = await collectFiles(profile.dataDir);
 
   // Collect bundled extensions (v2). Each extension's files are appended after
@@ -162,6 +170,7 @@ export async function importProfile(
   opts: ImportOptions = {},
 ): Promise<Profile> {
   const buf = await readFile(archivePath);
+  assertArchiveByteLength(buf.length);
   if (buf.subarray(0, 4).toString("ascii") !== MAGIC) {
     throw new Error("Not a MultiZen archive");
   }
@@ -187,12 +196,19 @@ export async function importProfile(
   }
 
   let cursor = 0;
-  const manifestLen = plaintext.readUInt32BE(cursor);
-  cursor += 4;
-  const manifest = JSON.parse(
-    plaintext.subarray(cursor, cursor + manifestLen).toString("utf8"),
-  ) as ArchiveManifest;
+  const manifestFrame = readFrameLength(plaintext, cursor, MAX_MANIFEST_BYTES);
+  const manifestLen = manifestFrame.length;
+  cursor = manifestFrame.nextCursor;
+  let manifest: ArchiveManifest;
+  try {
+    manifest = JSON.parse(
+      plaintext.subarray(cursor, cursor + manifestLen).toString("utf8"),
+    ) as ArchiveManifest;
+  } catch {
+    throw new Error("Archive manifest is invalid.");
+  }
   cursor += manifestLen;
+  validateManifest(manifest, version);
 
   // Preserve the original id when free (faithful move to another machine); mint
   // a fresh one if it's already taken here (duplicate import), OR if the
@@ -210,14 +226,19 @@ export async function importProfile(
 
   await mkdir(restored.dataDir, { recursive: true });
 
-  for (const fileMeta of manifest.files) {
-    const len = plaintext.readUInt32BE(cursor);
-    cursor += 4;
-    const content = plaintext.subarray(cursor, cursor + len);
-    cursor += len;
-    verifyChecksum(fileMeta, content);
-    await writeGuarded(restored.dataDir, fileMeta.path, content);
-  }
+  try {
+    for (const fileMeta of manifest.files) {
+      const frame = readFrameLength(plaintext, cursor, MAX_FILE_BYTES);
+      const len = frame.length;
+      cursor = frame.nextCursor;
+      if (len !== fileMeta.size) {
+        throw new Error(`Archive length mismatch for ${fileMeta.path}`);
+      }
+      const content = plaintext.subarray(cursor, cursor + len);
+      cursor += len;
+      verifyChecksum(fileMeta, content);
+      await writeGuarded(restored.dataDir, fileMeta.path, content);
+    }
 
   // v2: restore bundled shared-store extensions. The chunks follow the profile
   // files in the same order as manifest.extensions[].files. We always read the
@@ -230,8 +251,12 @@ export async function importProfile(
     // Don't clobber an extension the user already has in the store.
     const skipWrite = !destDir || existsSync(destDir);
     for (const fileMeta of ext.files) {
-      const len = plaintext.readUInt32BE(cursor);
-      cursor += 4;
+      const frame = readFrameLength(plaintext, cursor, MAX_FILE_BYTES);
+      const len = frame.length;
+      cursor = frame.nextCursor;
+      if (len !== fileMeta.size) {
+        throw new Error(`Archive length mismatch for extension file ${fileMeta.path}`);
+      }
       const content = plaintext.subarray(cursor, cursor + len);
       cursor += len;
       verifyChecksum(fileMeta, content);
@@ -240,7 +265,45 @@ export async function importProfile(
     }
   }
 
-  return restored;
+    if (cursor !== plaintext.length) {
+      throw new Error("Archive contains unexpected trailing payload.");
+    }
+    return restored;
+  } catch (error) {
+    await rm(restored.dataDir, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+function validateManifest(manifest: ArchiveManifest, headerVersion: number): void {
+  if (!manifest || manifest.magic !== MAGIC || manifest.version !== headerVersion) {
+    throw new Error("Archive manifest identity does not match its header.");
+  }
+  if (!manifest.profile || typeof manifest.profile.id !== "string") {
+    throw new Error("Archive manifest has no valid profile.");
+  }
+  if (!Array.isArray(manifest.files)) {
+    throw new Error("Archive manifest has no valid file list.");
+  }
+  const entries = [
+    ...manifest.files,
+    ...(manifest.extensions ?? []).flatMap((extension) => extension.files),
+  ];
+  if (entries.length > 200_000) {
+    throw new Error("Archive contains too many files.");
+  }
+  for (const entry of entries) {
+    if (
+      !entry ||
+      typeof entry.path !== "string" ||
+      !Number.isSafeInteger(entry.size) ||
+      entry.size < 0 ||
+      entry.size > MAX_FILE_BYTES ||
+      !/^[a-f0-9]{64}$/i.test(entry.sha256)
+    ) {
+      throw new Error("Archive manifest contains invalid file metadata.");
+    }
+  }
 }
 
 /** Throw if the content's SHA-256 doesn't match the manifest entry. */
