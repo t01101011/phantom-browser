@@ -1,7 +1,6 @@
 import { useMemo, useState, type JSX } from "react";
 import { Grid3x3, List, Plus, Play, Square } from "lucide-react";
 import type { ProfileSummary, ActivityEvent } from "../../types";
-import { Kbd } from "../atoms";
 import { ProfileTile, deriveTileState, type TileData, type TileState } from "./ProfileTile";
 import { ProfileTable } from "./ProfileTable";
 import { usePersistedState } from "../../lib/persisted";
@@ -203,7 +202,6 @@ export function Constellation({
         >
           <Plus size={12} strokeWidth={2} />
           New profile
-          <Kbd variant="on-brand">⌘ N</Kbd>
         </button>
       </div>
 

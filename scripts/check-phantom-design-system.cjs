@@ -59,6 +59,10 @@ expect(!/purple|168,\s*85,\s*247/i.test(leftRail), "navigation still contains pu
 expect(constellation.includes('usePersistedState<ViewMode>("profilesView", "list")'), "profile table must be the default view");
 expect(constellation.includes("phantom-workspace-toolbar"), "profile toolbar is missing the Phantom workspace contract");
 expect(!/purple|168,\s*85,\s*247/i.test(constellation), "profile workspace still contains purple branding");
+expect(
+  !constellation.includes('<Kbd variant="on-brand">⌘ N</Kbd>'),
+  "New profile primary action must not contain an overlaid Command-N badge",
+);
 
 expect(table.includes("phantom-profile-table"), "profile table is missing its design-system surface class");
 expect(row.includes("phantom-profile-row"), "profile row is missing its design-system interaction class");
