@@ -111,7 +111,7 @@ export function FingerprintForm({ fingerprint, onChange, proxy }: Props): JSX.El
     detected && fingerprint.country !== detected.country;
 
   return (
-    <div className="space-y-3">
+    <div className="phantom-fingerprint-form space-y-3">
       {/* Top toolbar: actions that operate on the WHOLE fingerprint live
           here so it's visually obvious they aren't tied to any single
           field below. Regen replaces every value with a new coherent
@@ -120,13 +120,7 @@ export function FingerprintForm({ fingerprint, onChange, proxy }: Props): JSX.El
         <button
           type="button"
           onClick={() => void regen()}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 text-[12px] font-medium text-[#6dffa7] hover:text-white transition-colors rounded-lg"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(66,245,141,0.18), rgba(66,245,141,0.10))",
-            boxShadow:
-              "inset 0 0 0 1px rgba(66,245,141,0.35), 0 1px 0 rgba(255,255,255,0.05)",
-          }}
+          className="btn-brand flex-1 inline-flex items-center justify-center gap-1.5 h-8 text-[12px] font-medium transition-colors rounded-lg"
           title="Generate a new coherent device + locale + screen + UA"
         >
           <RefreshCw size={12} strokeWidth={2.25} />

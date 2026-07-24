@@ -46,10 +46,8 @@ export function ExtensionCatalog({
   }
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2 px-2.5 h-9 rounded-lg bg-white/[0.03]"
-        style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
-      >
+    <div className="phantom-extension-catalog space-y-2.5">
+      <div className="phantom-control flex items-center gap-2 px-2.5 h-9">
         <Search size={13} className="text-slate-500 shrink-0" />
         <input
           value={query}
@@ -74,11 +72,7 @@ export function ExtensionCatalog({
                 return (
                   <div
                     key={ext.id}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
-                    }}
+                    className="phantom-operational-row flex items-center gap-2.5 px-3 py-2"
                   >
                     <ExtIcon id={ext.id} />
                     <div className="flex-1 min-w-0">

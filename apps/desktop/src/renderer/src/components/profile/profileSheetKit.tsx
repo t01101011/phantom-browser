@@ -35,8 +35,8 @@ export function SectionRail({
 }): JSX.Element {
   return (
     <nav
-      className="flex flex-col shrink-0 py-3 px-2 gap-0.5 overflow-y-auto min-h-0"
-      style={{ width: 168, borderRight: "1px solid rgba(255,255,255,0.05)" }}
+      className="phantom-profile-sheet flex flex-col shrink-0 py-3 px-2 gap-0.5 overflow-y-auto min-h-0"
+      style={{ width: 168 }}
     >
       {SECTIONS.map(({ id, label, icon: Icon }) => {
         const active = section === id;
@@ -45,12 +45,7 @@ export function SectionRail({
             key={id}
             type="button"
             onClick={() => onSelect(id)}
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] text-left transition-colors"
-            style={{
-              background: active ? "rgba(66,245,141,0.14)" : "transparent",
-              color: active ? "#e9d5ff" : "#94a3b8",
-              boxShadow: active ? "inset 0 0 0 1px rgba(66,245,141,0.22)" : undefined,
-            }}
+            className={`phantom-profile-sheet-item flex items-center gap-2.5 px-2.5 py-2 text-[12.5px] text-left transition-colors ${active ? "phantom-profile-sheet-item-active" : ""}`}
           >
             <Icon size={15} strokeWidth={1.75} className="shrink-0" />
             <span className="font-medium flex-1">{label}</span>
@@ -73,7 +68,7 @@ export function SectionRail({
 export function Field({ label, children }: { label: string; children: ReactNode }): JSX.Element {
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="text-[11px] font-medium text-slate-500">{label}</div>
+      <div className="phantom-field-label text-[11px] font-medium">{label}</div>
       {children}
     </div>
   );
@@ -112,9 +107,8 @@ export function Input({
           : undefined
       }
       placeholder={placeholder}
-      className="w-full px-2.5 h-9 rounded-lg bg-white/[0.03] text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:bg-white/[0.05] transition-colors"
+      className="phantom-control w-full px-2.5 h-9 text-[12px] outline-none"
       style={{
-        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
         fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
         fontWeight: mono ? 500 : 400,
       }}
@@ -139,8 +133,8 @@ export function Textarea({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full px-2.5 py-2 rounded-lg bg-white/[0.03] text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:bg-white/[0.05] transition-colors resize-none"
-      style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)", fontFamily: "var(--font-sans)" }}
+      className="phantom-control w-full px-2.5 py-2 text-[12px] outline-none resize-none"
+      style={{ fontFamily: "var(--font-sans)" }}
     />
   );
 }

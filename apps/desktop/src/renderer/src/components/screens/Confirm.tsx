@@ -26,18 +26,16 @@ export function Confirm(props: ConfirmProps): JSX.Element | null {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(5,6,10,0.55)", backdropFilter: "blur(8px)", animation: "mz-fade-in 120ms ease-out" }}
+      className="phantom-dialog-backdrop fixed inset-0 z-50 flex items-center justify-center"
+      style={{ animation: "mz-fade-in 120ms ease-out" }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) props.onCancel();
       }}
     >
       <div
+        className="phantom-dialog"
         style={{
           width: 420,
-          borderRadius: 16,
-          background: "rgba(15,16,22,0.92)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10), 0 30px 80px rgba(0,0,0,0.6)",
           padding: 22,
           animation: "mz-slide-up 140ms cubic-bezier(0.2,0.8,0.2,1)",
         }}
@@ -109,18 +107,16 @@ export function Prompt(props: PromptProps): JSX.Element | null {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(5,6,10,0.55)", backdropFilter: "blur(8px)", animation: "mz-fade-in 120ms ease-out" }}
+      className="phantom-dialog-backdrop fixed inset-0 z-50 flex items-center justify-center"
+      style={{ animation: "mz-fade-in 120ms ease-out" }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) props.onCancel();
       }}
     >
       <div
+        className="phantom-dialog"
         style={{
           width: 460,
-          borderRadius: 16,
-          background: "rgba(15,16,22,0.92)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10), 0 30px 80px rgba(0,0,0,0.6)",
           padding: 22,
           animation: "mz-slide-up 140ms cubic-bezier(0.2,0.8,0.2,1)",
         }}
@@ -140,11 +136,8 @@ export function Prompt(props: PromptProps): JSX.Element | null {
             if (e.key === "Enter" && !busy) void submit();
             if (e.key === "Escape") props.onCancel();
           }}
-          className="w-full mono text-[13px] text-slate-100 px-3 py-2.5 rounded-[10px] outline-none"
+          className="phantom-control w-full mono text-[13px] px-3 py-2.5 outline-none"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
-            border: 0,
             marginTop: props.label ? 0 : 16,
           }}
         />

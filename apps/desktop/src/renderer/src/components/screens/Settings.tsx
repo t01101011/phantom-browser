@@ -77,7 +77,7 @@ export function Settings({ onImport }: Props): JSX.Element {
   }
 
   return (
-    <div className="flex-1 overflow-auto" style={{ padding: "24px 32px" }}>
+    <div className="phantom-settings flex-1 overflow-auto" style={{ padding: "24px 32px" }}>
       <div className="max-w-[720px] mx-auto">
         <div className="text-lg font-bold tracking-tight text-slate-100 mb-1.5">Settings</div>
         <div className="text-[13px] text-slate-500 mb-5">

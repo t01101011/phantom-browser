@@ -16,6 +16,21 @@ const row = read("apps/desktop/src/renderer/src/components/profile/ProfileRow.ts
 const button = read("apps/desktop/src/renderer/src/components/atoms/Button.tsx");
 const kbd = read("apps/desktop/src/renderer/src/components/atoms/Kbd.tsx");
 const mcp = read("apps/desktop/src/renderer/src/components/mcp/McpPanel.tsx");
+const profileSheetKit = read("apps/desktop/src/renderer/src/components/profile/profileSheetKit.tsx");
+const newProfileSheet = read("apps/desktop/src/renderer/src/components/profile/NewProfileSheet.tsx");
+const profileEditSheet = read("apps/desktop/src/renderer/src/components/profile/ProfileEditSheet.tsx");
+const extensionCatalog = read("apps/desktop/src/renderer/src/components/profile/ExtensionCatalog.tsx");
+const settings = read("apps/desktop/src/renderer/src/components/screens/Settings.tsx");
+const modal = read("apps/desktop/src/renderer/src/components/atoms/Modal.tsx");
+const confirm = read("apps/desktop/src/renderer/src/components/screens/Confirm.tsx");
+const firstRun = read("apps/desktop/src/renderer/src/components/onboarding/FirstRun.tsx");
+const chromiumBootstrap = read("apps/desktop/src/renderer/src/components/onboarding/ChromiumBootstrapModal.tsx");
+const activityDrawer = read("apps/desktop/src/renderer/src/components/activity/ActivityDrawer.tsx");
+const commandPalette = read("apps/desktop/src/renderer/src/components/palette/CommandPalette.tsx");
+const updateBanner = read("apps/desktop/src/renderer/src/components/UpdateBanner.tsx");
+const emptyState = read("apps/desktop/src/renderer/src/components/profile/EmptyState.tsx");
+const fingerprintForm = read("apps/desktop/src/renderer/src/components/profile/FingerprintForm.tsx");
+const proxyTester = read("apps/desktop/src/renderer/src/components/profile/ProxyTester.tsx");
 const rendererRoot = path.join(root, "apps/desktop/src/renderer/src");
 const legacyBrandPattern = /purple|violet|fuchsia|pink|168,\s*85,\s*247|192,\s*132,\s*252|#a855f7|#c084fc|#8b5cf6|#ec4899|#d8b4fe|#c4b5fd/i;
 
@@ -70,6 +85,53 @@ expect(row.includes("phantom-profile-row-selected"), "selected profile row is mi
 expect(!/purple|168,\s*85,\s*247/i.test(row), "profile row still contains purple branding");
 expect(!/purple|violet|168,\s*85,\s*247|#c084fc|#a855f7|#8b5cf6|#ec4899/i.test(mcp), "MCP panel still contains purple branding");
 expect(mcp.includes("phantom-mcp-panel"), "MCP panel is missing its design-system surface contract");
+
+// Phase 4A — remaining screens must consume shared Phantom contracts instead of
+// carrying one-off glass, oversized-radius, and gradient treatments.
+for (const [source, marker, label] of [
+  [profileSheetKit, "phantom-profile-sheet", "profile sheet"],
+  [newProfileSheet, "phantom-profile-form", "new-profile form"],
+  [profileEditSheet, "phantom-profile-form", "edit-profile form"],
+  [extensionCatalog, "phantom-extension-catalog", "extension catalog"],
+  [settings, "phantom-settings", "settings"],
+  [modal, "phantom-modal", "modal"],
+  [confirm, "phantom-dialog", "confirm/prompt dialog"],
+  [firstRun, "phantom-onboarding", "onboarding"],
+  [chromiumBootstrap, "phantom-bootstrap", "Chromium bootstrap"],
+  [activityDrawer, "phantom-activity-drawer", "activity drawer"],
+  [commandPalette, "phantom-command-palette", "command palette"],
+  [updateBanner, "phantom-update-banner", "update banner"],
+  [emptyState, "phantom-empty-state", "profiles empty state"],
+  [fingerprintForm, "phantom-fingerprint-form", "fingerprint form"],
+  [proxyTester, "phantom-proxy-tester", "proxy tester"],
+]) {
+  expect(source.includes(marker), `${label} is missing its Phase 4A design-system contract`);
+}
+for (const [source, label] of [
+  [modal, "modal"],
+  [confirm, "confirm/prompt dialog"],
+  [firstRun, "onboarding"],
+  [chromiumBootstrap, "Chromium bootstrap"],
+]) {
+  expect(!/backdropFilter|backdrop-blur/i.test(source), `${label} still uses glass/blur treatment`);
+  expect(!/linear-gradient/i.test(source), `${label} still uses a decorative gradient`);
+}
+expect(!/borderRadius:\s*(?:1[1-9]|[2-9]\d)/.test(modal), "modal still uses oversized panel radius");
+expect(!/rounded-(?:xl|2xl)|rounded-\[(?:1[1-9]|[2-9]\d)px\]/.test(firstRun), "onboarding still uses oversized control radius");
+expect(
+  !/linear-gradient\(90deg,\s*#6366f1/i.test(chromiumBootstrap),
+  "Chromium bootstrap progress still contains the inherited indigo gradient",
+);
+for (const [source, label] of [
+  [activityDrawer, "activity drawer"],
+  [commandPalette, "command palette"],
+  [updateBanner, "update banner"],
+  [fingerprintForm, "fingerprint form"],
+]) {
+  expect(!/backdropFilter|backdrop-blur/i.test(source), `${label} still uses glass/blur treatment`);
+  expect(!/linear-gradient/i.test(source), `${label} still uses a decorative gradient`);
+}
+expect(!/borderRadius:\s*(?:1[1-9]|[2-9]\d)/.test(commandPalette), "command palette still uses oversized panel radius");
 for (const file of walk(rendererRoot)) {
   expect(
     !legacyBrandPattern.test(fs.readFileSync(file, "utf8")),

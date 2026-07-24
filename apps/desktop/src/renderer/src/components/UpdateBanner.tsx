@@ -83,14 +83,7 @@ export function UpdateBanner({ suppressed }: { suppressed?: boolean }): JSX.Elem
 function Bar({ children, tone }: { children: ReactNode; tone: "brand" | "info" }): JSX.Element {
   return (
     <div
-      className="flex items-center gap-2.5 px-4 py-2 text-[12px] text-slate-200"
-      style={{
-        background:
-          tone === "brand"
-            ? "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(66,245,141,0.14), rgba(236,72,153,0.12))"
-            : "rgba(15,16,22,0.95)",
-        boxShadow: "inset 0 -1px 0 0 rgba(255,255,255,0.08)",
-      }}
+      className={`phantom-update-banner flex items-center gap-2.5 px-4 py-2 text-[12px] text-slate-200 ${tone === "brand" ? "phantom-update-banner-brand" : ""}`}
     >
       {children}
     </div>
@@ -118,7 +111,7 @@ function BannerButton({
       }
       style={
         primary
-          ? { background: "linear-gradient(90deg, #6366f1, #42f58d)" }
+          ? { background: "var(--ph-primary)", color: "#07110b" }
           : { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }
       }
       {...rest}

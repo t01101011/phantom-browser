@@ -47,7 +47,7 @@ export function ProxyTester({ proxy, profileId, onProbed }: Props): JSX.Element 
   }
 
   return (
-    <div className="mt-2.5 space-y-2">
+    <div className="phantom-proxy-tester mt-2.5 space-y-2">
       <button
         type="button"
         onClick={() => void test()}

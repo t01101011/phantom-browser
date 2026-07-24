@@ -147,11 +147,8 @@ export function Modal({
     <div
       role="presentation"
       onMouseDown={onBackdropClick}
-      className="fixed inset-0 z-[80] flex items-center justify-center"
+      className="phantom-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center"
       style={{
-        background: "rgba(5,6,10,0.55)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
         animation: closing ? undefined : "mz-fade-in 180ms ease-out",
       }}
     >
@@ -159,24 +156,17 @@ export function Modal({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        className={`relative flex flex-col mx-6 ${panelClassName ?? ""}`}
+        className={`phantom-modal relative flex flex-col mx-6 ${panelClassName ?? ""}`}
         style={{
           width: "100%",
           maxWidth: width,
           maxHeight: "calc(100vh - 64px)",
-          background: "rgba(15,16,22,0.96)",
-          borderRadius: 18,
-          boxShadow:
-            "inset 0 0 0 1px rgba(255,255,255,0.08), 0 36px 96px -24px rgba(0,0,0,0.7), 0 0 0 1px rgba(66,245,141,0.06)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
           animation: "mz-modal-pop 220ms cubic-bezier(0.2,0.8,0.2,1)",
         }}
       >
         {!hideHeader && (
           <div
-            className="flex items-start gap-3 px-5 pt-4 pb-3"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+            className="phantom-modal-header flex items-start gap-3 px-5 pt-4 pb-3 border-b"
           >
             <div className="flex-1 min-w-0">
               {title && (
@@ -206,8 +196,7 @@ export function Modal({
 
         {footer && (
           <div
-            className="flex items-center justify-end gap-2 px-5 py-3"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+            className="phantom-modal-footer flex items-center justify-end gap-2 px-5 py-3 border-t"
           >
             {footer}
           </div>
@@ -271,7 +260,7 @@ export function ConfirmHost(): JSX.Element | null {
       onClose={() => close(false)}
       width={420}
       hideHeader
-      panelClassName="!rounded-2xl"
+      panelClassName=""
     >
       <div className="px-5 pt-5 pb-4">
         <div className="text-[15px] font-bold text-slate-100">{state.title}</div>
@@ -294,13 +283,11 @@ export function ConfirmHost(): JSX.Element | null {
             autoFocus
             className="px-3 h-8 text-[12px] rounded-lg font-medium transition-colors"
             style={{
-              background: state.destructive
-                ? "rgba(239,68,68,0.18)"
-                : "linear-gradient(180deg, rgba(66,245,141,0.95), rgba(66,245,141,0.75))",
-              color: state.destructive ? "#fca5a5" : "white",
+              background: state.destructive ? "rgba(239,68,68,0.18)" : "var(--ph-primary)",
+              color: state.destructive ? "#fca5a5" : "#07110b",
               boxShadow: state.destructive
                 ? "inset 0 0 0 1px rgba(239,68,68,0.4)"
-                : "inset 0 1px 0 rgba(255,255,255,0.16), 0 4px 12px -2px rgba(66,245,141,0.4)",
+                : "inset 0 0 0 1px rgba(7,17,11,0.14)",
             }}
           >
             {state.confirmLabel ?? "Confirm"}

@@ -186,7 +186,7 @@ export function ProfileEditSheet({ profile, onSaved }: Props): JSX.Element {
       : undefined;
 
   return (
-    <div className="flex" style={{ height: SHEET_HEIGHT }}>
+    <div className="phantom-profile-form flex" style={{ height: SHEET_HEIGHT }}>
       <SectionRail
         section={section}
         onSelect={setSection}
@@ -249,8 +249,7 @@ export function ProfileEditSheet({ profile, onSaved }: Props): JSX.Element {
                     <select
                       value={form.proxyType}
                       onChange={(e) => update("proxyType", e.target.value as "http" | "socks5")}
-                      className="w-full px-2.5 h-9 rounded-lg bg-white/[0.03] text-[12px] text-slate-200 outline-none"
-                      style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+                      className="phantom-control w-full px-2.5 h-9 text-[12px] outline-none"
                     >
                       <option value="http">HTTP</option>
                       <option value="socks5">SOCKS5</option>
