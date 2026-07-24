@@ -14,6 +14,7 @@ const constellation = read("apps/desktop/src/renderer/src/components/profile/Con
 const table = read("apps/desktop/src/renderer/src/components/profile/ProfileTable.tsx");
 const row = read("apps/desktop/src/renderer/src/components/profile/ProfileRow.tsx");
 const button = read("apps/desktop/src/renderer/src/components/atoms/Button.tsx");
+const kbd = read("apps/desktop/src/renderer/src/components/atoms/Kbd.tsx");
 const mcp = read("apps/desktop/src/renderer/src/components/mcp/McpPanel.tsx");
 const rendererRoot = path.join(root, "apps/desktop/src/renderer/src");
 const legacyBrandPattern = /purple|violet|fuchsia|pink|168,\s*85,\s*247|192,\s*132,\s*252|#a855f7|#c084fc|#8b5cf6|#ec4899|#d8b4fe|#c4b5fd/i;
@@ -42,6 +43,14 @@ for (const token of [
 expect(!/#a855f7|#ec4899|#6366f1|168,\s*85,\s*247/i.test(styles), "legacy purple/pink brand colors remain in styles.css");
 expect(!/linear-gradient\(135deg,\s*#6366f1/i.test(button), "primary button still uses the legacy gradient");
 expect(button.includes('bg: "#42f58d"') || button.includes('bg: "var(--ph-primary)"'), "primary button does not use Phantom green");
+expect(
+  kbd.includes('color: "#07110b"'),
+  "on-brand keyboard shortcut must use dark ink on the spectral-green primary button",
+);
+expect(
+  !kbd.includes('color: "rgba(255, 255, 255, 0.95)"'),
+  "on-brand keyboard shortcut still uses unreadable white text",
+);
 
 expect(leftRail.includes("data-phantom-shell=\"navigation\""), "navigation rail is missing the Phantom shell contract");
 expect(leftRail.includes("phantom-nav-active"), "navigation active state is missing the spectral edge treatment");
