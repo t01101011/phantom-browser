@@ -22,7 +22,7 @@ import { PROFILE_TABLE_GRID_TEMPLATE } from "./ProfileTable";
 const STATE_RING_COLOR: Record<TileState, string> = {
   idle: "rgba(148,163,184,0.3)",      // slate
   running: "rgba(52,211,153,0.6)",    // emerald
-  ai: "rgba(192,132,252,0.6)",        // purple
+  ai: "rgba(109,146,200,0.6)",        // info blue
   error: "rgba(248,113,113,0.6)",     // red
 };
 
@@ -88,11 +88,12 @@ export function ProfileRow({
     <div
       role="row"
       onClick={onOpen}
-      className="group grid items-center gap-3 px-4 py-2.5 pl-7 relative cursor-pointer transition-colors hover:bg-white/[0.025]"
+      className={cn(
+        "phantom-profile-row group grid items-center gap-3 px-4 py-2.5 pl-7 relative cursor-pointer transition-colors",
+        selected && "phantom-profile-row-selected",
+      )}
       style={{
         gridTemplateColumns: PROFILE_TABLE_GRID_TEMPLATE,
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
-        background: selected ? "rgba(168,85,247,0.07)" : undefined,
       }}
     >
       {onToggleSelect && (
@@ -102,7 +103,7 @@ export function ProfileRow({
           aria-pressed={selected}
           onClick={onToggleSelect}
           className="absolute ml-1 w-4 h-4 rounded flex items-center justify-center text-[10px]"
-          style={{ color: selected ? "#d8b4fe" : "#64748b", background: "rgba(15,16,22,0.8)" }}
+          style={{ color: selected ? "#42f58d" : "#66736b", background: "#0e1310" }}
         >
           {selected ? "✓" : ""}
         </button>
@@ -225,9 +226,9 @@ function PillForState({ profile }: { profile: TileData }): JSX.Element {
       <span
         className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md mono text-[10px] truncate"
         style={{
-          background: "rgba(168,85,247,0.10)",
-          color: "#c084fc",
-          boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.20)",
+          background: "rgba(109,146,200,0.10)",
+          color: "#8ba8d2",
+          boxShadow: "inset 0 0 0 1px rgba(109,146,200,0.20)",
         }}
         title={profile.lastTool ?? "ai-driven"}
       >

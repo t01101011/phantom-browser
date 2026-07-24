@@ -22,8 +22,8 @@ export function TopBar({ totalCount, runningCount, mcpUrl, platform, onCmdK, onS
         height: 44,
         paddingLeft: 14 + leadingInset,
         paddingRight: 14 + captionInset,
-        background: "#0a0b0f",
-        borderBottom: "1px solid rgba(220,255,232,0.06)",
+        background: "var(--ph-canvas)",
+        borderBottom: "1px solid var(--ph-border-subtle)",
       }}
     >
       {/* Brand — non-interactive decoration: pointer-events:none so the label
@@ -49,8 +49,8 @@ export function TopBar({ totalCount, runningCount, mcpUrl, platform, onCmdK, onS
           boxShadow: "inset 0 0 0 1px rgba(220,255,232,0.07)",
         }}
       >
-        <Search size={14} className="text-slate-500" />
-        <span className="flex-1 text-left text-[13px] text-slate-500">
+        <Search size={14} className="text-[#66736b]" />
+        <span className="flex-1 text-left text-[13px] text-[#66736b]">
           Search profiles, tags, urls…
         </span>
         <Kbd>⌘ K</Kbd>
@@ -58,11 +58,11 @@ export function TopBar({ totalCount, runningCount, mcpUrl, platform, onCmdK, onS
 
       {/* Right cluster */}
       <div className="no-drag flex items-center gap-3">
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-          <span className="mono text-slate-300 text-[12px]">{runningCount}</span>
+        <div className="flex items-center gap-1.5 text-[11px] text-[#66736b]">
+          <span className="mono text-[#a2afa7] text-[12px]">{runningCount}</span>
           <span>running</span>
           <span className="text-slate-600">·</span>
-          <span className="mono text-slate-400 text-[12px]">{totalCount}</span>
+          <span className="mono text-[#a2afa7] text-[12px]">{totalCount}</span>
           <span>total</span>
         </div>
         <Pill kind={mcpUrl ? "running" : "idle"} dot={!!mcpUrl}>
@@ -71,7 +71,7 @@ export function TopBar({ totalCount, runningCount, mcpUrl, platform, onCmdK, onS
         <button
           type="button"
           onClick={onSettings}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[#66736b] hover:bg-[#131a16] hover:text-[#a2afa7] transition-colors"
           aria-label="Settings"
         >
           <SettingsIcon size={14} />

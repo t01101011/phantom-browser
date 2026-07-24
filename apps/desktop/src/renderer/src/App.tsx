@@ -348,7 +348,7 @@ export function App(): JSX.Element {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col" style={{ background: "var(--ph-canvas)" }}>
       <TopBar
         totalCount={profiles.length}
         runningCount={runningCount}

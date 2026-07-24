@@ -1,8 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+}
+
+:root {
+  --ph-canvas: #070a09;
+  --ph-sidebar: #0a0e0c;
+  --ph-surface-1: #0e1310;
+  --ph-surface-2: #131a16;
+  --ph-surface-elevated: #18211c;
+  --ph-text-primary: #e8f0eb;
+  --ph-text-secondary: #a2afa7;
+  --ph-text-muted: #66736b;
+  --ph-text-disabled: #414a44;
+  --ph-primary: #42f58d;
+  --ph-primary-hover: #6dffa7;
+  --ph-primary-muted: #183c28;
+  --ph-border-subtle: rgba(220, 255, 232, 0.06);
+  --ph-border: rgba(220, 255, 232, 0.1);
+  --ph-focus: rgba(66, 245, 141, 0.4);
+  --ph-success: #42d985;
+  --ph-warning: #d7a94b;
+  --ph-error: #e05d66;
+  --ph-info: #6d92c8;
 }
 
 @layer base {
@@ -12,8 +34,8 @@
     height: 100%;
   }
   body {
-    background: #0a0b0f;
-    color: #f1f5f9;
+    background: var(--ph-canvas);
+    color: var(--ph-text-primary);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "ss02", "cv01";
     -webkit-font-smoothing: antialiased;
@@ -21,13 +43,13 @@
     overflow: hidden;
   }
   :focus-visible {
-    outline: 2px solid rgba(168, 85, 247, 0.4);
+    outline: 2px solid var(--ph-focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
   ::selection {
-    background: rgba(168, 85, 247, 0.5);
-    color: white;
+    background: rgba(66, 245, 141, 0.35);
+    color: var(--ph-text-primary);
   }
   ::-webkit-scrollbar {
     width: 10px;
@@ -39,7 +61,7 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    border: 2px solid #0a0b0f;
+    border: 2px solid var(--ph-canvas);
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -53,25 +75,22 @@
   }
 }
 
-/* Brand cube logo gradient (used as fallback when image fails) */
+/* Brand mark fallback (used only when the supplied image fails). */
 .cube-fallback {
-  background: linear-gradient(135deg, #ff6b35 0%, #ff3d8a 35%, #8b5cf6 70%, #3b82f6 100%);
+  background: var(--ph-primary-muted);
 }
 
 /* Atoms used across the app */
 .mz-card {
-  background: rgba(255, 255, 255, 0.02);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
+  background: var(--ph-surface-1);
+  box-shadow: inset 0 0 0 1px var(--ph-border-subtle);
+  border-radius: 8px;
 }
 
 .mz-panel {
-  background: rgba(255, 255, 255, 0.02);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  background: var(--ph-surface-1);
+  box-shadow: inset 0 0 0 1px var(--ph-border-subtle);
+  border-radius: 10px;
 }
 
 .mz-pill {
@@ -115,7 +134,7 @@
   color: #cbd5e1 !important;
 }
 .mz-button:hover:not(:disabled)[data-variant="accent"] {
-  background: rgba(168, 85, 247, 0.16) !important;
+  background: rgba(66, 245, 141, 0.16) !important;
 }
 .mz-button:hover:not(:disabled)[data-variant="success"] {
   background: rgba(16, 185, 129, 0.16) !important;
@@ -130,23 +149,74 @@
   transform: scale(0.97);
 }
 
+.phantom-shell-nav {
+  background: var(--ph-sidebar);
+  border-right: 1px solid var(--ph-border-subtle);
+}
+
+.phantom-nav-item {
+  position: relative;
+  color: var(--ph-text-muted);
+}
+.phantom-nav-item:hover {
+  color: var(--ph-text-secondary);
+  background: var(--ph-surface-2);
+}
+.phantom-nav-active {
+  color: var(--ph-primary);
+  background: var(--ph-primary-muted);
+  box-shadow: inset 0 0 0 1px rgba(66, 245, 141, 0.12);
+}
+.phantom-nav-active::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ph-primary);
+}
+
+.phantom-workspace-toolbar {
+  border-bottom: 1px solid var(--ph-border-subtle);
+}
+
+.phantom-profile-table {
+  background: var(--ph-surface-1);
+  box-shadow: inset 0 0 0 1px var(--ph-border-subtle);
+  border-radius: 8px;
+}
+.phantom-profile-table-header {
+  background: var(--ph-surface-2);
+  border-bottom: 1px solid var(--ph-border-subtle);
+}
+.phantom-profile-row {
+  border-bottom: 1px solid var(--ph-border-subtle);
+}
+.phantom-profile-row:hover {
+  background: rgba(220, 255, 232, 0.025);
+}
+.phantom-profile-row-selected {
+  background: rgba(66, 245, 141, 0.075);
+  box-shadow: inset 2px 0 0 var(--ph-primary);
+}
+
 /* Legacy classes kept until call sites migrate to <Button> — same look as
    primary / secondary / ghost variants so we can swap incrementally. */
 .btn-brand {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
-  color: white;
+  background: var(--ph-primary);
+  color: #07110b;
   font-weight: 600;
   border: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow:
-    0 6px 20px -6px rgba(168, 85, 247, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(7, 17, 11, 0.14);
   transition: all 150ms ease-out;
 }
-.btn-brand:hover { filter: brightness(1.06); }
+.btn-brand:hover { background: var(--ph-primary-hover); }
 .btn-brand:active { transform: scale(0.97); }
 .btn-brand:disabled { opacity: 0.5; pointer-events: none; }
 
