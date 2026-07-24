@@ -53,10 +53,10 @@ extraResources:
 # Stable artifact names — no version baked in. The GitHub Releases page
 # still surfaces the version (from package.json) in the release title,
 # but the asset URLs stay predictable:
-#   /releases/latest/download/Phantom-Research-mac-arm64.dmg
-#   /releases/latest/download/Phantom-Research-mac-x64.dmg
-#   /releases/latest/download/Phantom-Research-win-x64.exe
-#   /releases/latest/download/Phantom-Research-linux-x86_64.AppImage
+#   /releases/latest/download/Phantom-Browser-mac-arm64.dmg
+#   /releases/latest/download/Phantom-Browser-mac-x64.dmg
+#   /releases/latest/download/Phantom-Browser-win-x64.exe
+#   /releases/latest/download/Phantom-Browser-linux-x86_64.AppImage
 #     (electron-builder hardcodes the x86_64 suffix on AppImage,
 #      regardless of artifactName — the landing links to that exact name)
 # This lets the landing page hardcode links that never need updating.
@@ -78,7 +78,7 @@ mac:
   # binary has at least *some* signature — without it, macOS Sequoia
   # shows the scary "is damaged" Gatekeeper dialog with no override.
   # With ad-hoc sig the user can right-click → Open, or run
-  # `xattr -cr /Applications/MultiZen.app` to strip the quarantine bit.
+  # `xattr -cr "/Applications/Phantom Browser.app"` to strip the quarantine bit.
   # Both paths are documented in the release notes.
   hardenedRuntime: false
   gatekeeperAssess: false
@@ -91,8 +91,10 @@ win:
       arch:
         - x64
   artifactName: "${productName}-win-${arch}.${ext}"
-  icon: ../../build/icon.png
-  signAndEditExecutable: false
+  icon: ../../build/icon.ico
+  # Required for electron-builder/rcedit to stamp the Phantom icon and product
+  # metadata into the unpacked application EXE. This does not imply code signing.
+  signAndEditExecutable: true
 
 linux:
   target:
@@ -110,7 +112,7 @@ nsis:
 publish:
   provider: github
   owner: t01101011
-  repo: multizen-browser
+  repo: phantom-browser
   # Cut a published release (not draft) directly from CI. Default is
   # draft which means /releases/latest redirector misses it until a
   # human un-drafts manually — we don't want that friction.

@@ -82,7 +82,14 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    titleBarStyle: "hiddenInset",
+    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
+    titleBarOverlay: process.platform === "win32"
+      ? {
+          color: "#0a0b0f",
+          symbolColor: "#a2afa7",
+          height: 44,
+        }
+      : false,
     backgroundColor: "#0a0b0f",
     icon: iconPath ?? undefined,
     webPreferences: {
@@ -201,7 +208,7 @@ app.whenReady().then(async () => {
     profileManager,
     chromiumBootstrap,
     extensionStoreRoot,
-    // The companion's "Add to MultiZen" button routes here (profile-scoped).
+    // The companion's "Add to Phantom Browser" button routes here (profile-scoped).
     // Confirm natively first: any script on the store page could trigger the
     // channel, so an explicit OS dialog makes a drive-by install impossible.
     onCompanionInstall: (profileId, extensionId) => {
@@ -215,7 +222,7 @@ app.whenReady().then(async () => {
         const profile = profileManager.get(profileId);
         const choice = await dialog.showMessageBox(mainWindow!, {
           type: "question",
-          buttons: ["Add to MultiZen", "Cancel"],
+          buttons: ["Add to Phantom Browser", "Cancel"],
           defaultId: 0,
           cancelId: 1,
           message: "Add this extension to the profile?",
@@ -603,7 +610,7 @@ app.whenReady().then(async () => {
   const detail = e instanceof Error ? (e.stack ?? e.message) : String(e);
   process.stderr.write(`[multizen] fatal startup error:\n${detail}\n`);
   dialog.showErrorBox(
-    "MultiZen failed to start",
+    "Phantom Browser failed to start",
     `A startup step failed:\n\n${e instanceof Error ? e.message : String(e)}\n\n` +
       "Please report this on Discord/GitHub with this message.",
   );

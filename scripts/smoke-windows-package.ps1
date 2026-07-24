@@ -15,6 +15,37 @@ foreach ($path in $required) {
   if (-not (Test-Path $path)) { throw "Missing packaged runtime path: $path" }
 }
 
+# A configured builder icon is not enough: signAndEditExecutable can be disabled,
+# leaving Electron's default icon embedded in the actual PE. Extract the icon from
+# the packaged EXE and compare its pixels with the canonical generated icon.
+Add-Type -AssemblyName System.Drawing
+$expectedIcon = Join-Path $repo "build/icon.ico"
+if (-not (Test-Path $expectedIcon)) { throw "Missing canonical Windows icon: $expectedIcon" }
+
+$embedded = [System.Drawing.Icon]::ExtractAssociatedIcon($appExe)
+if (-not $embedded) { throw "Phantom Browser.exe has no associated icon" }
+$expected = New-Object System.Drawing.Icon($expectedIcon, 32, 32)
+$embeddedBitmap = $embedded.ToBitmap()
+$expectedBitmap = $expected.ToBitmap()
+
+try {
+  if ($embeddedBitmap.Width -ne $expectedBitmap.Width -or $embeddedBitmap.Height -ne $expectedBitmap.Height) {
+    throw "Embedded EXE icon dimensions differ from the canonical icon"
+  }
+  for ($y = 0; $y -lt $embeddedBitmap.Height; $y++) {
+    for ($x = 0; $x -lt $embeddedBitmap.Width; $x++) {
+      if ($embeddedBitmap.GetPixel($x, $y).ToArgb() -ne $expectedBitmap.GetPixel($x, $y).ToArgb()) {
+        throw "Phantom Browser.exe does not embed the canonical product icon"
+      }
+    }
+  }
+} finally {
+  $embeddedBitmap.Dispose()
+  $expectedBitmap.Dispose()
+  $embedded.Dispose()
+  $expected.Dispose()
+}
+
 $native = Get-ChildItem $nativeRoot -Recurse -Filter "better_sqlite3.node" | Select-Object -First 1
 if (-not $native) { throw "better_sqlite3.node was not unpacked" }
 

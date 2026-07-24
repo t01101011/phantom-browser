@@ -81,7 +81,7 @@ export function Settings({ onImport }: Props): JSX.Element {
       <div className="max-w-[720px] mx-auto">
         <div className="text-lg font-bold tracking-tight text-slate-100 mb-1.5">Settings</div>
         <div className="text-[13px] text-slate-500 mb-5">
-          MCP server, archives, build info. Configuration is local — MultiZen does not call any
+          MCP server, archives, build info. Configuration is local — Phantom Browser does not call any
           external API on your behalf.
         </div>
 
@@ -234,7 +234,7 @@ export function Settings({ onImport }: Props): JSX.Element {
           desc={
             info?.platform === "darwin"
               ? "Auto-install isn't available on macOS yet — we'll notify you in-app to download the new version."
-              : "MultiZen checks for updates in the background and installs them on restart."
+              : "Phantom Browser checks for updates in the background and installs them on restart."
           }
         >
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -269,7 +269,7 @@ export function Settings({ onImport }: Props): JSX.Element {
         <Row
           icon={<ShieldCheck size={16} strokeWidth={1.5} />}
           title="Anonymous usage"
-          desc="Off by default. Help gauge how many people run MultiZen."
+          desc="Off by default. Help gauge how many people run Phantom Browser."
         >
           <label className="flex items-center gap-2.5 text-[12px] text-slate-400 cursor-pointer">
             <input
@@ -290,9 +290,15 @@ export function Settings({ onImport }: Props): JSX.Element {
         </Row>
 
         <Row icon={<Sparkles size={16} strokeWidth={1.5} />} title="About" desc="">
-          <div className="mono text-[12px] text-slate-400 leading-relaxed">
-            MultiZen v{info?.appVersion ?? "0.0.0"} · {info?.platform ?? "—"} · Electron{" "}
-            {electronVersion()}
+          <div className="text-[12px] text-slate-400 leading-relaxed">
+            <div className="mono">
+              Phantom Browser v{info?.appVersion ?? "0.0.0"} · {info?.platform ?? "—"} · Electron{" "}
+              {electronVersion()}
+            </div>
+            <div className="mt-2 text-slate-500">
+              Phantom Browser is based on MultiZen, licensed under MIT. Third-party notices are
+              included in <code>THIRD_PARTY_NOTICES.txt</code> with the distribution.
+            </div>
           </div>
         </Row>
       </div>
