@@ -222,7 +222,14 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     }
 
     const restorableSession = await hasRestorableSession(browserDataDir);
-    const startupPlan = sessionStartupPlan(restorableSession);
+    // A start-page edit newer than the browser's saved tab state must win on
+    // the next launch. Otherwise session restore keeps reopening the stale tab
+    // forever and the saved profile setting appears to do nothing.
+    const startPageChanged =
+      restorableSession &&
+      Boolean(profile.startUrl) &&
+      Date.parse(profile.updatedAt) > (await latestSessionMtime(browserDataDir));
+    const startupPlan = sessionStartupPlan(restorableSession, startPageChanged);
     // Only force restore preferences when real session files exist. On a fresh
     // profile, setting restore_on_startup=1 makes Chromium create its own default
     // window in addition to the positional start URL window.
@@ -1853,6 +1860,29 @@ async function hasRestorableSession(dataDir: string): Promise<boolean> {
     // no Sessions dir yet
   }
   return existsSync(join(dataDir, "Default", "Current Session"));
+}
+
+async function latestSessionMtime(dataDir: string): Promise<number> {
+  const candidates = [
+    join(dataDir, "Default", "Sessions"),
+    join(dataDir, "Default", "Current Session"),
+  ];
+  let latest = 0;
+  for (const candidate of candidates) {
+    try {
+      const stat = await fsp.stat(candidate);
+      latest = Math.max(latest, stat.mtimeMs);
+      if (stat.isDirectory()) {
+        for (const entry of await fsp.readdir(candidate)) {
+          const entryStat = await fsp.stat(join(candidate, entry));
+          latest = Math.max(latest, entryStat.mtimeMs);
+        }
+      }
+    } catch {
+      // Candidate does not exist yet.
+    }
+  }
+  return latest;
 }
 
 async function ensureSessionRestore(dataDir: string): Promise<void> {

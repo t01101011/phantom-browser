@@ -11,9 +11,17 @@ test("first launch opens only the configured start page", () => {
 });
 
 test("returning launch restores session without adding a start page", () => {
-  assert.deepEqual(sessionStartupPlan(true), {
+  assert.deepEqual(sessionStartupPlan(true, false), {
     writeRestorePreference: true,
     restoreLastSession: true,
     openStartPage: false,
+  });
+});
+
+test("a changed start page overrides one returning launch instead of restoring the stale tab", () => {
+  assert.deepEqual(sessionStartupPlan(true, true), {
+    writeRestorePreference: false,
+    restoreLastSession: false,
+    openStartPage: true,
   });
 });
