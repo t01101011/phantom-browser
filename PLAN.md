@@ -86,8 +86,9 @@ Do not:
 - Product/package identity rebrand merged in PR #4 (`5cc1798`).
 - Profile groups, explicit multi-select bulk launch/stop, and Windows launch/session fixes merged in PR #5 (`a6d6a2c`).
 - Encrypted `.mzar` archive hardening merged in PR #6 (`6bdba3d`): explicit secret-content warning, stronger new-export passphrases, malformed archive validation, and failed-import rollback.
+- Full GUI rebrand cleanup is in **Review** at PR #7 (`847354c`): remaining user-visible copy, native dialogs, updater/MCP/extension surfaces, original app/installer/companion icon family, neutral MIT attribution, fork release target, and Windows artifact label are updated while compatibility internals remain unchanged. Local immutable install/typecheck/acceptance checks/11 focused tests/Linux AppImage build passed; native Windows run `30085822643` passed and produced artifact `phantom-browser-windows-16578a68547247a8f9202819e243418abe58e464` (237,811,460 bytes). Manual Windows visual/compatibility review remains the merge gate.
 
-1. Complete the remaining full GUI rebrand cleanup: replace user-visible MultiZen strings, logo/app/installer/companion icons, CI artifact labels, and add neutral MIT attribution. Preserve compatibility internals (`@multizen/*`, `window.multizen`, IPC/localStorage/data paths, `.mzar`/`MZAR`). Exact implementation plan: `/root/projects/phantom-research/.hermes/plans/2026-07-24_090234-full-gui-rebrand-cleanup.md`.
+1. Review PR #7's Windows artifact on a real Windows machine: icons, top bar/window title, onboarding, Settings/About attribution, update/MCP/extension copy, startup/native prompts, CI artifact naming, and existing profile/session/`.mzar` compatibility. Merge only after tk accepts.
 2. Implement extension manager improvements and per-profile/group extension assignment after GUI rebrand review passes.
 3. Benchmark 1/10/50/100 profiles for startup, memory, and disk behavior.
 4. Research native Chromium anti-detect coverage for canvas/audio/font/DOMRect. Do not ship naive JS spoofing as a substitute for native patches.
