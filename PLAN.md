@@ -81,10 +81,17 @@ Do not:
 
 ## Immediate next work
 
-1. Start Phase 1 rebrand only after preserving the verified baseline: new product name, bundle identifier, icons, updater URLs, telemetry endpoints/settings, and neutral attribution screen.
-2. Implement profile groups plus bulk launch/stop as the first local feature; add focused tests and a Windows smoke.
-3. Harden cookie import/export with explicit confirmation, redaction, encryption, and secret-safe logs.
-4. Resolve final runtime notices and optional-engine licensing before any external release.
+**Status update — 2026-07-24**
+
+- Product/package identity rebrand merged in PR #4 (`5cc1798`).
+- Profile groups, explicit multi-select bulk launch/stop, and Windows launch/session fixes merged in PR #5 (`a6d6a2c`).
+- Encrypted `.mzar` archive hardening merged in PR #6 (`6bdba3d`): explicit secret-content warning, stronger new-export passphrases, malformed archive validation, and failed-import rollback.
+
+1. Complete the remaining full GUI rebrand cleanup: replace user-visible MultiZen strings, logo/app/installer/companion icons, CI artifact labels, and add neutral MIT attribution. Preserve compatibility internals (`@multizen/*`, `window.multizen`, IPC/localStorage/data paths, `.mzar`/`MZAR`). Exact implementation plan: `/root/projects/phantom-research/.hermes/plans/2026-07-24_090234-full-gui-rebrand-cleanup.md`.
+2. Implement extension manager improvements and per-profile/group extension assignment after GUI rebrand review passes.
+3. Benchmark 1/10/50/100 profiles for startup, memory, and disk behavior.
+4. Research native Chromium anti-detect coverage for canvas/audio/font/DOMRect. Do not ship naive JS spoofing as a substitute for native patches.
+5. Resolve final runtime notices and optional-engine licensing before any external release.
 
 ## Shelved project
 
