@@ -7,6 +7,7 @@
 
 :root {
   --ph-canvas: #070a09;
+  --ph-settings-canvas: #040706;
   --ph-sidebar: #0a0e0c;
   --ph-surface-1: #0e1310;
   --ph-surface-2: #131a16;
@@ -245,9 +246,12 @@
   box-shadow: inset 0 0 0 1px var(--ph-primary), 0 0 0 2px var(--ph-focus);
 }
 .phantom-extension-catalog,
-.phantom-settings,
 .phantom-mcp-panel {
   color: var(--ph-text-primary);
+}
+.phantom-settings {
+  color: var(--ph-text-primary);
+  background: var(--ph-settings-canvas);
 }
 .phantom-operational-row {
   background: var(--ph-surface-1);

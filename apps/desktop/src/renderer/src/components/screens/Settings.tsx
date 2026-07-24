@@ -70,7 +70,7 @@ export function Settings({ onImport }: Props): JSX.Element {
 
   if (!settings) {
     return (
-      <div className="flex-1 overflow-auto p-8">
+      <div className="phantom-settings flex-1 overflow-auto p-8">
         <div className="max-w-[720px] mx-auto text-[13px] text-slate-500">Loading…</div>
       </div>
     );
