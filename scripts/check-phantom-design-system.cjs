@@ -15,6 +15,16 @@ const table = read("apps/desktop/src/renderer/src/components/profile/ProfileTabl
 const row = read("apps/desktop/src/renderer/src/components/profile/ProfileRow.tsx");
 const button = read("apps/desktop/src/renderer/src/components/atoms/Button.tsx");
 const mcp = read("apps/desktop/src/renderer/src/components/mcp/McpPanel.tsx");
+const rendererRoot = path.join(root, "apps/desktop/src/renderer/src");
+const legacyBrandPattern = /purple|violet|fuchsia|pink|168,\s*85,\s*247|192,\s*132,\s*252|#a855f7|#c084fc|#8b5cf6|#ec4899|#d8b4fe|#c4b5fd/i;
+
+function walk(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(directory, entry.name);
+    if (entry.isDirectory()) return walk(full);
+    return /\.(?:tsx|css)$/.test(entry.name) ? [full] : [];
+  });
+}
 
 for (const token of [
   "--ph-canvas: #070a09",
@@ -47,6 +57,12 @@ expect(row.includes("phantom-profile-row-selected"), "selected profile row is mi
 expect(!/purple|168,\s*85,\s*247/i.test(row), "profile row still contains purple branding");
 expect(!/purple|violet|168,\s*85,\s*247|#c084fc|#a855f7|#8b5cf6|#ec4899/i.test(mcp), "MCP panel still contains purple branding");
 expect(mcp.includes("phantom-mcp-panel"), "MCP panel is missing its design-system surface contract");
+for (const file of walk(rendererRoot)) {
+  expect(
+    !legacyBrandPattern.test(fs.readFileSync(file, "utf8")),
+    `legacy purple/pink branding remains in ${path.relative(root, file)}`,
+  );
+}
 
 if (failures.length) {
   console.error(failures.map((failure) => `FAIL: ${failure}`).join("\n"));

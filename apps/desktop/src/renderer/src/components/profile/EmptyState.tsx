@@ -26,9 +26,9 @@ export function ProfilesEmptyState({ onCreate }: Props): JSX.Element {
             width: 48,
             height: 48,
             borderRadius: 12,
-            background: "rgba(168,85,247,0.10)",
-            color: "#c084fc",
-            boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.2)",
+            background: "rgba(66,245,141,0.10)",
+            color: "#42f58d",
+            boxShadow: "inset 0 0 0 1px rgba(66,245,141,0.2)",
           }}
         >
           <Boxes size={22} strokeWidth={1.5} />

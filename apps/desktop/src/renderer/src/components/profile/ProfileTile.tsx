@@ -31,7 +31,7 @@ export interface TileData extends ProfileSummary {
 const RING_BY_STATE: Record<TileState, string> = {
   idle: "rgba(255,255,255,0.05)",
   running: "rgba(16,185,129,0.30)",
-  ai: "rgba(168,85,247,0.30)",
+  ai: "rgba(66,245,141,0.30)",
   error: "rgba(239,68,68,0.30)",
 };
 
@@ -44,7 +44,7 @@ const RING_BY_STATE: Record<TileState, string> = {
 const GLOW_BY_STATE: Record<TileState, string> = {
   idle: "0 0 0 0 rgba(0,0,0,0)",
   running: "0 0 32px rgba(16,185,129,0.18)",
-  ai: "0 0 32px rgba(168,85,247,0.18)",
+  ai: "0 0 32px rgba(66,245,141,0.18)",
   error: "0 0 32px rgba(239,68,68,0.15)",
 };
 
@@ -134,10 +134,10 @@ export function ProfileTile({
           onClick={onToggleSelect}
           className="absolute top-3 right-3 z-10 w-5 h-5 rounded-md flex items-center justify-center text-[11px] transition-colors"
           style={{
-            color: selected ? "#d8b4fe" : "#64748b",
-            background: selected ? "rgba(168,85,247,0.18)" : "rgba(15,16,22,0.82)",
+            color: selected ? "#6dffa7" : "#64748b",
+            background: selected ? "rgba(66,245,141,0.18)" : "rgba(15,16,22,0.82)",
             boxShadow: selected
-              ? "inset 0 0 0 1px rgba(168,85,247,0.45)"
+              ? "inset 0 0 0 1px rgba(66,245,141,0.45)"
               : "inset 0 0 0 1px rgba(255,255,255,0.10)",
           }}
         >
@@ -368,17 +368,17 @@ function ContextLine({ profile }: { profile: TileData }): JSX.Element | null {
       <div
         className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
         style={{
-          background: "rgba(168,85,247,0.06)",
-          boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.12)",
+          background: "rgba(66,245,141,0.06)",
+          boxShadow: "inset 0 0 0 1px rgba(66,245,141,0.12)",
         }}
       >
-        <Zap size={12} className="text-purple-400" />
-        <span className="mono text-[11px] text-purple-200 truncate flex-1">
-          <span className="text-purple-400">multizen.</span>
+        <Zap size={12} className="text-[#42f58d]" />
+        <span className="mono text-[11px] text-[#6dffa7] truncate flex-1">
+          <span className="text-[#42f58d]">multizen.</span>
           {profile.lastTool ?? "…"}
         </span>
         {profile.lastDuration && (
-          <span className="mono text-[10px] text-purple-300">{profile.lastDuration}</span>
+          <span className="mono text-[10px] text-[#6dffa7]">{profile.lastDuration}</span>
         )}
       </div>
     );

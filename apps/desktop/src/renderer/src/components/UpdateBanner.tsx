@@ -34,7 +34,7 @@ export function UpdateBanner({ suppressed }: { suppressed?: boolean }): JSX.Elem
   if (status.kind === "downloading") {
     return (
       <Bar tone="info">
-        <RefreshCw size={13} className="animate-spin text-purple-300 shrink-0" />
+        <RefreshCw size={13} className="animate-spin text-[#6dffa7] shrink-0" />
         <span>Downloading Phantom Browser {version}…</span>
         <span className="mono text-[11px] text-slate-400">{status.percent}%</span>
         <div className="flex-1" />
@@ -45,7 +45,7 @@ export function UpdateBanner({ suppressed }: { suppressed?: boolean }): JSX.Elem
   if (status.kind === "ready") {
     return (
       <Bar tone="brand">
-        <Download size={13} className="text-purple-200 shrink-0" />
+        <Download size={13} className="text-[#6dffa7] shrink-0" />
         <span>
           Phantom Browser <b className="font-semibold">{version}</b> is ready to install.
         </span>
@@ -62,7 +62,7 @@ export function UpdateBanner({ suppressed }: { suppressed?: boolean }): JSX.Elem
     // macOS-only terminal state (no in-app install possible).
     return (
       <Bar tone="brand">
-        <Download size={13} className="text-purple-200 shrink-0" />
+        <Download size={13} className="text-[#6dffa7] shrink-0" />
         <span>
           Phantom Browser <b className="font-semibold">{version}</b> is available.
         </span>
@@ -87,7 +87,7 @@ function Bar({ children, tone }: { children: ReactNode; tone: "brand" | "info" }
       style={{
         background:
           tone === "brand"
-            ? "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(168,85,247,0.14), rgba(236,72,153,0.12))"
+            ? "linear-gradient(90deg, rgba(99,102,241,0.16), rgba(66,245,141,0.14), rgba(236,72,153,0.12))"
             : "rgba(15,16,22,0.95)",
         boxShadow: "inset 0 -1px 0 0 rgba(255,255,255,0.08)",
       }}
@@ -118,7 +118,7 @@ function BannerButton({
       }
       style={
         primary
-          ? { background: "linear-gradient(90deg, #6366f1, #a855f7)" }
+          ? { background: "linear-gradient(90deg, #6366f1, #42f58d)" }
           : { boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }
       }
       {...rest}

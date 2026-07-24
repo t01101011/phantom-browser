@@ -234,7 +234,7 @@ export function NewProfileSheet({ onCancel, onCreated, onDirtyChange }: Props): 
                   type="checkbox"
                   checked={proxy.enabled}
                   onChange={(e) => setProxy((p) => ({ ...p, enabled: e.target.checked }))}
-                  className="w-3.5 h-3.5 rounded accent-purple-500"
+                  className="w-3.5 h-3.5 rounded accent-[#42f58d]"
                 />
                 Use proxy
               </label>
