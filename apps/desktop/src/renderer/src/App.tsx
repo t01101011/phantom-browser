@@ -279,6 +279,10 @@ export function App(): JSX.Element {
   }
 
   async function importProfile(passphrase: string): Promise<void> {
+    if (passphrase.length < 12) {
+      showToast("Passphrase must be at least 12 characters");
+      return;
+    }
     setModal({ kind: "none" });
     const result = await window.multizen.profiles.importArchive(passphrase);
     if (!result.ok) {
@@ -290,8 +294,8 @@ export function App(): JSX.Element {
 
   async function exportProfile(profileId: string, passphrase: string): Promise<void> {
     setModal({ kind: "none" });
-    if (passphrase.length < 8) {
-      showToast("Passphrase must be at least 8 characters");
+    if (passphrase.length < 12) {
+      showToast("Passphrase must be at least 12 characters");
       return;
     }
     const result = await window.multizen.profiles.exportArchive(profileId, passphrase);
@@ -481,10 +485,10 @@ export function App(): JSX.Element {
       <Prompt
         open={modal.kind === "import-passphrase"}
         title="Import profile archive"
-        description="Choose a .mzar file. Provide the passphrase used at export time."
-        label="Passphrase"
+        description="Choose a .mzar file. Archives contain cookies, login state, browsing data, proxy credentials, and extensions. Import only files you trust."
+        label="Archive passphrase"
         inputType="password"
-        placeholder="Passphrase"
+        placeholder="At least 12 characters"
         confirmLabel="Choose file & import"
         onSubmit={importProfile}
         onCancel={() => setModal({ kind: "none" })}
@@ -493,10 +497,10 @@ export function App(): JSX.Element {
       <Prompt
         open={modal.kind === "export-passphrase"}
         title="Export profile archive"
-        description="Choose a passphrase to encrypt the archive. You'll need it to import this profile elsewhere. Minimum 8 characters."
-        label="New passphrase"
+        description="This archive includes cookies, authenticated sessions, browsing data, proxy credentials, and extensions. Encrypt it with a unique passphrase of at least 12 characters and store it like a password backup."
+        label="New archive passphrase"
         inputType="password"
-        placeholder="At least 8 characters"
+        placeholder="At least 12 characters"
         confirmLabel="Encrypt & save…"
         onSubmit={(p) => {
           if (modal.kind === "export-passphrase") {

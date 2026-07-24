@@ -525,7 +525,7 @@ app.whenReady().then(async () => {
       const result = await dialog.showSaveDialog(mainWindow ?? undefined!, {
         title: "Export profile",
         defaultPath: `${profile.name.replace(/[^a-z0-9-_]+/gi, "_")}.mzar`,
-        filters: [{ name: "MultiZen archive", extensions: ["mzar"] }],
+        filters: [{ name: "Phantom Browser archive", extensions: ["mzar"] }],
       });
       if (result.canceled || !result.filePath) return { ok: false, reason: "cancelled" };
       // Bundle the profile's shared-store extensions so importing on another
@@ -547,7 +547,7 @@ app.whenReady().then(async () => {
     async (_e, passphrase: string): Promise<{ ok: true; id: string } | { ok: false; reason: string }> => {
       const result = await dialog.showOpenDialog(mainWindow ?? undefined!, {
         title: "Import profile",
-        filters: [{ name: "MultiZen archive", extensions: ["mzar"] }],
+        filters: [{ name: "Phantom Browser archive", extensions: ["mzar"] }],
         properties: ["openFile"],
       });
       if (result.canceled || result.filePaths.length === 0) {

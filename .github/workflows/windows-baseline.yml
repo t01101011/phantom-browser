@@ -53,8 +53,8 @@ jobs:
           }
           node scripts/check-phantom-rebrand.cjs
 
-      - name: Browser behavior unit tests
-        run: node --test --experimental-strip-types apps/desktop/src/renderer/src/lib/bulkLifecycle.test.ts apps/desktop/src/renderer/src/lib/initialProfileFingerprint.test.ts apps/desktop/src/main/sessionStartup.test.ts apps/desktop/src/main/chromiumVersion.test.ts
+      - name: Browser and archive behavior unit tests
+        run: node --test --experimental-strip-types apps/desktop/src/renderer/src/lib/bulkLifecycle.test.ts apps/desktop/src/renderer/src/lib/initialProfileFingerprint.test.ts apps/desktop/src/main/sessionStartup.test.ts apps/desktop/src/main/chromiumVersion.test.ts packages/profile-manager/scripts/archiveSecurity.test.ts
 
       - name: Build Windows unpacked app and NSIS installer
         run: yarn workspace @multizen/desktop build:win
