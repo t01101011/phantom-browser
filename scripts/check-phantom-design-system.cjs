@@ -14,6 +14,7 @@ const constellation = read("apps/desktop/src/renderer/src/components/profile/Con
 const table = read("apps/desktop/src/renderer/src/components/profile/ProfileTable.tsx");
 const row = read("apps/desktop/src/renderer/src/components/profile/ProfileRow.tsx");
 const button = read("apps/desktop/src/renderer/src/components/atoms/Button.tsx");
+const mcp = read("apps/desktop/src/renderer/src/components/mcp/McpPanel.tsx");
 
 for (const token of [
   "--ph-canvas: #070a09",
@@ -44,6 +45,8 @@ expect(table.includes("phantom-profile-table"), "profile table is missing its de
 expect(row.includes("phantom-profile-row"), "profile row is missing its design-system interaction class");
 expect(row.includes("phantom-profile-row-selected"), "selected profile row is missing the green selection treatment");
 expect(!/purple|168,\s*85,\s*247/i.test(row), "profile row still contains purple branding");
+expect(!/purple|violet|168,\s*85,\s*247|#c084fc|#a855f7|#8b5cf6|#ec4899/i.test(mcp), "MCP panel still contains purple branding");
+expect(mcp.includes("phantom-mcp-panel"), "MCP panel is missing its design-system surface contract");
 
 if (failures.length) {
   console.error(failures.map((failure) => `FAIL: ${failure}`).join("\n"));
