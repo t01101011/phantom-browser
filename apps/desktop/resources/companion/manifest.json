@@ -3,6 +3,19 @@
   "name": "Phantom Browser Companion",
   "version": "1.0.0",
   "description": "Adds an \"Add to Phantom Browser\" button on Chrome Web Store pages.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_title": "Add to Phantom Browser",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["https://chromewebstore.google.com/detail/*"],

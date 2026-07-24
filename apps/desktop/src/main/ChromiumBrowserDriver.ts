@@ -43,7 +43,7 @@ export interface ChromiumBrowserDriverOptions {
   profileManager: ProfileManager;
   chromiumBootstrap: ChromiumBootstrap;
   /**
-   * Called when the companion extension's "Add to MultiZen" button is clicked
+   * Called when the companion extension's "Add to Phantom Browser" button is clicked
    * inside a running profile. `profileId` is the profile that made the call
    * (the CDP session is profile-scoped). The host installs the extension.
    */
@@ -363,7 +363,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     }
 
     // Browser extensions: load this profile's enabled extensions plus the
-    // bundled companion (the "Add to MultiZen" injector). Same flag pair
+    // bundled companion (the "Add to Phantom Browser" injector). Same flag pair
     // CloakBrowser's own `extension_paths` emits; requires the persistent
     // user-data-dir we already use. Extensions live under the profile dir
     // (shared across engines), so we pass absolute paths.
@@ -649,7 +649,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         console.error("[multizen] CDP bootstrap failed:", e);
       });
 
-    // Wire the companion's "Add to MultiZen" channel for this profile — scoped
+    // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
     // to Web Store pages only (the host polls a DOM attribute there, never on
     // the user's normal browsing). The CDP session is profile-scoped, so any
     // signal belongs to this profileId — no cross-profile ambiguity.
@@ -1684,7 +1684,7 @@ async function ensureCftInfobarSuppressed(): Promise<void> {
     `/bin/cp '${tempPath}' '${userPlistPath}' && ` +
     `/bin/chmod 644 '${userPlistPath}' && ` +
     `/usr/sbin/chown root:wheel '${userPlistPath}'`;
-  const apple = `do shell script "${shellScript.replace(/"/g, '\\"')}" with administrator privileges with prompt "MultiZen needs a one-time admin authorization to hide the 'Chrome for Testing' warning bar."`;
+  const apple = `do shell script "${shellScript.replace(/"/g, '\\"')}" with administrator privileges with prompt "Phantom Browser needs a one-time admin authorization to hide the 'Chrome for Testing' warning bar."`;
 
   try {
     await execFileP("osascript", ["-e", apple]);

@@ -241,7 +241,7 @@ export class ChromiumBootstrap extends EventEmitter {
         throw new Error(
           `Failed to extract the browser archive — the download was likely ` +
             `corrupted or truncated. It has been cleared; please retry. If it ` +
-            `keeps failing, add MultiZen to your antivirus exclusions or switch ` +
+            `keeps failing, add Phantom Browser to your antivirus exclusions or switch ` +
             `the engine to Chrome for Testing in Settings. (${(e as Error).message})`,
         );
       }
@@ -434,7 +434,7 @@ export class ChromiumBootstrap extends EventEmitter {
       `Could not download a complete, valid Chromium archive after ${MAX_ATTEMPTS} attempts. ` +
         `Last error: ${lastError?.message ?? "unknown"}. Your network — or an antivirus / ` +
         `corporate proxy inspecting HTTPS — is likely corrupting the large download. Try a ` +
-        `different network, add MultiZen to your antivirus exclusions, or switch the engine to ` +
+        `different network, add Phantom Browser to your antivirus exclusions, or switch the engine to ` +
         `"Chrome for Testing" in Settings.`,
     );
   }
