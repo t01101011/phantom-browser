@@ -111,7 +111,7 @@ export function Settings({ onImport }: Props): JSX.Element {
                 <button
                   type="button"
                   onClick={copyMcpUrl}
-                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                  className="text-[#42f58d] hover:text-[#6dffa7] transition-colors"
                   aria-label="Copy URL"
                 >
                   {copied ? <Check size={13} /> : <Copy size={13} />}
@@ -150,7 +150,7 @@ export function Settings({ onImport }: Props): JSX.Element {
                 <button
                   type="button"
                   onClick={copyMcpToken}
-                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                  className="text-[#42f58d] hover:text-[#6dffa7] transition-colors"
                   aria-label="Copy token"
                 >
                   {tokenCopied ? <Check size={13} /> : <Copy size={13} />}
@@ -164,7 +164,7 @@ export function Settings({ onImport }: Props): JSX.Element {
               type="checkbox"
               checked={settings.mcpHttpEnabled}
               onChange={(e) => void patch({ mcpHttpEnabled: e.target.checked })}
-              className="w-3.5 h-3.5 rounded accent-purple-500"
+              className="w-3.5 h-3.5 rounded accent-[#42f58d]"
             />
             Auto-start MCP HTTP transport on app launch
           </label>
@@ -186,9 +186,9 @@ export function Settings({ onImport }: Props): JSX.Element {
                   className="text-left p-3 rounded-lg transition-colors"
                   style={{
                     boxShadow: selected
-                      ? "inset 0 0 0 1px rgba(168,85,247,0.45)"
+                      ? "inset 0 0 0 1px rgba(66,245,141,0.45)"
                       : "inset 0 0 0 1px rgba(255,255,255,0.07)",
-                    background: selected ? "rgba(168,85,247,0.08)" : "rgba(255,255,255,0.025)",
+                    background: selected ? "rgba(66,245,141,0.08)" : "rgba(255,255,255,0.025)",
                   }}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -260,7 +260,7 @@ export function Settings({ onImport }: Props): JSX.Element {
               type="checkbox"
               checked={settings.autoUpdate}
               onChange={(e) => void patch({ autoUpdate: e.target.checked })}
-              className="w-3.5 h-3.5 rounded accent-purple-500"
+              className="w-3.5 h-3.5 rounded accent-[#42f58d]"
             />
             Automatically check for updates
           </label>
@@ -276,7 +276,7 @@ export function Settings({ onImport }: Props): JSX.Element {
               type="checkbox"
               checked={settings.usageReporting}
               onChange={(e) => void patch({ usageReporting: e.target.checked })}
-              className="w-3.5 h-3.5 rounded accent-purple-500"
+              className="w-3.5 h-3.5 rounded accent-[#42f58d]"
             />
             Send an anonymous daily heartbeat
           </label>
@@ -372,9 +372,9 @@ function Row({
           width: 36,
           height: 36,
           borderRadius: 10,
-          background: "rgba(168,85,247,0.10)",
-          boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.18)",
-          color: "#c084fc",
+          background: "rgba(66,245,141,0.10)",
+          boxShadow: "inset 0 0 0 1px rgba(66,245,141,0.18)",
+          color: "#42f58d",
         }}
       >
         {icon}

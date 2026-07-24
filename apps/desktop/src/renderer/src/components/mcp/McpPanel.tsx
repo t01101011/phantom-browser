@@ -23,11 +23,11 @@ export function McpPanel({ events, profiles, mcpUrl, mcpToken }: Props): JSX.Ele
   const recent = useMemo(() => events.slice().reverse(), [events]);
 
   return (
-    <div className="flex-1 overflow-auto" style={{ padding: "24px 32px" }}>
+    <div className="phantom-mcp-panel flex-1 overflow-auto" style={{ padding: "24px 32px" }}>
       <div className="max-w-[960px] mx-auto">
         <div className="flex items-baseline gap-3 mb-1.5">
-          <div className="text-lg font-bold tracking-tight text-slate-100">MCP</div>
-          <div className="mono text-[11px] text-slate-600">·  {events.length} calls</div>
+          <div className="text-[20px] font-semibold tracking-[-0.02em] text-[#e8f0eb]">MCP</div>
+          <div className="mono text-[11px] text-[#66736b]">{events.length} calls</div>
         </div>
         <div className="text-[13px] text-slate-500 mb-5 leading-relaxed max-w-[68ch]">
           Drive your profiles from an AI agent. Point any MCP client (Claude Desktop, Cursor,
@@ -48,9 +48,9 @@ export function McpPanel({ events, profiles, mcpUrl, mcpToken }: Props): JSX.Ele
             className="text-center"
             style={{
               padding: 40,
-              borderRadius: 18,
-              background: "rgba(255,255,255,0.02)",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.05)",
+              borderRadius: 10,
+              background: "var(--ph-surface-1)",
+              boxShadow: "inset 0 0 0 1px var(--ph-border-subtle)",
             }}
           >
             <div className="text-[13px] font-semibold text-slate-100">No agent calls yet</div>
@@ -153,9 +153,9 @@ function ConnectCard({
   return (
     <div
       style={{
-        borderRadius: 18,
-        background: "rgba(255,255,255,0.025)",
-        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06), 0 24px 48px -24px rgba(0,0,0,0.5)",
+        borderRadius: 10,
+        background: "var(--ph-surface-1)",
+        boxShadow: "inset 0 0 0 1px var(--ph-border-subtle)",
         padding: 18,
       }}
     >
@@ -165,10 +165,10 @@ function ConnectCard({
           style={{
             width: 30,
             height: 30,
-            borderRadius: 9,
-            background: "rgba(168,85,247,0.12)",
-            color: "#c084fc",
-            boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.22)",
+            borderRadius: 6,
+            background: "rgba(66,245,141,0.10)",
+            color: "#42f58d",
+            boxShadow: "inset 0 0 0 1px rgba(66,245,141,0.20)",
           }}
         >
           <Plug size={15} strokeWidth={1.75} />
@@ -385,11 +385,11 @@ function CopyPromptButton({ prompt }: { prompt: string }): JSX.Element {
         borderRadius: 8,
         fontSize: 11,
         fontWeight: 600,
-        background: copied ? "rgba(16,185,129,0.14)" : "rgba(168,85,247,0.12)",
+        background: copied ? "rgba(66,217,133,0.14)" : "rgba(66,245,141,0.10)",
         boxShadow: copied
-          ? "inset 0 0 0 1px rgba(16,185,129,0.3)"
-          : "inset 0 0 0 1px rgba(168,85,247,0.24)",
-        color: copied ? "#6ee7b7" : "#c084fc",
+          ? "inset 0 0 0 1px rgba(66,217,133,0.3)"
+          : "inset 0 0 0 1px rgba(66,245,141,0.22)",
+        color: copied ? "#6dffa7" : "#42f58d",
       }}
     >
       {copied ? <Check size={12} /> : <Sparkles size={12} />}
@@ -416,14 +416,14 @@ function PageRow({
       style={{
         padding: "12px 18px",
         borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.04)",
-        background: event.status === "pending" ? "rgba(168,85,247,0.04)" : undefined,
+        background: event.status === "pending" ? "rgba(66,245,141,0.04)" : undefined,
       }}
     >
       <StatusPill status={event.status} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
           <code className="mono text-[12px] font-semibold text-slate-100">
-            <span className="text-purple-400">multizen.</span>
+            <span className="text-[#42f58d]">multizen.</span>
             {event.tool}
           </code>
           <span className="ml-auto mono text-[10px] text-slate-500">

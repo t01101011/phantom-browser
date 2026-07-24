@@ -2,15 +2,14 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../lib/cn";
 
 /**
- * MultiZen button system. Same status-pill DNA — soft tinted background +
- * saturated foreground, with subtle inner ring. The brand-gradient `primary`
- * is the only "loud" variant; everything else is calm by design.
+ * Phantom Research button system. One spectral-green primary action; all
+ * secondary variants stay quiet and semantic.
  *
  * Variants:
- *   primary     — brand gradient. The single most-important action on the screen.
+ *   primary     — flat Phantom green. The single most-important action on the screen.
  *   secondary   — neutral white-tint chip. Default for non-primary actions.
  *   ghost       — transparent until hover. For tertiary or icon-only actions.
- *   accent      — purple soft pill. Use for "launch / open / drive" actions.
+ *   accent      — muted Phantom green. Use for "launch / open / drive" actions.
  *   success     — emerald soft pill. Use for "running / connected" affordances.
  *   warning     — amber soft pill.
  *   danger      — red soft pill. Use for "wipe / delete / kill".
@@ -38,10 +37,10 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 /* tint, fg, ring (using rgb for inset shadow) */
 const VARIANT_TOKENS: Record<Variant, { bg: string; fg: string; ring: string; hoverBg: string }> = {
   primary: {
-    bg: "linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)",
-    fg: "#ffffff",
-    ring: "rgba(255, 255, 255, 0.15)",
-    hoverBg: "linear-gradient(135deg, #7273f3 0%, #b366f9 50%, #f060a3 100%)",
+    bg: "var(--ph-primary)",
+    fg: "#07110b",
+    ring: "rgba(7, 17, 11, 0.14)",
+    hoverBg: "var(--ph-primary-hover)",
   },
   secondary: {
     bg: "rgba(255, 255, 255, 0.04)",
@@ -56,10 +55,10 @@ const VARIANT_TOKENS: Record<Variant, { bg: string; fg: string; ring: string; ho
     hoverBg: "rgba(255, 255, 255, 0.04)",
   },
   accent: {
-    bg: "rgba(168, 85, 247, 0.10)",
-    fg: "#c4b5fd",
-    ring: "rgba(168, 85, 247, 0.20)",
-    hoverBg: "rgba(168, 85, 247, 0.16)",
+    bg: "rgba(66, 245, 141, 0.10)",
+    fg: "#6dffa7",
+    ring: "rgba(66, 245, 141, 0.20)",
+    hoverBg: "rgba(66, 245, 141, 0.16)",
   },
   success: {
     bg: "rgba(16, 185, 129, 0.10)",
@@ -103,7 +102,6 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   ref,
 ) {
   const t = VARIANT_TOKENS[variant];
-  const isPrimary = variant === "primary";
   return (
     <button
       ref={ref}
@@ -120,9 +118,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       style={{
         background: t.bg,
         color: t.fg,
-        boxShadow: isPrimary
-          ? `inset 0 0 0 1px ${t.ring}, 0 6px 20px -6px rgba(168, 85, 247, 0.45)`
-          : `inset 0 0 0 1px ${t.ring}`,
+        boxShadow: `inset 0 0 0 1px ${t.ring}`,
         ...style,
       }}
       {...rest}

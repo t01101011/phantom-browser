@@ -43,28 +43,19 @@ export function ProfileTable({
   onDelete,
 }: Props): JSX.Element {
   return (
-    <div
-      className="rounded-xl overflow-hidden"
-      style={{
-        background: "rgba(255,255,255,0.02)",
-        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.05)",
-      }}
-    >
+    <div className="phantom-profile-table overflow-hidden">
       {/* Header */}
       <div
         role="rowheader"
-        className="grid items-center gap-3 px-4 py-2 sticky top-0 z-10"
+        className="phantom-profile-table-header grid items-center gap-3 px-4 py-2 sticky top-0 z-10"
         style={{
           gridTemplateColumns: PROFILE_TABLE_GRID_TEMPLATE,
-          background: "rgba(10,11,15,0.92)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
         {COLUMNS.map((c, i) => (
           <div
             key={c.label || `col-${i}`}
-            className="text-[10px] font-semibold tracking-wider uppercase text-slate-600"
+            className="text-[10px] font-semibold tracking-wider uppercase text-[#66736b]"
             style={{ textAlign: c.align ?? "left" }}
           >
             {c.label}

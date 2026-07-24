@@ -10,7 +10,7 @@ interface Props {
    *  emoji is colourful, the well picks up a whisper of its hue; grey emojis
    *  stay neutral. Omit for a plain neutral well. */
   tint?: EmojiTint;
-  /** Purple treatment for AI-driven profiles. Overrides any emoji tint. */
+  /** Cool info treatment for AI-driven profiles. Overrides any emoji tint. */
   accent?: boolean;
   size?: number;
 }
@@ -20,7 +20,7 @@ interface Props {
  * the surrounding cards, just a touch more opaque, with a hairline border, a
  * soft top light-edge, and a small grounding shadow for real (not haloed)
  * depth. Colourful emojis lend the well a very quiet tint; neutral emojis and
- * initials stay monochrome. AI profiles get a purple well.
+ * initials stay monochrome. AI profiles get a info-blue well.
  */
 export function Avatar({ initials, emoji, tint, accent = false, size = 32 }: Props): JSX.Element {
   const radius = Math.round(size * 0.3);
@@ -49,7 +49,7 @@ export function Avatar({ initials, emoji, tint, accent = false, size = 32 }: Pro
 
   return (
     <div
-      style={{ ...surface, color: accent ? "#e9d5ff" : "#cbd5e1" }}
+      style={{ ...surface, color: accent ? "#b5c8e5" : "#cbd5e1" }}
       className="flex items-center justify-center font-semibold"
     >
       <span style={{ fontSize: Math.max(11, size / 2.5), lineHeight: 1 }}>{initials}</span>
@@ -75,12 +75,12 @@ function wellSurface({
   // A colourful emoji (chroma above the floor) lends its hue to the well at a
   // low, restrained saturation; grey/near-grey emojis fall back to neutral.
   const tinted = !accent && tint !== undefined && tint.chroma >= 0.12;
-  const hue = accent ? 276 : tinted ? tint.hue : 222;
+  const hue = accent ? 214 : tinted ? tint.hue : 222;
   const sat = accent ? 34 : tinted ? Math.round(10 + Math.min(tint.chroma, 0.9) * 12) : 8;
   const topL = accent ? 26 : 17;
   const botL = accent ? 17 : 12;
 
-  const border = accent ? "rgba(168,85,247,0.34)" : "rgba(255,255,255,0.07)";
+  const border = accent ? "rgba(66,245,141,0.34)" : "rgba(255,255,255,0.07)";
 
   return {
     width: size,
@@ -95,8 +95,8 @@ function wellSurface({
       `inset 0 0 0 1px ${border}`,
       // grounds the tile without a coloured halo
       "0 1px 2px rgba(0,0,0,0.35)",
-      // accent adds only the faintest purple lift, never a neon glow
-      accent ? "0 2px 10px -4px rgba(168,85,247,0.35)" : "0 0 0 0 rgba(0,0,0,0)",
+      // accent adds only the faintest cool lift, never a neon glow
+      accent ? "0 2px 10px -4px rgba(66,245,141,0.35)" : "0 0 0 0 rgba(0,0,0,0)",
     ].join(", "),
   };
 }

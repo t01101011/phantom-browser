@@ -51,7 +51,7 @@ export function ExtIcon({
   }, [catalogSrc, ext, profileId]);
 
   const src = catalogSrc ?? manifestSrc;
-  if (!src) return <Blocks size={size} className="text-purple-300 shrink-0" />;
+  if (!src) return <Blocks size={size} className="text-[#6dffa7] shrink-0" />;
   return (
     <img
       src={src}

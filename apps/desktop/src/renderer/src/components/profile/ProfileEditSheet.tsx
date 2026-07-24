@@ -238,7 +238,7 @@ export function ProfileEditSheet({ profile, onSaved }: Props): JSX.Element {
                 type="checkbox"
                 checked={form.proxyEnabled}
                 onChange={(e) => update("proxyEnabled", e.target.checked)}
-                className="w-3.5 h-3.5 rounded accent-purple-500"
+                className="w-3.5 h-3.5 rounded accent-[#42f58d]"
               />
               Use proxy
             </label>

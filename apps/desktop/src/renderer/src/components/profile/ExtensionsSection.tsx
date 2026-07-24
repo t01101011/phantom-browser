@@ -330,7 +330,7 @@ function ExtRow({
           type="checkbox"
           checked={ext.enabled}
           onChange={(e) => onToggle(e.target.checked)}
-          className="w-3.5 h-3.5 rounded accent-purple-500"
+          className="w-3.5 h-3.5 rounded accent-[#42f58d]"
         />
         on
       </label>

@@ -24,10 +24,10 @@ const FILTERS: FilterChip[] = [
 ];
 
 const DOT_COLOR: Record<TileState, string> = {
-  running: "#34d399",
-  ai: "#c084fc",
+  running: "#42d985",
+  ai: "#6d92c8",
   error: "#f87171",
-  idle: "#94a3b8",
+  idle: "#66736b",
 };
 
 interface Props {
@@ -61,7 +61,7 @@ export function Constellation({
   const [filter, setFilter] = useState<FilterChip["id"]>("all");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = usePersistedState<ViewMode>("profilesView", "grid");
+  const [viewMode, setViewMode] = usePersistedState<ViewMode>("profilesView", "list");
 
   const tileData: TileData[] = useMemo(
     () =>
@@ -115,10 +115,10 @@ export function Constellation({
   return (
     <div className="flex-1 flex flex-col min-w-0 min-h-0">
       {/* Title row */}
-      <div className="flex items-center gap-3.5 px-6 pt-4 pb-3">
-        <div className="text-lg font-bold tracking-tight text-slate-100">All profiles</div>
-        <div className="mono text-[11px] text-slate-600">
-          ·  {profiles.length} total · {counts.running + counts.ai} running
+      <div className="phantom-workspace-toolbar flex items-center gap-3.5 px-6 py-3.5">
+        <div className="text-[20px] font-semibold tracking-[-0.02em] text-[#e8f0eb]">Profiles</div>
+        <div className="mono text-[11px] text-[#66736b]">
+          {profiles.length} total · {counts.running + counts.ai} running
           {aiCount > 0 && ` · ${aiCount} driven by Claude`}
         </div>
         <div className="flex-1" />
@@ -166,7 +166,7 @@ export function Constellation({
           <button
             type="button"
             onClick={() => setSelectedIds(new Set())}
-            className="mono text-[11px] px-2 py-[7px] text-purple-300 hover:text-purple-200"
+            className="mono text-[11px] px-2 py-[7px] text-[#42f58d] hover:text-[#6dffa7]"
             title="Clear selection"
           >
             {selected.length} selected
@@ -251,12 +251,12 @@ export function Constellation({
                   onClick={() => setActiveTag(isActive ? null : t)}
                   className={cn(
                     "mz-pill mono cursor-pointer transition-colors",
-                    isActive ? "text-purple-300" : "text-slate-500 hover:text-slate-300",
+                    isActive ? "text-[#42f58d]" : "text-slate-500 hover:text-slate-300",
                   )}
                   style={{
-                    background: isActive ? "rgba(168,85,247,0.10)" : "rgba(255,255,255,0.03)",
+                    background: isActive ? "rgba(66,245,141,0.10)" : "rgba(255,255,255,0.03)",
                     boxShadow: isActive
-                      ? "inset 0 0 0 1px rgba(168,85,247,0.25)"
+                      ? "inset 0 0 0 1px rgba(66,245,141,0.22)"
                       : "inset 0 0 0 1px rgba(255,255,255,0.05)",
                   }}
                 >

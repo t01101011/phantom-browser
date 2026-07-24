@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * Brand mark — the 3D-ish cube with orange→pink→purple→blue gradient.
+ * Brand mark — the 3D-ish cube with supplied Phantom Research mark.
  * Renders the bundled PNG asset; falls back to a CSS gradient div.
  */
 export function Cube({ size = 28, glow = true, className }: Props): JSX.Element {

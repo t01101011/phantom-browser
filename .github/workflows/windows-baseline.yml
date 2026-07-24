@@ -53,6 +53,7 @@ jobs:
           }
           node scripts/check-phantom-rebrand.cjs
           node scripts/check-phantom-gui-rebrand.cjs
+          node scripts/check-phantom-design-system.cjs
 
       - name: Browser and archive behavior unit tests
         run: node --test --experimental-strip-types apps/desktop/src/renderer/src/lib/bulkLifecycle.test.ts apps/desktop/src/renderer/src/lib/initialProfileFingerprint.test.ts apps/desktop/src/main/sessionStartup.test.ts apps/desktop/src/main/chromiumVersion.test.ts packages/profile-manager/scripts/archiveSecurity.test.ts
