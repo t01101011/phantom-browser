@@ -51,6 +51,11 @@ def main() -> None:
 
     canonical = fitted_logo(1024)
     canonical.save(build / "icon.png")
+    canonical.save(
+        build / "icon.ico",
+        format="ICO",
+        sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+    )
     for size in (16, 32, 64, 128, 256, 512, 1024):
         fitted_logo(size).save(icons / f"icon-{size}.png")
 

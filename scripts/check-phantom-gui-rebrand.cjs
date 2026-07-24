@@ -131,6 +131,18 @@ for (const name of ["icon16.png", "icon48.png", "icon128.png"]) {
 const builder = read("apps/desktop/electron-builder.yml");
 expect(builder.includes("repo: phantom-browser"), "release publishing must target the fork repo");
 expect(!builder.includes("repo: multizen-browser"), "release publishing must not target upstream");
+expect(builder.includes("icon: ../../build/icon.ico"), "Windows packaging must use the generated ICO");
+expect(
+  builder.includes("signAndEditExecutable: true"),
+  "electron-builder must edit the Windows executable to embed the product icon",
+);
+expect(fs.existsSync(path.join(root, "build/icon.ico")), "generated Windows ICO is missing");
+
+const windowsSmoke = read("scripts/smoke-windows-package.ps1");
+expect(
+  windowsSmoke.includes("ExtractAssociatedIcon"),
+  "Windows package smoke must inspect the icon embedded in Phantom Browser.exe",
+);
 
 if (failures.length) {
   console.error(failures.map((failure) => `FAIL: ${failure}`).join("\n"));
