@@ -6,30 +6,33 @@ interface Props {
   totalCount: number;
   runningCount: number;
   mcpUrl: string | null;
+  platform: string | null;
   onCmdK: () => void;
   onSettings: () => void;
 }
 
-export function TopBar({ totalCount, runningCount, mcpUrl, onCmdK, onSettings }: Props): JSX.Element {
+export function TopBar({ totalCount, runningCount, mcpUrl, platform, onCmdK, onSettings }: Props): JSX.Element {
+  const leadingInset = platform === "darwin" ? 72 : 0;
+  const captionInset = platform === "win32" ? 148 : 0;
+
   return (
     <div
       className="drag-region flex items-center gap-3.5 relative flex-shrink-0"
       style={{
         height: 44,
-        padding: "0 14px",
-        background: "rgba(10,11,15,0.7)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        paddingLeft: 14 + leadingInset,
+        paddingRight: 14 + captionInset,
+        background: "#0a0b0f",
+        borderBottom: "1px solid rgba(220,255,232,0.06)",
       }}
     >
-      {/* macOS spacer for native traffic lights (we use titleBarStyle: hiddenInset) */}
-      <div style={{ width: 60 }} className="no-drag" aria-hidden />
-
       {/* Brand — non-interactive decoration: pointer-events:none so the label
           isn't selectable and pointer events fall through to the drag region. */}
-      <div className="flex items-center gap-2 ml-2 pointer-events-none">
-        <Cube size={20} />
-        <span className="font-bold text-[13px] tracking-tight text-slate-100">Phantom Browser</span>
+      <div className="flex items-center gap-2 pointer-events-none min-w-[154px]">
+        <Cube size={22} />
+        <span className="font-semibold text-[13px] leading-none tracking-[-0.01em] text-[#e8f0eb] whitespace-nowrap">
+          Phantom Browser
+        </span>
       </div>
 
       {/* Search trigger — center, opens command palette */}
@@ -41,9 +44,9 @@ export function TopBar({ totalCount, runningCount, mcpUrl, onCmdK, onSettings }:
           maxWidth: 540,
           margin: "0 auto",
           padding: "6px 12px",
-          borderRadius: 10,
-          background: "rgba(255,255,255,0.03)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+          borderRadius: 6,
+          background: "rgba(220,255,232,0.025)",
+          boxShadow: "inset 0 0 0 1px rgba(220,255,232,0.07)",
         }}
       >
         <Search size={14} className="text-slate-500" />

@@ -66,6 +66,44 @@ expect(
 
 const cube = read("apps/desktop/src/renderer/src/components/atoms/Cube.tsx");
 expect(cube.includes('alt="Phantom Browser"'), "renderer logo alt text must use Phantom Browser");
+expect(
+  fs.existsSync(path.join(root, "assets/brand/phantom-logo-source.png")),
+  "canonical supplied Phantom Browser logo source must be tracked",
+);
+
+const iconGenerator = read("scripts/generate-phantom-icons.py");
+expect(
+  iconGenerator.includes('"assets" / "brand" / "phantom-logo-source.png"'),
+  "icon family must derive from the canonical supplied logo source",
+);
+
+const mainWindow = read("apps/desktop/src/main/index.ts");
+expect(
+  mainWindow.includes('titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden"'),
+  "Windows/Linux must use a compact hidden titlebar while macOS keeps hiddenInset traffic lights",
+);
+expect(
+  mainWindow.includes('titleBarOverlay: process.platform === "win32"'),
+  "Windows must declare a native titlebar overlay for caption controls",
+);
+
+const topBar = read("apps/desktop/src/renderer/src/components/screens/TopBar.tsx");
+expect(
+  topBar.includes('platform: string | null;'),
+  "TopBar must receive the runtime platform before applying titlebar spacing",
+);
+expect(
+  topBar.includes('platform === "darwin" ? 72 : 0'),
+  "macOS traffic-light spacing must not offset the Windows brand",
+);
+expect(
+  topBar.includes('platform === "win32" ? 148 : 0'),
+  "Windows toolbar content must reserve room for native caption controls",
+);
+expect(
+  !topBar.includes('<div style={{ width: 60 }}'),
+  "TopBar must not retain the unconditional spacer that misaligns Windows branding",
+);
 
 const companion = JSON.parse(
   read("apps/desktop/resources/companion/manifest.json"),

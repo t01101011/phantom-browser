@@ -30,7 +30,7 @@ expect(files.updater.includes("t01101011/phantom-browser/releases"), "updater mu
 expect(!files.updater.includes("multizenteam/multizen-browser"), "updater must not use the upstream release feed");
 expect(!files.telemetry.includes("getmultizen.com"), "telemetry must not target the upstream endpoint");
 expect(files.html.includes("<title>Phantom Browser</title>"), "renderer title must use Phantom Browser");
-expect(files.topBar.includes(">Phantom Browser</span>"), "top bar must use Phantom Browser");
+expect(files.topBar.includes("Phantom Browser"), "top bar must use Phantom Browser");
 expect(files.companion.includes('"name": "Phantom Browser Companion"'), "companion extension must use Phantom Browser");
 
 if (failures.length) {

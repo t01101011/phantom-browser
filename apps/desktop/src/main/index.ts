@@ -82,7 +82,14 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    titleBarStyle: "hiddenInset",
+    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
+    titleBarOverlay: process.platform === "win32"
+      ? {
+          color: "#0a0b0f",
+          symbolColor: "#a2afa7",
+          height: 44,
+        }
+      : false,
     backgroundColor: "#0a0b0f",
     icon: iconPath ?? undefined,
     webPreferences: {

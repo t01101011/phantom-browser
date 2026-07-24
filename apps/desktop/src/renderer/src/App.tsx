@@ -353,6 +353,7 @@ export function App(): JSX.Element {
         totalCount={profiles.length}
         runningCount={runningCount}
         mcpUrl={info?.mcpHttpUrl ?? null}
+        platform={info?.platform ?? null}
         onCmdK={() => setPaletteOpen(true)}
         onSettings={() => setSection("settings")}
       />
