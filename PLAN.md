@@ -87,11 +87,13 @@ Do not:
 - Profile groups, explicit multi-select bulk launch/stop, and Windows launch/session fixes merged in PR #5 (`a6d6a2c`).
 - Encrypted `.mzar` archive hardening merged in PR #6 (`6bdba3d`): explicit secret-content warning, stronger new-export passphrases, malformed archive validation, and failed-import rollback.
 - Full GUI rebrand cleanup **merged** in PR #7 (`212effd`) after tk acceptance: remaining user-visible copy, native dialogs, updater/MCP/extension surfaces, neutral MIT attribution, fork release target, and Windows artifact label are updated while compatibility internals remain unchanged. The Windows shell now uses one compact 44px custom titlebar with native caption controls, platform-aware insets, and corrected Phantom Browser brand alignment. tk's supplied transparent logo is the canonical source for app/installer/renderer/companion icons. Windows EXE icon embedding is enforced with multi-size `build/icon.ico`, `signAndEditExecutable: true`, and a native smoke that extracts the icon from `Phantom Browser.exe` and pixel-compares it with the canonical ICO. Final native Windows run `30090079128` passed; accepted artifact: `phantom-browser-windows-ae19000ec73dab1fbfce261c72521361a4c561da` (221,329,104 bytes).
+- Phantom Research design-system slice **merged** in PR #8 (`2dd2bb4`) after tk acceptance: linted `DESIGN.md`, near-black/spectral-green tokens, typography/surface rules, app-shell navigation, title/search bar, flat primary action, profile toolbar/table/default view/row-selection treatment, and renderer-wide removal of legacy purple/pink accents. CI recursively scans renderer TSX/CSS and blocks regressions. Final native Windows run `30093778155` passed; accepted artifact: `phantom-browser-windows-a28e92374d38cc8000f3c33d988ccbed928fae84`.
 
-1. Implement extension manager improvements and per-profile/group extension assignment.
-2. Benchmark 1/10/50/100 profiles for startup, memory, and disk behavior.
-3. Research native Chromium anti-detect coverage for canvas/audio/font/DOMRect. Do not ship naive JS spoofing as a substitute for native patches.
-4. Resolve final runtime notices and optional-engine licensing before any external release.
+1. Continue the design-system rollout to profile grid/detail/create flows, proxy, extensions, MCP, settings, onboarding, dialogs, loading/empty/error states, and motion.
+2. Implement extension manager improvements and per-profile/group extension assignment.
+3. Benchmark 1/10/50/100 profiles for startup, memory, and disk behavior.
+4. Research native Chromium anti-detect coverage for canvas/audio/font/DOMRect. Do not ship naive JS spoofing as a substitute for native patches.
+5. Resolve final runtime notices and optional-engine licensing before any external release.
 
 ## Shelved project
 
