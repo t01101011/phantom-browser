@@ -5,6 +5,7 @@ import { sessionStartupPlan } from "./sessionStartup.ts";
 test("first launch opens only the configured start page", () => {
   assert.deepEqual(sessionStartupPlan(false), {
     writeRestorePreference: false,
+    writeStartPagePreference: false,
     restoreLastSession: false,
     openStartPage: true,
   });
@@ -13,6 +14,7 @@ test("first launch opens only the configured start page", () => {
 test("returning launch restores session without adding a start page", () => {
   assert.deepEqual(sessionStartupPlan(true, false), {
     writeRestorePreference: true,
+    writeStartPagePreference: false,
     restoreLastSession: true,
     openStartPage: false,
   });
@@ -21,6 +23,7 @@ test("returning launch restores session without adding a start page", () => {
 test("a changed start page overrides one returning launch instead of restoring the stale tab", () => {
   assert.deepEqual(sessionStartupPlan(true, true), {
     writeRestorePreference: false,
+    writeStartPagePreference: true,
     restoreLastSession: false,
     openStartPage: true,
   });

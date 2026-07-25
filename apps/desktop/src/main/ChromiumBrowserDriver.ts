@@ -21,7 +21,7 @@ import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
-import { sanitizeStartUrl } from "./startPage";
+import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
 import { sessionStartupPlan } from "./sessionStartup";
 import { parseChromiumVersion } from "./chromiumVersion";
 
@@ -222,13 +222,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     }
 
     const restorableSession = await hasRestorableSession(browserDataDir);
-    // A start-page edit newer than the browser's saved tab state must win on
-    // the next launch. Otherwise session restore keeps reopening the stale tab
-    // forever and the saved profile setting appears to do nothing.
-    const startPageChanged =
-      restorableSession &&
-      Boolean(profile.startUrl) &&
-      Date.parse(profile.updatedAt) > (await latestSessionMtime(browserDataDir));
+    const startPageMarker = join(browserDataDir, ".phantom-last-start-url");
+    const lastAppliedStartUrl = await fsp.readFile(startPageMarker, "utf8").catch(() => undefined);
+    // Compare explicit values, not timestamps. Profile autosave updates
+    // `updatedAt` for unrelated fields and Chromium may touch session files
+    // during shutdown, making mtime ordering inherently racy on Windows.
+    const startPageChanged = shouldApplyStartUrl(profile.startUrl, lastAppliedStartUrl);
     const startupPlan = sessionStartupPlan(restorableSession, startPageChanged);
     // Only force restore preferences when real session files exist. On a fresh
     // profile, setting restore_on_startup=1 makes Chromium create its own default
@@ -236,6 +235,11 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     if (startupPlan.writeRestorePreference) {
       await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
         console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
+      });
+    }
+    if (startupPlan.writeStartPagePreference) {
+      await disableSessionRestore(browserDataDir).catch((e: unknown) => {
+        console.warn("[multizen] failed to disable stale session restore:", (e as Error).message);
       });
     }
 
@@ -460,6 +464,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // launch() resolves, so an MCP navigate/extract right after launch can't
     // race a not-yet-ready CDP endpoint.
     await waitForCdpSessionReady(port, session, 15000);
+    if (startupPlan.openStartPage && profile.startUrl) {
+      await fsp.writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8").catch(() => {});
+    }
 
     // Apply per-target emulation: timezone, locale, Sec-CH-UA via
     // userAgentMetadata (works on stock Chromium — no patches needed!),
@@ -1862,29 +1869,6 @@ async function hasRestorableSession(dataDir: string): Promise<boolean> {
   return existsSync(join(dataDir, "Default", "Current Session"));
 }
 
-async function latestSessionMtime(dataDir: string): Promise<number> {
-  const candidates = [
-    join(dataDir, "Default", "Sessions"),
-    join(dataDir, "Default", "Current Session"),
-  ];
-  let latest = 0;
-  for (const candidate of candidates) {
-    try {
-      const stat = await fsp.stat(candidate);
-      latest = Math.max(latest, stat.mtimeMs);
-      if (stat.isDirectory()) {
-        for (const entry of await fsp.readdir(candidate)) {
-          const entryStat = await fsp.stat(join(candidate, entry));
-          latest = Math.max(latest, entryStat.mtimeMs);
-        }
-      }
-    } catch {
-      // Candidate does not exist yet.
-    }
-  }
-  return latest;
-}
-
 async function ensureSessionRestore(dataDir: string): Promise<void> {
   const prefsPath = join(dataDir, "Default", "Preferences");
   let prefs: Record<string, unknown> = {};
@@ -1917,6 +1901,25 @@ async function ensureSessionRestore(dataDir: string): Promise<void> {
 
   await fsp.mkdir(join(dataDir, "Default"), { recursive: true });
   // Atomic-ish write: write to .tmp then rename.
+  const tmpPath = `${prefsPath}.multizen.tmp`;
+  await fsp.writeFile(tmpPath, JSON.stringify(prefs));
+  await fsp.rename(tmpPath, prefsPath);
+}
+
+async function disableSessionRestore(dataDir: string): Promise<void> {
+  const prefsPath = join(dataDir, "Default", "Preferences");
+  let prefs: Record<string, unknown> = {};
+  try {
+    prefs = JSON.parse(await fsp.readFile(prefsPath, "utf8")) as Record<string, unknown>;
+  } catch {
+    // Missing/malformed preferences: Chromium will recreate them.
+  }
+  const session = (prefs.session as Record<string, unknown>) ?? {};
+  // 5 = open the New Tab page. The positional URL then becomes the only
+  // explicit startup navigation; stale `1` would restore the old DDG tab.
+  session.restore_on_startup = 5;
+  prefs.session = session;
+  await fsp.mkdir(join(dataDir, "Default"), { recursive: true });
   const tmpPath = `${prefsPath}.multizen.tmp`;
   await fsp.writeFile(tmpPath, JSON.stringify(prefs));
   await fsp.rename(tmpPath, prefsPath);

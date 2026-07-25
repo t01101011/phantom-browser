@@ -21,8 +21,17 @@ export const DEFAULT_START_URL = "https://duckduckgo.com/";
  * treats any leading-dash token as a switch regardless of argv position.
  */
 export function sanitizeStartUrl(raw?: string): string {
+  return normalizeExplicitStartUrl(raw) ?? DEFAULT_START_URL;
+}
+
+export function shouldApplyStartUrl(raw: string | undefined, lastApplied: string | undefined): boolean {
+  const normalized = normalizeExplicitStartUrl(raw);
+  return normalized !== null && normalized !== lastApplied;
+}
+
+function normalizeExplicitStartUrl(raw?: string): string | null {
   const v = (raw ?? "").trim();
-  if (!v || v.startsWith("-")) return DEFAULT_START_URL;
+  if (!v || v.startsWith("-")) return null;
 
   const candidates = /^[a-z][a-z\d+.-]*:/i.test(v) ? [v] : [`https://${v}`];
   for (const candidate of candidates) {
@@ -36,8 +45,8 @@ export function sanitizeStartUrl(raw?: string): string {
       }
       if (u.protocol === "about:" && candidate === v) return v;
     } catch {
-      // Try the next candidate, then fall back to the app default.
+      // Try the next candidate, then reject the explicit value.
     }
   }
-  return DEFAULT_START_URL;
+  return null;
 }
