@@ -30,7 +30,7 @@ This audit distinguishes three evidence classes:
 2. **Upstream wrapper evidence** — public CloakBrowser README/tests/config describing intended binary behavior.
 3. **Engine patch evidence** — an inspectable, pinned Chromium source diff proving implementation inside Blink/V8/net/Chromium.
 
-The first two are present. The third is not vendored or pinned in Phantom Browser. Upstream's repository is MIT-licensed, but the checked tree is primarily wrappers, tests, download logic, and release metadata; the custom Chromium patchset is consumed as prebuilt release artifacts. Upstream marketing statements are therefore useful provenance, not independent proof of every native surface.
+The first two are present. The third is not vendored or pinned in Phantom Browser. Upstream's **wrapper repository** is MIT-licensed, but CloakHQ explicitly states that the compiled Chromium binary, build configuration, and C++ patches are proprietary and not publicly available (CloakBrowser `BINARY-LICENSE.md` v1.3; maintainer response in Discussion #101). The checked public tree is primarily wrappers, tests, download logic, and release metadata; the custom Chromium patchset is consumed as a prebuilt opaque artifact. Upstream marketing statements are therefore useful provenance, not independent proof of every native surface.
 
 ## Runtime and provenance
 
@@ -43,7 +43,7 @@ The first two are present. The third is not vendored or pinned in Phantom Browse
 | Reproducibility | First compatible release is chosen newest-to-oldest; no allowlisted tag, patch commit, or archive digest lives in repo. | Gap |
 | Current-release access | Current Pro tags expose checksum/signature assets but platform archives are license-gated; downloader skips them and falls back to older public v146/v145 assets. | Material drift |
 | Patch ownership | No Chromium source tree or patch series is tracked by Phantom. | Upstream-dependent |
-| License | Upstream repository `LICENSE` is MIT; Phantom app is MIT. Binary/service terms still need release counsel because current builds are distributed through upstream's license-gated channel. | Legal gate remains |
+| License | Phantom and CloakBrowser wrapper source are MIT. CloakBrowser's compiled binary/build config/patches are proprietary under `BINARY-LICENSE.md`; redistribution, repackaging, sublicensing, and some product/SaaS embedding require separate rights. | Legal gate remains |
 
 ## Surface coverage matrix
 
@@ -77,6 +77,15 @@ Legend:
 | HTTP/2 SETTINGS / HTTP/3 | No adapter control or owned patch. README lists HTTP/2 fingerprinting as future work (`README.md:222-227`). | Stock engine behavior. | Uncovered as configurable persona surface. |
 | CDP automation traces | Phantom avoids risky `Runtime.enable`/`Network.enable` on CloakBrowser through the CDP safety layer (`packages/cdp-driver/src/CdpSession.ts:47-51,399-403`). | Normal CDP behavior. | Good integration hardening; final stealth still depends on upstream engine. |
 
+## Network and geo coherence
+
+- The profile proxy is routed through a localhost SOCKS5 bridge and Chromium receives hostnames for upstream resolution (`ChromiumBrowserDriver.ts:323-333`; `apps/desktop/src/main/socks5Bridge.ts:96-106,141-159,214-271`). The bridge pipes origin TLS bytes rather than terminating origin TLS, so page TLS/H2 behavior remains that of the selected browser binary.
+- DoH, async DNS, prefetch, prediction, and background networking are disabled with launch flags (`ChromiumBrowserDriver.ts:344-373`). This is mitigation, not proof of a leak-free native resolver; the source itself records a residual custom-resolver patch boundary (`:350-363`).
+- Launch-time proxy geo probing automatically updates timezone and optional coordinates, but **does not automatically reconcile locale or languages** (`ChromiumBrowserDriver.ts:175-193`). Therefore README's claim that proxy launch auto-aligns timezone, locale, and geolocation is too broad. Locale matching currently requires a separate UI action.
+- If proxy geo probing fails, launch continues (`ChromiumBrowserDriver.ts:194-199`). That can leave timezone/geolocation/persona coherence unresolved rather than failing closed.
+- CFT has no geolocation override in the audited launch path. CloakBrowser receives `--fingerprint-location` only when the probe returns coordinates (`ChromiumBrowserDriver.ts:305-310`).
+- No first-party runtime suite proves authenticated HTTP/SOCKS routing, DNS/DoH leakage, WebRTC ICE/STUN/TURN behavior, TLS/JA3/JA4, HTTP/2 SETTINGS, or HTTP/3/QUIC coherence. The current classification is implementation evidence, not packet-level proof.
+
 ## Material inconsistencies found
 
 ### 1. README overstates the default runtime
@@ -101,6 +110,14 @@ The bootstrap assumes public per-platform GitHub assets (`ChromiumBootstrap.ts:8
 
 Upstream documents Ed25519 verification of signed checksum manifests. Phantom only parses a plaintext SHA-256 and ignores `SHA256SUMS.sig`. A compromised release account/CDN path could replace both archive and checksum. Pinning a digest helps reproducibility; verifying a pinned publisher key adds authenticity.
 
+### 6. Wrapper license is not engine-source availability
+
+`README.md:120,189` says the patched engine is open source. Primary upstream evidence says otherwise: `LICENSE` covers the Python/JavaScript wrapper, while `BINARY-LICENSE.md` says CloakHQ's build configuration, patches, compiled releases, and distributed binary are proprietary. The maintainer states in Discussion #101 that the C++ patches are not publicly available. Product copy must not conflate an MIT wrapper with an open-source patched Chromium engine.
+
+### 7. Proxy locale claim exceeds implementation
+
+`README.md:118` claims automatic proxy alignment for timezone, locale, and geolocation. The launch flow changes timezone and passes coordinates when available, but leaves `fp.locale` and `fp.languages` unchanged (`ChromiumBrowserDriver.ts:175-193`). A profile can therefore launch with a proxy-country timezone and an unrelated Accept-Language/ICU persona unless the user separately invokes locale matching.
+
 ## Recommendation
 
 ### Near-term: keep CloakBrowser as an explicit adapter, but make it reproducible
@@ -112,6 +129,8 @@ Upstream documents Ed25519 verification of signed checksum manifests. Phantom on
 5. Correct README/runtime copy: CFT is baseline; native coverage exists only when the opt-in CloakBrowser engine is installed and selected.
 6. Add launch-contract tests that assert every intended `FingerprintConfig` field is either applied natively, applied through an explicitly weaker fallback, or reported unsupported.
 7. Add browser-level probes for Canvas, Audio, WebGL, UA-CH high entropy, screen/availScreen/DPR, ICU locale, WebRTC, geolocation, DNS, and network fingerprints. A stored field or launch flag is not proof that the page observes a coherent value.
+8. Make proxy-geo failure and locale mismatch visible before launch; either fail closed for stealth profiles or require explicit acceptance of degraded coherence.
+9. Resolve binary/OEM/SaaS rights before presenting CloakBrowser as a distributable Phantom engine. Direct end-user download is not the same grant as redistribution or embedding.
 
 ### Strategic fork decision
 
@@ -130,4 +149,5 @@ If those are mandatory, Phantom needs an owned Chromium patchset and reproducibl
 - Inspected Phantom Browser branch/status and source paths listed above.
 - Cloned upstream `CloakHQ/CloakBrowser` at `a5f2c33ff9aa27cabd93871d714ee1469fb8fcc5` (`v0.5.2`, 2026-07-25) for wrapper/config/test and license inspection.
 - Queried current upstream GitHub release metadata and compared public platform assets with Pro/current tags.
+- Verified upstream's MIT wrapper / proprietary binary boundary against `BINARY-LICENSE.md` v1.3 and the CloakHQ maintainer's Discussion #101 response.
 - This was a source/provenance audit only. No anti-bot benchmark was run, and no score is claimed.
