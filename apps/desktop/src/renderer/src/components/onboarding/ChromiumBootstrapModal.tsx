@@ -27,15 +27,10 @@ export function ChromiumBootstrapModal(): JSX.Element | null {
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center"
-      style={{ background: "rgba(5,6,10,0.7)", backdropFilter: "blur(12px)" }}
+      className="phantom-modal-backdrop fixed inset-0 z-[70] flex items-center justify-center"
     >
       <div
-        className="rounded-2xl p-6 w-full max-w-md mx-6"
-        style={{
-          background: "rgba(15,16,22,0.95)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10), 0 30px 80px rgba(0,0,0,0.6)",
-        }}
+        className="phantom-bootstrap p-6 w-full max-w-md mx-6"
       >
         <div className="flex items-center gap-3 mb-4">
           <Cube size={36} glow={false} />
@@ -125,15 +120,11 @@ function Body({ status }: { status: ChromiumStatus }): JSX.Element {
     return (
       <>
         <div
-          className="relative h-2 rounded-full overflow-hidden mb-3"
-          style={{ background: "rgba(255,255,255,0.06)" }}
+          className="phantom-progress-track relative h-2 rounded-full overflow-hidden mb-3"
         >
           <div
-            className="absolute inset-y-0 left-0 transition-[width] duration-200"
-            style={{
-              width: `${pct}%`,
-              background: "linear-gradient(90deg, #6366f1, #42f58d, #6dffa7)",
-            }}
+            className="phantom-progress-value absolute inset-y-0 left-0 transition-[width] duration-200"
+            style={{ width: `${pct}%` }}
           />
         </div>
         <div className="flex items-center justify-between text-[11px] mono text-slate-500">

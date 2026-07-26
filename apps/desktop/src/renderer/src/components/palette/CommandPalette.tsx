@@ -149,10 +149,8 @@ export function CommandPalette({ open, profiles, onClose, onAction }: Props): JS
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[80px]"
+      className="phantom-dialog-backdrop fixed inset-0 z-50 flex items-start justify-center pt-[80px]"
       style={{
-        background: "rgba(5,6,10,0.55)",
-        backdropFilter: "blur(8px)",
         animation: "mz-fade-in 120ms ease-out",
       }}
       onMouseDown={(e) => {
@@ -160,21 +158,16 @@ export function CommandPalette({ open, profiles, onClose, onAction }: Props): JS
       }}
     >
       <div
+        className="phantom-command-palette phantom-dialog"
         style={{
           width: 600,
-          borderRadius: 16,
-          background: "rgba(15,16,22,0.92)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10), 0 30px 80px rgba(0,0,0,0.6)",
-          backdropFilter: "blur(24px)",
-          overflow: "hidden",
           animation: "mz-slide-up 140ms cubic-bezier(0.2,0.8,0.2,1)",
         }}
         onKeyDown={handleKey}
       >
         {/* Input */}
         <div
-          className="flex items-center gap-3 px-[18px] py-3.5"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          className="phantom-command-palette-header flex items-center gap-3 px-[18px] py-3.5 border-b"
         >
           <Command size={16} className="text-[#42f58d]" strokeWidth={1.5} />
           <input
@@ -249,8 +242,7 @@ export function CommandPalette({ open, profiles, onClose, onAction }: Props): JS
 
         {/* Footer */}
         <div
-          className="flex items-center gap-3 px-[18px] py-2 text-[11px] text-slate-500"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+          className="phantom-command-palette-footer flex items-center gap-3 px-[18px] py-2 text-[11px] text-slate-500 border-t"
         >
           <span className="flex items-center gap-1.5">
             <Kbd>↑</Kbd>

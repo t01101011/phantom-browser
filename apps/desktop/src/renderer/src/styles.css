@@ -7,6 +7,7 @@
 
 :root {
   --ph-canvas: #070a09;
+  --ph-settings-canvas: #040706;
   --ph-sidebar: #0a0e0c;
   --ph-surface-1: #0e1310;
   --ph-surface-2: #131a16;
@@ -200,6 +201,118 @@
 .phantom-profile-row-selected {
   background: rgba(66, 245, 141, 0.075);
   box-shadow: inset 2px 0 0 var(--ph-primary);
+}
+
+/* Phase 4A — shared contracts for operational screens. Keep these surfaces
+   flat, compact, and token-driven; components provide layout, not new palettes. */
+.phantom-profile-sheet {
+  background: var(--ph-surface-1);
+  border-right: 1px solid var(--ph-border-subtle);
+}
+.phantom-profile-sheet-item {
+  color: var(--ph-text-muted);
+  border-radius: 6px;
+}
+.phantom-profile-sheet-item:hover {
+  color: var(--ph-text-secondary);
+  background: var(--ph-surface-2);
+}
+.phantom-profile-sheet-item-active {
+  color: var(--ph-primary);
+  background: var(--ph-primary-muted);
+  box-shadow: inset 2px 0 0 var(--ph-primary);
+}
+.phantom-profile-form {
+  color: var(--ph-text-primary);
+}
+.phantom-field-label {
+  color: var(--ph-text-muted);
+}
+.phantom-control {
+  color: var(--ph-text-primary);
+  background: var(--ph-surface-2);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--ph-border);
+  transition: background 120ms ease-out, box-shadow 120ms ease-out;
+}
+.phantom-control::placeholder {
+  color: var(--ph-text-disabled);
+}
+.phantom-control:hover {
+  background: var(--ph-surface-elevated);
+}
+.phantom-control:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--ph-primary), 0 0 0 2px var(--ph-focus);
+}
+.phantom-extension-catalog,
+.phantom-mcp-panel {
+  color: var(--ph-text-primary);
+}
+.phantom-settings {
+  color: var(--ph-text-primary);
+  background: var(--ph-settings-canvas);
+}
+.phantom-operational-row {
+  background: var(--ph-surface-1);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--ph-border-subtle);
+}
+.phantom-modal-backdrop,
+.phantom-dialog-backdrop {
+  background: rgba(3, 6, 4, 0.78);
+}
+.phantom-modal,
+.phantom-dialog,
+.phantom-bootstrap {
+  background: var(--ph-surface-elevated);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ph-border), 0 24px 64px rgba(0, 0, 0, 0.56);
+}
+.phantom-modal-header,
+.phantom-modal-footer {
+  border-color: var(--ph-border-subtle);
+}
+.phantom-onboarding {
+  background: var(--ph-canvas);
+}
+.phantom-onboarding-control {
+  border-radius: 6px;
+}
+.phantom-progress-track {
+  background: var(--ph-surface-2);
+}
+.phantom-progress-value {
+  background: var(--ph-primary);
+}
+.phantom-activity-drawer {
+  background: var(--ph-surface-1);
+  border-top: 1px solid var(--ph-border-subtle);
+}
+.phantom-command-palette {
+  overflow: hidden;
+}
+.phantom-command-palette-header,
+.phantom-command-palette-footer {
+  border-color: var(--ph-border-subtle);
+}
+.phantom-update-banner {
+  background: var(--ph-surface-2);
+  box-shadow: inset 0 -1px 0 var(--ph-border-subtle);
+}
+.phantom-update-banner-brand {
+  background: var(--ph-primary-muted);
+}
+.phantom-empty-state {
+  max-width: 420px;
+  padding: 32px;
+  background: var(--ph-surface-1);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ph-border-subtle);
+}
+.phantom-fingerprint-form,
+.phantom-proxy-tester {
+  color: var(--ph-text-primary);
 }
 
 /* Legacy classes kept until call sites migrate to <Button> — same look as

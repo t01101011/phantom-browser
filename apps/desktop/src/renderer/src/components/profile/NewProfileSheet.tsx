@@ -170,7 +170,7 @@ export function NewProfileSheet({ onCancel, onCreated, onDirtyChange }: Props): 
   }
 
   return (
-    <div className="flex flex-col" style={{ height: SHEET_HEIGHT }} onKeyDown={onKeyDown}>
+    <div className="phantom-profile-form flex flex-col" style={{ height: SHEET_HEIGHT }} onKeyDown={onKeyDown}>
       <div className="flex flex-1 min-h-0">
         <SectionRail
           section={section}
@@ -213,11 +213,8 @@ export function NewProfileSheet({ onCancel, onCreated, onDirtyChange }: Props): 
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional — what this profile is for"
                   rows={3}
-                  className="w-full px-2.5 py-2 rounded-lg bg-white/[0.03] text-[12px] text-slate-200 placeholder:text-slate-600 outline-none focus:bg-white/[0.05] transition-colors resize-none"
-                  style={{
-                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
-                    fontFamily: "var(--font-sans)",
-                  }}
+                  className="phantom-control w-full px-2.5 py-2 text-[12px] outline-none resize-none"
+                  style={{ fontFamily: "var(--font-sans)" }}
                 />
               </Field>
             </div>
@@ -247,8 +244,7 @@ export function NewProfileSheet({ onCancel, onCreated, onDirtyChange }: Props): 
                         onChange={(e) =>
                           setProxy((p) => ({ ...p, type: e.target.value as "http" | "socks5" }))
                         }
-                        className="w-full px-2.5 h-9 rounded-lg bg-white/[0.03] text-[12px] text-slate-200 outline-none"
-                        style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+                        className="phantom-control w-full px-2.5 h-9 text-[12px] outline-none"
                       >
                         <option value="http">HTTP</option>
                         <option value="socks5">SOCKS5</option>

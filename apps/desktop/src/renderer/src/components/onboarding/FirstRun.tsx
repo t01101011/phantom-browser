@@ -49,9 +49,8 @@ export function FirstRun({ onCreate }: Props): JSX.Element {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      className="phantom-onboarding fixed inset-0 z-50 flex flex-col items-center justify-center"
       style={{
-        background: "#0a0b0f",
         padding: 48,
         overflow: "hidden",
       }}
@@ -122,8 +121,8 @@ export function FirstRun({ onCreate }: Props): JSX.Element {
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="btn-brand text-[13px] mt-2"
-              style={{ padding: "10px 16px", borderRadius: 11 }}
+              className="btn-brand phantom-onboarding-control text-[13px] mt-2"
+              style={{ padding: "10px 16px" }}
             >
               Continue
             </button>
@@ -150,16 +149,16 @@ export function FirstRun({ onCreate }: Props): JSX.Element {
               <button
                 type="button"
                 onClick={() => chooseTelemetry(true)}
-                className="btn-brand text-[13px]"
-                style={{ padding: "10px 16px", borderRadius: 11 }}
+                className="btn-brand phantom-onboarding-control text-[13px]"
+                style={{ padding: "10px 16px" }}
               >
                 Enable
               </button>
               <button
                 type="button"
                 onClick={() => chooseTelemetry(false)}
-                className="btn-ghost text-[13px]"
-                style={{ padding: "10px 16px", borderRadius: 11 }}
+                className="btn-ghost phantom-onboarding-control text-[13px]"
+                style={{ padding: "10px 16px" }}
               >
                 Not now
               </button>
@@ -191,16 +190,15 @@ export function FirstRun({ onCreate }: Props): JSX.Element {
                   if (e.key === "Enter" && !busy) void submit();
                 }}
                 placeholder={DEFAULT_NAME}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] text-[14px] text-slate-100 placeholder:text-slate-600 outline-none focus:bg-white/[0.05] transition-colors mono"
-                style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+                className="phantom-control phantom-onboarding-control w-full px-4 py-3 text-[14px] outline-none mono"
               />
             </div>
             <button
               type="button"
               disabled={busy}
               onClick={() => void submit()}
-              className="btn-brand text-[13px] mt-2"
-              style={{ padding: "10px 16px", borderRadius: 11 }}
+              className="btn-brand phantom-onboarding-control text-[13px] mt-2"
+              style={{ padding: "10px 16px" }}
             >
               {busy ? "Creating…" : "Create profile"}
             </button>
@@ -216,7 +214,7 @@ export function FirstRun({ onCreate }: Props): JSX.Element {
                 width: i === step ? 22 : 6,
                 height: 6,
                 borderRadius: 3,
-                background: i === step ? "linear-gradient(90deg, #42f58d, #6dffa7)" : "rgba(255,255,255,0.08)",
+                background: i === step ? "var(--ph-primary)" : "var(--ph-border)",
                 transition: "width 240ms cubic-bezier(0.2,0.8,0.2,1)",
               }}
             />

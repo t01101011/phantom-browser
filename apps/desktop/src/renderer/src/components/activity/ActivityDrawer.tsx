@@ -18,12 +18,9 @@ export function ActivityDrawer({ open, events, profiles, onToggle }: Props): JSX
 
   return (
     <div
-      className="flex-shrink-0 flex flex-col overflow-hidden"
+      className="phantom-activity-drawer flex-shrink-0 flex flex-col overflow-hidden"
       style={{
         height: open ? 240 : 36,
-        background: "rgba(10,11,15,0.85)",
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        backdropFilter: "blur(20px)",
         transition: "height 220ms cubic-bezier(0.2,0.8,0.2,1)",
       }}
     >
