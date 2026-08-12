@@ -45,6 +45,11 @@ async function extractZipPreservingAttrs(zipPath: string, destDir: string): Prom
 }
 import type { BrowserEngine } from "@multizen/settings-store";
 import type { ChromiumStatus } from "@multizen/types";
+import {
+  CLOAKBROWSER_ENGINE_LOCK,
+  resolveLockedCloakBrowserArtifact,
+  verifySignedCloakBrowserManifest,
+} from "./cloakBrowserArtifactLock.ts";
 
 const execFileP = promisify(execFile);
 
@@ -79,20 +84,7 @@ interface BootstrapEvents {
 const CFT_LATEST =
   "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json";
 
-// /releases (not /releases/latest) — CloakBrowser ships per-platform
-// builds at different cadences (Linux/Win on 146.x, macOS still on 145.x).
-// We walk newest → oldest looking for the first release that has an
-// asset for the current platform.
-const CLOAKBROWSER_API = "https://api.github.com/repos/CloakHQ/CloakBrowser/releases?per_page=30";
-
-interface CloakBrowserAsset {
-  name: string;
-  browser_download_url: string;
-}
-interface CloakBrowserRelease {
-  tag_name: string;
-  assets: CloakBrowserAsset[];
-}
+const CLOAKBROWSER_RELEASES = "https://github.com/CloakHQ/CloakBrowser/releases/download";
 
 interface CftPlatformDownload {
   platform: string;
@@ -112,6 +104,7 @@ interface BrowserDownloadManifest {
   version: string;
   url: string;
   sha256?: string;
+  releaseTag?: string;
 }
 
 /**
@@ -193,7 +186,9 @@ export class ChromiumBootstrap extends EventEmitter {
     if (cached) {
       this.setStatus({
         kind: "ready",
+        engine: this.engine,
         version: cached.version,
+        releaseTag: cached.releaseTag,
         binaryPath: cached.binaryPath,
       });
       // Background: check if a newer version exists and pre-fetch it.
@@ -289,6 +284,8 @@ export class ChromiumBootstrap extends EventEmitter {
             sha256,
             installedAt: new Date().toISOString(),
             channel: this.channel,
+            engine: this.engine,
+            releaseTag: manifest.releaseTag,
           },
           null,
           2,
@@ -303,7 +300,9 @@ export class ChromiumBootstrap extends EventEmitter {
 
       this.setStatus({
         kind: "ready",
+        engine: this.engine,
         version: manifest.version,
+        releaseTag: manifest.releaseTag,
         binaryPath: finalBinary,
       });
       return this.status;
@@ -326,22 +325,35 @@ export class ChromiumBootstrap extends EventEmitter {
     this.emit("status", next);
   }
 
-  private async findCached(): Promise<{ version: string; binaryPath: string } | null> {
+  private async findCached(): Promise<{
+    version: string;
+    releaseTag?: string;
+    binaryPath: string;
+  } | null> {
     const manifestPath = join(this.cacheDir, "current.json");
     if (!existsSync(manifestPath)) return null;
     try {
       const raw = await readFile(manifestPath, "utf8");
       const cur = JSON.parse(raw) as {
         version: string;
+        engine?: BrowserEngine;
+        releaseTag?: string;
         binaryRelative: string;
       };
+      if (cur.engine && cur.engine !== this.engine) return null;
+      if (this.engine === "cloakbrowser") {
+        const locked = resolveLockedCloakBrowserArtifact();
+        if (cur.version !== locked.chromiumVersion || cur.releaseTag !== locked.releaseTag) {
+          return null;
+        }
+      }
       const versionDir = join(this.cacheDir, cur.version);
       const candidate = join(versionDir, cur.binaryRelative);
       if (!existsSync(candidate)) return null;
       // Quick sanity: stat must succeed. We don't re-hash on every
       // launch — a 280MB read is too expensive for a cold path.
       await stat(candidate);
-      return { version: cur.version, binaryPath: candidate };
+      return { version: cur.version, releaseTag: cur.releaseTag, binaryPath: candidate };
     } catch {
       return null;
     }
@@ -625,36 +637,37 @@ export class ChromiumBootstrap extends EventEmitter {
   // ─── CloakBrowser-specific resolvers ────────────────────────────────
 
   private async fetchCloakBrowserManifest(): Promise<BrowserDownloadManifest> {
-    const res = await fetch(CLOAKBROWSER_API, {
-      headers: { accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} fetching CloakBrowser releases`);
+    const artifact = resolveLockedCloakBrowserArtifact();
+    const releaseBase = `${CLOAKBROWSER_RELEASES}/${artifact.releaseTag}`;
+    const [manifestResponse, signatureResponse, assetResponse] = await Promise.all([
+      fetch(`${releaseBase}/SHA256SUMS`),
+      fetch(`${releaseBase}/SHA256SUMS.sig`),
+      fetch(`${releaseBase}/${artifact.assetFilename}`, { method: "HEAD" }),
+    ]);
+    if (!manifestResponse.ok || !signatureResponse.ok) {
+      throw new Error(
+        `Locked CloakBrowser release ${artifact.releaseTag} has no signed checksum manifest`,
+      );
     }
-    const releases = (await res.json()) as CloakBrowserRelease[];
-    if (!Array.isArray(releases) || releases.length === 0) {
-      throw new Error("CloakBrowser releases list is empty");
+    if (!assetResponse.ok) {
+      throw new Error(
+        `Locked CloakBrowser artifact ${artifact.assetFilename} is unavailable; refusing to downgrade`,
+      );
     }
-    const assetName = cloakBrowserAssetName();
-    // Walk newest → oldest, return first release that has our platform's
-    // asset. Releases are listed sorted by created_at desc by GitHub.
-    for (const release of releases) {
-      const asset = release.assets.find((a) => a.name === assetName);
-      if (asset) {
-        const sums = release.assets.find((a) => a.name === "SHA256SUMS");
-        return {
-          // Tags look like "chromium-v146.0.7680.177.4" — strip prefix.
-          version: release.tag_name.replace(/^chromium-v?|^v/, ""),
-          url: asset.browser_download_url,
-          sha256: sums
-            ? await fetchCloakBrowserSha256(sums.browser_download_url, assetName)
-            : undefined,
-        };
-      }
-    }
-    throw new Error(
-      `No CloakBrowser release has asset ${assetName}. Latest tag: ${releases[0]?.tag_name ?? "?"}`,
+    const manifestBytes = new Uint8Array(await manifestResponse.arrayBuffer());
+    const signatureBytes = new Uint8Array(await signatureResponse.arrayBuffer());
+    verifySignedCloakBrowserManifest(
+      manifestBytes,
+      signatureBytes,
+      artifact,
+      CLOAKBROWSER_ENGINE_LOCK.publisherEd25519PublicKey,
     );
+    return {
+      version: artifact.chromiumVersion,
+      releaseTag: artifact.releaseTag,
+      url: `${releaseBase}/${artifact.assetFilename}`,
+      sha256: artifact.sha256,
+    };
   }
 
   private async locateCloakBrowserBinary(rootDir: string): Promise<string | null> {
@@ -759,42 +772,6 @@ function cftPlatformKey(): "mac-arm64" | "mac-x64" | "linux64" | "win64" | "win3
     return process.arch === "ia32" ? "win32" : "win64";
   }
   return "linux64";
-}
-
-/**
- * CloakBrowser GitHub release asset name for the current platform.
- * Naming convention (verified against actual releases):
- *   cloakbrowser-darwin-arm64.tar.gz  / cloakbrowser-darwin-x64.tar.gz
- *   cloakbrowser-windows-x64.zip
- *   cloakbrowser-linux-x64.tar.gz  / cloakbrowser-linux-arm64.tar.gz
- */
-function cloakBrowserAssetName(): string {
-  if (process.platform === "darwin") {
-    return process.arch === "arm64"
-      ? "cloakbrowser-darwin-arm64.tar.gz"
-      : "cloakbrowser-darwin-x64.tar.gz";
-  }
-  if (process.platform === "win32") {
-    return "cloakbrowser-windows-x64.zip";
-  }
-  return process.arch === "arm64"
-    ? "cloakbrowser-linux-arm64.tar.gz"
-    : "cloakbrowser-linux-x64.tar.gz";
-}
-
-async function fetchCloakBrowserSha256(sumsUrl: string, assetName: string): Promise<string> {
-  const res = await fetch(sumsUrl);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} fetching CloakBrowser SHA256SUMS`);
-  }
-  const text = await res.text();
-  for (const line of text.split(/\r?\n/)) {
-    const [hash, name] = line.trim().split(/\s+/, 2);
-    if (hash && name?.replace(/^\*/, "") === assetName && /^[a-f0-9]{64}$/i.test(hash)) {
-      return hash.toLowerCase();
-    }
-  }
-  throw new Error(`CloakBrowser SHA256SUMS has no checksum for ${assetName}`);
 }
 
 /**
