@@ -1,9 +1,6 @@
 import type { ProxyCoherenceResult } from "./proxyCoherence";
 
-export type CdpSender = (
-  method: string,
-  params?: Record<string, unknown>,
-) => Promise<unknown>;
+export type CdpSender = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 
 /** Apply CFT's weaker CDP geolocation fallback and report whether it landed. */
 export async function applyCftGeolocationOverride(
