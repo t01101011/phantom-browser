@@ -226,6 +226,11 @@ export interface LaunchedProfile {
   cdpEndpoint: string;
   pid: number;
   startedAt: string;
+  coherence?: {
+    status: "coherent" | "degraded";
+    issues: string[];
+    geolocationCoverage: "native-upstream" | "cdp-weaker" | "unavailable";
+  };
 }
 
 export interface McpToolError {

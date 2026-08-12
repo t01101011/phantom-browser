@@ -1216,6 +1216,12 @@ export function findLocaleIdByCountry(cc: string): string | null {
   return found?.id ?? null;
 }
 
+/** Return a locale only for an unambiguous exact country mapping. */
+export function findDeterministicLocaleIdByCountry(cc: string): string | null {
+  const matches = LOCALES.filter((locale) => locale.country === cc.toLowerCase());
+  return matches.length === 1 ? matches[0]!.id : null;
+}
+
 function findLocaleByCountry(cc: string): LocaleGroup | null {
   const lower = cc.toLowerCase();
   // Exact preferred locale per multilingual country. The country has more

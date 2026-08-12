@@ -19,6 +19,11 @@ import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
+import {
+  ProxyCoherenceError,
+  resolveProxyCoherence,
+  type ProxyCoherenceResult,
+} from "./proxyCoherence";
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
@@ -101,7 +106,10 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     return super.emit(event, ...args);
   }
 
-  async launch(profileId: ProfileId): Promise<LaunchedProfile> {
+  async launch(
+    profileId: ProfileId,
+    opts: { acceptDegradedCoherence?: boolean } = {},
+  ): Promise<LaunchedProfile> {
     const existing = this.running.get(profileId);
     if (existing) {
       return {
@@ -172,12 +180,21 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // and is out of scope for #13.
     let webrtcSpoofIp: string | null = null;
     let geoCoords: { latitude: number; longitude: number } | null = null;
+    let coherence: ProxyCoherenceResult | null = null;
     if (profile.proxy) {
       try {
         const geo = await probeProxyGeo(profile.proxy, { timeoutMs: 4000 });
-        webrtcSpoofIp = geo.ip;
-        if (typeof geo.latitude === "number" && typeof geo.longitude === "number") {
-          geoCoords = { latitude: geo.latitude, longitude: geo.longitude };
+        coherence = resolveProxyCoherence({
+          engine,
+          fingerprint: fp,
+          geo,
+          acceptDegraded: opts.acceptDegradedCoherence,
+        });
+        fp = coherence.fingerprint;
+        webrtcSpoofIp = coherence.webrtcIp;
+        geoCoords = coherence.coordinates;
+        if (JSON.stringify(fp) !== JSON.stringify(profile.fingerprint)) {
+          this.profileManager.update(profileId, { fingerprint: fp });
         }
         // Cache the resolved country on the profile so the GUI flag chip
         // matches the proxy's egress (Luxembourg proxy → LU flag, not the
@@ -185,17 +202,15 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         if (geo.country) {
           this.profileManager.setProxyCountry(profileId, geo.country.toLowerCase());
         }
-        if (geo.timezone && geo.timezone !== fp.timezone) {
-          console.log(
-            `[multizen] aligning fingerprint timezone ${fp.timezone} → ${geo.timezone} (proxy geo)`,
-          );
-          fp = { ...fp, timezone: geo.timezone };
-        }
       } catch (e) {
-        console.warn(
-          "[multizen] proxy IP probe failed; using WebRTC block fallback:",
-          (e as Error).message,
-        );
+        if (e instanceof ProxyCoherenceError) throw e;
+        coherence = resolveProxyCoherence({
+          engine,
+          fingerprint: fp,
+          probeError: e,
+          acceptDegraded: opts.acceptDegradedCoherence,
+        });
+        console.warn(`[phantom] proxy coherence degraded: ${coherence.issues.join("; ")}`);
       }
     }
     // No-proxy: fp.timezone is left as the profile configured it (issue #13).
@@ -560,6 +575,19 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
             console.error("[multizen] setDeviceMetricsOverride failed:", e);
           }
         }
+        // CFT has no native location control. CDP is a useful but explicitly
+        // weaker, potentially observable fallback.
+        if (ctx.isRoot && engine === "cft" && geoCoords) {
+          try {
+            await send("Emulation.setGeolocationOverride", {
+              latitude: geoCoords.latitude,
+              longitude: geoCoords.longitude,
+              accuracy: 100,
+            });
+          } catch (e) {
+            console.error("[phantom] CFT CDP geolocation fallback failed:", e);
+          }
+        }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.
         //
         // Run this full block only for CFT. CloakBrowser exposes native
@@ -720,7 +748,19 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     });
 
     this.emit("running-changed", { kind: "launched", profileId });
-    return { id: profileId, cdpEndpoint, pid: child.pid, startedAt };
+    return {
+      id: profileId,
+      cdpEndpoint,
+      pid: child.pid,
+      startedAt,
+      coherence: coherence
+        ? {
+            status: coherence.status,
+            issues: coherence.issues,
+            geolocationCoverage: coherence.geolocationCoverage,
+          }
+        : undefined,
+    };
   }
 
   async close(profileId: ProfileId): Promise<void> {

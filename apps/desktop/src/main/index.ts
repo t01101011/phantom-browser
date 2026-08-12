@@ -327,7 +327,11 @@ app.whenReady().then(async () => {
       profileManager.allExtensionRefs().map((r) => r.ext),
     ).catch(() => {});
   });
-  ipcMain.handle("profiles:launch", (_e, id: string) => browserDriver.launch(id));
+  ipcMain.handle(
+    "profiles:launch",
+    (_e, id: string, opts?: { acceptDegradedCoherence?: boolean }) =>
+      browserDriver.launch(id, opts),
+  );
   ipcMain.handle("profiles:close", (_e, id: string) => browserDriver.close(id));
 
   // Settings IPC

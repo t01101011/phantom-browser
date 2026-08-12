@@ -72,8 +72,10 @@ const api = {
     update: (id: ProfileId, patch: UpdateProfileInput): Promise<Profile> =>
       ipcRenderer.invoke("profiles:update", id, patch),
     delete: (id: ProfileId): Promise<void> => ipcRenderer.invoke("profiles:delete", id),
-    launch: (id: ProfileId): Promise<LaunchedProfile> =>
-      ipcRenderer.invoke("profiles:launch", id),
+    launch: (
+      id: ProfileId,
+      opts?: { acceptDegradedCoherence?: boolean },
+    ): Promise<LaunchedProfile> => ipcRenderer.invoke("profiles:launch", id, opts),
     close: (id: ProfileId): Promise<void> => ipcRenderer.invoke("profiles:close", id),
     exportArchive: (
       id: ProfileId,

@@ -239,9 +239,31 @@ export function App(): JSX.Element {
 
   async function launchProfile(id: string): Promise<void> {
     try {
-      await window.multizen.profiles.launch(id);
+      const launched = await window.multizen.profiles.launch(id);
+      if (launched.coherence?.status === "degraded") {
+        showToast(`Launched with degraded proxy coherence: ${launched.coherence.issues.join("; ")}`);
+      }
     } catch (e) {
-      showToast(`Launch failed: ${(e as Error).message}`);
+      const message = (e as Error).message;
+      if (/explicit degraded-mode acceptance/i.test(message)) {
+        const accepted = window.confirm(
+          `${message}\n\nLaunch anyway with degraded coherence? This may expose a proxy/persona mismatch.`,
+        );
+        if (accepted) {
+          try {
+            const launched = await window.multizen.profiles.launch(id, {
+              acceptDegradedCoherence: true,
+            });
+            showToast(
+              `Launched with explicit degraded coherence: ${launched.coherence?.issues.join("; ") ?? "proxy geo unavailable"}`,
+            );
+          } catch (retryError) {
+            showToast(`Launch failed: ${(retryError as Error).message}`);
+          }
+        }
+      } else {
+        showToast(`Launch failed: ${message}`);
+      }
     }
     await refresh();
   }

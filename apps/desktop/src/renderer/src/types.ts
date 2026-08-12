@@ -67,7 +67,10 @@ export interface MultizenApi {
     create: (input: CreateProfileInput) => Promise<Profile>;
     update: (id: ProfileId, patch: UpdateProfileInput) => Promise<Profile>;
     delete: (id: ProfileId) => Promise<void>;
-    launch: (id: ProfileId) => Promise<LaunchedProfile>;
+    launch: (
+      id: ProfileId,
+      opts?: { acceptDegradedCoherence?: boolean },
+    ) => Promise<LaunchedProfile>;
     close: (id: ProfileId) => Promise<void>;
     exportArchive: (
       id: ProfileId,

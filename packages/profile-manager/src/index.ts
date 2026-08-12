@@ -9,6 +9,7 @@ export {
   deviceCatalog,
   localeCatalog,
   findLocaleIdByCountry,
+  findDeterministicLocaleIdByCountry,
   CHROME_VERSION_FULL,
   CHROME_VERSION_MAJOR,
   type DeviceCatalogEntry,

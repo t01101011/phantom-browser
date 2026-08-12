@@ -29,15 +29,29 @@ export interface ProxyGeoResult {
  */
 export async function probeProxyGeo(
   proxy: ProxyConfig,
-  opts: { timeoutMs?: number } = {},
+  opts: {
+    timeoutMs?: number;
+    requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<RawIpapi>;
+  } = {},
 ): Promise<ProxyGeoResult> {
+  const json = await (opts.requestJson ?? requestProxyGeoJson)(
+    proxy,
+    opts.timeoutMs ?? 10000,
+  );
+  return parseProxyGeoPayload(json);
+}
+
+async function requestProxyGeoJson(
+  proxy: ProxyConfig,
+  timeoutMs: number,
+): Promise<RawIpapi> {
   const proxyUrl = buildProxyUrl(proxy);
   const agent =
     proxy.type === "socks5"
       ? new SocksProxyAgent(proxyUrl)
       : new HttpsProxyAgent(proxyUrl);
 
-  const json = await new Promise<RawIpapi>((resolve, reject) => {
+  return new Promise<RawIpapi>((resolve, reject) => {
     const req = request(
       "https://ipapi.co/json/",
       {
@@ -74,13 +88,15 @@ export async function probeProxyGeo(
       },
     );
 
-    req.setTimeout(opts.timeoutMs ?? 10000, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy(new Error("proxy probe timed out"));
     });
     req.on("error", reject);
     req.end();
   });
+}
 
+export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
   if (!json.country_code || !json.timezone) {
     if (json.error) {
       throw new Error(`ipapi.co error: ${json.reason ?? "rate-limit or block"}`);
@@ -99,7 +115,7 @@ export async function probeProxyGeo(
   };
 }
 
-interface RawIpapi {
+export interface RawIpapi {
   ip: string;
   city: string;
   country_code: string;
