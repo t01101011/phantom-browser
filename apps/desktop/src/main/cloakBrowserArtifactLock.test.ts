@@ -1,9 +1,15 @@
 import assert from "node:assert/strict";
-import { generateKeyPairSync, sign } from "node:crypto";
+import { createHash, generateKeyPairSync, sign } from "node:crypto";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
+  CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION,
   CLOAKBROWSER_ENGINE_LOCK,
   resolveLockedCloakBrowserArtifact,
+  resolveContainedRegularFile,
+  validateCloakBrowserCacheAuthentication,
   verifySignedCloakBrowserManifest,
   type CloakBrowserEngineLock,
   type CloakBrowserPlatformLock,
@@ -88,6 +94,104 @@ test("rejects a manifest whose signature does not authenticate", () => {
   );
 });
 
+test("rejects a matching legacy cache without authenticated-manifest attestation", () => {
+  assert.throws(
+    () => validateCloakBrowserCacheAuthentication(undefined, TEST_ARTIFACT),
+    /lacks authenticated-manifest attestation/,
+  );
+});
+
+test("accepts cache attestation bound to the signed manifest, publisher key, and archive", () => {
+  const signed = signedManifest(TEST_ARTIFACT);
+  assert.doesNotThrow(() =>
+    validateCloakBrowserCacheAuthentication(
+      {
+        schemaVersion: CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION,
+        signedManifestSha256: sha256(signed.manifest),
+        signedManifestBase64: Buffer.from(signed.manifest).toString("base64"),
+        signatureBase64: Buffer.from(signed.signature).toString("base64"),
+        publisherEd25519PublicKey: signed.publicKey,
+        archiveSha256: TEST_ARTIFACT.sha256,
+      },
+      TEST_ARTIFACT,
+      signed.publicKey,
+    ),
+  );
+});
+
+test("rejects forged cache attestation whose manifest digest does not match", () => {
+  const signed = signedManifest(TEST_ARTIFACT);
+  assert.throws(
+    () =>
+      validateCloakBrowserCacheAuthentication(
+        {
+          schemaVersion: CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION,
+          signedManifestSha256: "1".repeat(64),
+          signedManifestBase64: Buffer.from(signed.manifest).toString("base64"),
+          signatureBase64: Buffer.from(signed.signature).toString("base64"),
+          publisherEd25519PublicKey: signed.publicKey,
+          archiveSha256: TEST_ARTIFACT.sha256,
+        },
+        TEST_ARTIFACT,
+        signed.publicKey,
+      ),
+    /digest does not match its attestation/,
+  );
+});
+
+test("rejects a cached binary path that traverses outside the locked version directory", async () => {
+  const cache = await mkdtemp(join(tmpdir(), "cloak-cache-test-"));
+  const versionDir = join(cache, TEST_ARTIFACT.chromiumVersion);
+  await mkdir(versionDir);
+  await writeFile(join(cache, "outside-browser"), "not trusted");
+  try {
+    await assert.rejects(
+      resolveContainedRegularFile(versionDir, "../outside-browser"),
+      /escapes its locked version directory/,
+    );
+  } finally {
+    await rm(cache, { recursive: true, force: true });
+  }
+});
+
+test("accepts only a regular cached binary inside the locked version directory", async () => {
+  const cache = await mkdtemp(join(tmpdir(), "cloak-cache-test-"));
+  const versionDir = join(cache, TEST_ARTIFACT.chromiumVersion);
+  await mkdir(versionDir);
+  await writeFile(join(versionDir, "chrome"), "trusted binary");
+  await mkdir(join(versionDir, "directory"));
+  try {
+    assert.equal(
+      await resolveContainedRegularFile(versionDir, "chrome"),
+      join(versionDir, "chrome"),
+    );
+    await assert.rejects(
+      resolveContainedRegularFile(versionDir, "directory"),
+      /not a regular file/,
+    );
+  } finally {
+    await rm(cache, { recursive: true, force: true });
+  }
+});
+
+test("rejects a cached binary reached through an intermediate symlink outside the version", async () => {
+  const cache = await mkdtemp(join(tmpdir(), "cloak-cache-test-"));
+  const versionDir = join(cache, TEST_ARTIFACT.chromiumVersion);
+  const outsideDir = join(cache, "outside");
+  await mkdir(versionDir);
+  await mkdir(outsideDir);
+  await writeFile(join(outsideDir, "chrome"), "not trusted");
+  await symlink(outsideDir, join(versionDir, "linked"), "dir");
+  try {
+    await assert.rejects(
+      resolveContainedRegularFile(versionDir, "linked/chrome"),
+      /resolves outside its locked version directory/,
+    );
+  } finally {
+    await rm(cache, { recursive: true, force: true });
+  }
+});
+
 function signedManifest(artifact: CloakBrowserPlatformLock): {
   manifest: Uint8Array;
   signature: Uint8Array;
@@ -106,4 +210,8 @@ function signedManifest(artifact: CloakBrowserPlatformLock): {
     signature,
     publicKey: Buffer.from(jwk.x, "base64url").toString("base64"),
   };
+}
+
+function sha256(bytes: Uint8Array): string {
+  return createHash("sha256").update(bytes).digest("hex");
 }

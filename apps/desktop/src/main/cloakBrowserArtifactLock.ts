@@ -1,4 +1,6 @@
-import { createPublicKey, verify as cryptoVerify } from "node:crypto";
+import { createHash, createPublicKey, verify as cryptoVerify } from "node:crypto";
+import { lstat, realpath } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
 import lockJson from "./cloakbrowser-engine-lock.json" with { type: "json" };
 
 export interface CloakBrowserPlatformLock {
@@ -21,6 +23,16 @@ export interface CloakBrowserEngineLock {
 }
 
 export const CLOAKBROWSER_ENGINE_LOCK = lockJson as CloakBrowserEngineLock;
+export const CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION = 1;
+
+export interface CloakBrowserCacheAuthentication {
+  schemaVersion: number;
+  signedManifestSha256: string;
+  signedManifestBase64: string;
+  signatureBase64: string;
+  publisherEd25519PublicKey: string;
+  archiveSha256: string;
+}
 
 export function cloakBrowserPlatformKey(
   platform: NodeJS.Platform = process.platform,
@@ -94,6 +106,73 @@ export function verifySignedCloakBrowserManifest(
       `Signed CloakBrowser checksum for ${artifact.assetFilename} does not match the engine lock`,
     );
   }
+}
+
+export function validateCloakBrowserCacheAuthentication(
+  authentication: CloakBrowserCacheAuthentication | undefined,
+  artifact: CloakBrowserPlatformLock,
+  publisherEd25519PublicKey: string = CLOAKBROWSER_ENGINE_LOCK.publisherEd25519PublicKey,
+): void {
+  if (authentication?.schemaVersion !== CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION) {
+    throw new Error("CloakBrowser cache lacks authenticated-manifest attestation");
+  }
+  if (!/^[a-f0-9]{64}$/.test(authentication.signedManifestSha256)) {
+    throw new Error("CloakBrowser cache has an invalid signed-manifest digest");
+  }
+  if (authentication.publisherEd25519PublicKey !== publisherEd25519PublicKey) {
+    throw new Error("CloakBrowser cache was authenticated by an untrusted publisher key");
+  }
+  if (authentication.archiveSha256 !== artifact.sha256) {
+    throw new Error("CloakBrowser cache archive digest does not match the engine lock");
+  }
+  const manifestBytes = decodeCanonicalBase64(
+    authentication.signedManifestBase64,
+    "signed manifest",
+  );
+  const signatureBytes = decodeCanonicalBase64(authentication.signatureBase64, "signature");
+  const digest = createHash("sha256").update(manifestBytes).digest("hex");
+  if (digest !== authentication.signedManifestSha256) {
+    throw new Error("CloakBrowser cache signed-manifest digest does not match its attestation");
+  }
+  verifySignedCloakBrowserManifest(
+    manifestBytes,
+    signatureBytes,
+    artifact,
+    publisherEd25519PublicKey,
+  );
+}
+
+function decodeCanonicalBase64(value: string, label: string): Buffer {
+  const decoded = Buffer.from(value, "base64");
+  if (!value || decoded.toString("base64") !== value) {
+    throw new Error(`CloakBrowser cache has malformed ${label} bytes`);
+  }
+  return decoded;
+}
+
+export async function resolveContainedRegularFile(
+  rootDir: string,
+  binaryRelative: string,
+): Promise<string> {
+  if (!binaryRelative || isAbsolute(binaryRelative)) {
+    throw new Error("Cached browser binary path must be relative");
+  }
+  const root = resolve(rootDir);
+  const candidate = resolve(root, binaryRelative);
+  const fromRoot = relative(root, candidate);
+  if (!fromRoot || fromRoot.startsWith("..") || isAbsolute(fromRoot)) {
+    throw new Error("Cached browser binary path escapes its locked version directory");
+  }
+  const info = await lstat(candidate);
+  if (!info.isFile()) {
+    throw new Error("Cached browser binary path is not a regular file");
+  }
+  const [realRoot, realCandidate] = await Promise.all([realpath(root), realpath(candidate)]);
+  const realFromRoot = relative(realRoot, realCandidate);
+  if (!realFromRoot || realFromRoot.startsWith("..") || isAbsolute(realFromRoot)) {
+    throw new Error("Cached browser binary resolves outside its locked version directory");
+  }
+  return realCandidate;
 }
 
 function validateArtifactLock(platformKey: string, artifact: CloakBrowserPlatformLock): void {

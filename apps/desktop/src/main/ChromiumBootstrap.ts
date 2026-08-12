@@ -46,9 +46,13 @@ async function extractZipPreservingAttrs(zipPath: string, destDir: string): Prom
 import type { BrowserEngine } from "@multizen/settings-store";
 import type { ChromiumStatus } from "@multizen/types";
 import {
+  CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION,
   CLOAKBROWSER_ENGINE_LOCK,
   resolveLockedCloakBrowserArtifact,
+  resolveContainedRegularFile,
+  validateCloakBrowserCacheAuthentication,
   verifySignedCloakBrowserManifest,
+  type CloakBrowserCacheAuthentication,
 } from "./cloakBrowserArtifactLock.ts";
 
 const execFileP = promisify(execFile);
@@ -105,6 +109,9 @@ interface BrowserDownloadManifest {
   url: string;
   sha256?: string;
   releaseTag?: string;
+  signedManifestSha256?: string;
+  signedManifestBase64?: string;
+  signatureBase64?: string;
 }
 
 /**
@@ -275,6 +282,23 @@ export class ChromiumBootstrap extends EventEmitter {
       await rename(tmpExtract, versionDir);
 
       // Persist current.json so the next launch picks up the cached copy.
+      let authentication: CloakBrowserCacheAuthentication | undefined;
+      if (this.engine === "cloakbrowser") {
+        const signedManifestSha256 = manifest.signedManifestSha256;
+        const signedManifestBase64 = manifest.signedManifestBase64;
+        const signatureBase64 = manifest.signatureBase64;
+        if (!signedManifestSha256 || !signedManifestBase64 || !signatureBase64) {
+          throw new Error("Authenticated CloakBrowser manifest attestation is missing");
+        }
+        authentication = {
+          schemaVersion: CLOAKBROWSER_CACHE_AUTH_SCHEMA_VERSION,
+          signedManifestSha256,
+          signedManifestBase64,
+          signatureBase64,
+          publisherEd25519PublicKey: CLOAKBROWSER_ENGINE_LOCK.publisherEd25519PublicKey,
+          archiveSha256: sha256,
+        };
+      }
       await writeFile(
         join(this.cacheDir, "current.json"),
         JSON.stringify(
@@ -286,6 +310,7 @@ export class ChromiumBootstrap extends EventEmitter {
             channel: this.channel,
             engine: this.engine,
             releaseTag: manifest.releaseTag,
+            authentication,
           },
           null,
           2,
@@ -339,6 +364,7 @@ export class ChromiumBootstrap extends EventEmitter {
         engine?: BrowserEngine;
         releaseTag?: string;
         binaryRelative: string;
+        authentication?: CloakBrowserCacheAuthentication;
       };
       if (cur.engine && cur.engine !== this.engine) return null;
       if (this.engine === "cloakbrowser") {
@@ -346,13 +372,10 @@ export class ChromiumBootstrap extends EventEmitter {
         if (cur.version !== locked.chromiumVersion || cur.releaseTag !== locked.releaseTag) {
           return null;
         }
+        validateCloakBrowserCacheAuthentication(cur.authentication, locked);
       }
       const versionDir = join(this.cacheDir, cur.version);
-      const candidate = join(versionDir, cur.binaryRelative);
-      if (!existsSync(candidate)) return null;
-      // Quick sanity: stat must succeed. We don't re-hash on every
-      // launch — a 280MB read is too expensive for a cold path.
-      await stat(candidate);
+      const candidate = await resolveContainedRegularFile(versionDir, cur.binaryRelative);
       return { version: cur.version, releaseTag: cur.releaseTag, binaryPath: candidate };
     } catch {
       return null;
@@ -667,6 +690,9 @@ export class ChromiumBootstrap extends EventEmitter {
       releaseTag: artifact.releaseTag,
       url: `${releaseBase}/${artifact.assetFilename}`,
       sha256: artifact.sha256,
+      signedManifestSha256: sha256Bytes(manifestBytes),
+      signedManifestBase64: Buffer.from(manifestBytes).toString("base64"),
+      signatureBase64: Buffer.from(signatureBytes).toString("base64"),
     };
   }
 
@@ -786,6 +812,10 @@ async function sha256File(path: string): Promise<string> {
     hash.update(chunk as Buffer);
   }
   return hash.digest("hex");
+}
+
+function sha256Bytes(bytes: Uint8Array): string {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 /**
