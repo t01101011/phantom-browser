@@ -358,9 +358,8 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // use --host-resolver-rules: it triggers the "unsupported flag"
       // infobar (visible to the user, even though JS can't probe it),
       // and a SOCKS5 upstream makes it redundant anyway. Real anti-
-      // detect products (Multilogin Mimic) solve the residual leak
-      // with a custom DNS-resolver source patch — a Phase-1 item for
-      // multizen-pro, not the open-source build.
+      // detect products may solve the residual leak with custom resolver
+      // patches. This repository does not own or ship such a Chromium patch.
       args.push("--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction");
       args.push("--dns-over-https-mode=off");
       args.push("--dns-prefetch-disable");
@@ -396,17 +395,11 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       args.push(`--disable-extensions-except=${joined}`);
     }
 
-    // NOTE on Sec-CH-UA: The Client Hints headers (`Sec-CH-UA`,
-    // `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`, `Sec-CH-UA-Arch`,
-    // `Sec-CH-UA-Bitness`, etc.) and `navigator.userAgentData` are NOT
-    // overridable via CLI flags. They are baked into the compiled Chromium
-    // binary at build time. To make them coherent with our chosen `userAgent`
-    // we need our patched Chromium build (multizen-pro) which applies native
-    // overrides. Until that ships, system Chrome will emit its real Client
-    // Hints and detection vendors will see a UA-vs-CH mismatch.
-    //
-    // The full ClientHints object is stored in `profile.fingerprint.clientHints`
-    // and will be picked up by the patched binary's launch wrapper when present.
+    // NOTE on Sec-CH-UA: these values are not fully controllable through CLI
+    // flags. On stock CFT we apply `userAgentMetadata` through CDP below; the
+    // result is emulation rather than native engine behavior. The opt-in
+    // CloakBrowser adapter instead passes the native brand/platform-version
+    // controls exposed by its proprietary third-party binary.
 
     // Build a minimal env for the child — Electron's main process
     // accumulates a pile of ELECTRON_*, CHROME_*, V8_*, DYLD_* env vars
@@ -569,9 +562,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.
         //
-        // ONLY run for CFT. CloakBrowser sets these natively at C++ level
-        // through --fingerprint-timezone / --fingerprint-locale /
-        // --fingerprint-brand-version. Layering CDP `Emulation.*` on top
+        // Run this full block only for CFT. CloakBrowser exposes native
+        // timezone and brand/version controls, but no verified native locale
+        // switch. Layering CDP UA/timezone `Emulation.*` on top
         // produces subtle disagreements between layers (e.g. our CDP UA
         // string ≠ CloakBrowser's native UA-CH brand list) that
         // composite scorers like fingerprint-scan.com flag as "Masking

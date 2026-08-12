@@ -312,14 +312,15 @@ const engineOptions: Array<{
   description: string;
 }> = [
   {
-    value: "cloakbrowser",
-    label: "CloakBrowser",
-    description: "Source-patched Chromium from CloakHQ releases. Primary runtime.",
-  },
-  {
     value: "cft",
     label: "Chrome for Testing",
-    description: "Compatibility fallback using Google's official automation build.",
+    description: "Default stock runtime from Google's official automation channel.",
+  },
+  {
+    value: "cloakbrowser",
+    label: "CloakBrowser",
+    description:
+      "Opt-in proprietary third-party binary with native fingerprint flags. Separate CloakHQ terms apply.",
   },
 ];
 
