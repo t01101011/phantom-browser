@@ -1,4 +1,5 @@
 import { request } from "node:https";
+import { isIP } from "node:net";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import type { ProxyConfig } from "@multizen/types";
@@ -103,13 +104,16 @@ export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
     }
     throw new Error("ipapi.co returned an unexpected payload");
   }
+  if (isIP(json.ip ?? "") === 0) {
+    throw new Error("ipapi.co returned no valid egress IP");
+  }
 
   return {
     country: json.country_code.toLowerCase(),
     countryName: json.country_name ?? json.country_code,
     timezone: json.timezone,
     city: json.city ?? "",
-    ip: json.ip ?? "",
+    ip: json.ip,
     latitude: typeof json.latitude === "number" ? json.latitude : undefined,
     longitude: typeof json.longitude === "number" ? json.longitude : undefined,
   };

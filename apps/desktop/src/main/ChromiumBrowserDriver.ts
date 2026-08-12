@@ -19,6 +19,7 @@ import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
+import { applyCftGeolocationOverride } from "./cdpGeolocation";
 import {
   ProxyCoherenceError,
   resolveProxyCoherence,
@@ -578,15 +579,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         // CFT has no native location control. CDP is a useful but explicitly
         // weaker, potentially observable fallback.
         if (ctx.isRoot && engine === "cft" && geoCoords) {
-          try {
-            await send("Emulation.setGeolocationOverride", {
-              latitude: geoCoords.latitude,
-              longitude: geoCoords.longitude,
-              accuracy: 100,
-            });
-          } catch (e) {
-            console.error("[phantom] CFT CDP geolocation fallback failed:", e);
-          }
+          await applyCftGeolocationOverride(send, geoCoords, coherence ?? undefined);
         }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.
         //
@@ -683,6 +676,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       .catch((e: unknown) => {
         console.error("[multizen] CDP bootstrap failed:", e);
       });
+
 
     // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
     // to Web Store pages only (the host polls a DOM attribute there, never on

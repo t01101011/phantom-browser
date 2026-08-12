@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type { BrowserEngine } from "@multizen/settings-store";
 import type { FingerprintConfig } from "@multizen/types";
 import {
@@ -47,22 +48,24 @@ export function resolveProxyCoherence(params: {
     }
 
     const proxyCountry = geo.country.toLowerCase();
-    if (fingerprint.country.toLowerCase() !== proxyCountry) {
-      const localeId = findDeterministicLocaleIdByCountry(proxyCountry);
-      if (localeId) {
-        fingerprint = reconcileFingerprint(fingerprint, {
-          localeId,
-          timezone: geo.timezone,
-        });
-      } else {
-        issues.push(
-          `Locale ${fingerprint.locale} does not match proxy country ${proxyCountry.toUpperCase()}, and no deterministic locale mapping exists`,
-        );
-      }
+    const localeId = findDeterministicLocaleIdByCountry(proxyCountry);
+    if (localeId) {
+      const reconciled = reconcileFingerprint(fingerprint, {
+        localeId,
+        timezone: geo.timezone,
+      });
+      if (!hasSameLocaleTuple(fingerprint, reconciled)) fingerprint = reconciled;
+    } else if (fingerprint.country.toLowerCase() !== proxyCountry) {
+      issues.push(
+        `Locale ${fingerprint.locale} does not match proxy country ${proxyCountry.toUpperCase()}, and no deterministic locale mapping exists`,
+      );
     }
 
     if (typeof geo.latitude !== "number" || typeof geo.longitude !== "number") {
       issues.push("Proxy geolocation response has no coordinates");
+    }
+    if (isIP(geo.ip) === 0) {
+      issues.push("Proxy geolocation response has no valid egress IP");
     }
   }
 
@@ -82,7 +85,7 @@ export function resolveProxyCoherence(params: {
   return {
     fingerprint,
     coordinates,
-    webrtcIp: geo?.ip || null,
+    webrtcIp: geo && isIP(geo.ip) !== 0 ? geo.ip : null,
     country: geo?.country.toLowerCase() || null,
     status: issues.length === 0 ? "coherent" : "degraded",
     issues,
@@ -92,6 +95,16 @@ export function resolveProxyCoherence(params: {
         : "cdp-weaker"
       : "unavailable",
   };
+}
+
+function hasSameLocaleTuple(left: FingerprintConfig, right: FingerprintConfig): boolean {
+  return (
+    left.country.toLowerCase() === right.country.toLowerCase() &&
+    left.locale === right.locale &&
+    left.acceptLanguage === right.acceptLanguage &&
+    left.languages.length === right.languages.length &&
+    left.languages.every((language, index) => language === right.languages[index])
+  );
 }
 
 function safeProbeError(error: unknown): string {
