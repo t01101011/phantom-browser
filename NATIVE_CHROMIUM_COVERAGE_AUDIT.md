@@ -132,6 +132,19 @@ Upstream documents Ed25519 verification of signed checksum manifests. Phantom on
 8. Make proxy-geo failure and locale mismatch visible before launch; either fail closed for stealth profiles or require explicit acceptance of degraded coherence.
 9. Resolve binary/OEM/SaaS rights before presenting CloakBrowser as a distributable Phantom engine. Direct end-user download is not the same grant as redistribution or embedding.
 
+### Product policy decision — 2026-08-16
+
+Pending written rights from CloakHQ or legal counsel, Phantom Browser adopts the conservative production policy below:
+
+- Chrome for Testing (`cft`) remains the only default and redistributable baseline.
+- CloakBrowser remains an explicit opt-in evaluation adapter. Phantom must not bundle, mirror, redistribute, repackage, sublicense, or present the proprietary binary as a shipped Phantom engine.
+- End-user direct download, if technically available, is not treated as permission for OEM embedding, SaaS/browser-control use, MCP control, redistribution, or concurrent commercial operation.
+- No CloakBrowser release channel, license-key ownership model, concurrency entitlement, or production use is approved by this decision. Those remain `UNKNOWN` until supported by an immutable written grant.
+- Windows and real-network acceptance may exercise CFT. CloakBrowser evidence must remain `UNKNOWN` unless the operator has separate entitlement and supplies no credential or license secret in evidence.
+- A later written grant may supersede this policy only after independent review records its scope, effective date, permitted release/channel, distribution model, MCP/browser-control allowance, concurrency, and credential ownership.
+
+This is a product risk decision, not legal advice and not a representation that CloakBrowser rights were granted. It closes the immediate policy choice by selecting the non-distribution path; it does not manufacture missing OEM/SaaS rights.
+
 ### Strategic fork decision
 
 Do **not** start a full Chromium fork merely to close one or two UI-facing gaps. First require a pinned CloakBrowser build and exercise the real binary. Fork only if one of these remains a product requirement that upstream cannot expose or verify:
