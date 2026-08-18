@@ -190,7 +190,17 @@ async function runBrowserProbe({ engine, binary, args, runId, signal }) {
   } finally {
     if (child) await terminate(child);
     if (server) await server.close();
-    await rm(temp, { recursive: true, force: true });
+    // Windows may still hold the profile lockfile briefly after Chrome exits.
+    // Retry cleanup a few times; if it still fails, the probe result is still valid.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await rm(temp, { recursive: true, force: true });
+        break;
+      } catch (cleanupError) {
+        if (attempt === 4) break; // give up silently on last attempt
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
   }
 }
 
