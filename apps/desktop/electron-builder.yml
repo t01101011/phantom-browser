@@ -63,15 +63,16 @@ extraResources:
 mac:
   category: public.app-category.developer-tools
   icon: ../../build/icon.icns
+  # No per-target `arch` list here — the arch is selected per CI runner via the
+  # `--x64` / `--arm64` CLI flag on the build:mac:{x64,arm64}:publish scripts.
+  # If we pin `arch: [x64, arm64]` in this config, electron-builder's
+  # computeArchToTargetNamesMap() merges BOTH arches back in regardless of the
+  # CLI flag (the flag only filters when the config leaves arch unspecified).
+  # That made the Intel runner build arm64 too, colliding with the arm64
+  # runner's upload → HTTP 422 already_exists → job failure (BUG-RELEASE-1).
   target:
     - target: dmg
-      arch:
-        - x64
-        - arm64
     - target: zip
-      arch:
-        - x64
-        - arm64
   artifactName: "${productName}-mac-${arch}.${ext}"
   # Open-source unsigned build: skip Apple notarization (would need a
   # $99/yr Developer ID). We use ad-hoc signing (identity "-") so the
