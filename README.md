@@ -98,10 +98,9 @@ curl -sSL https://getmultizen.com/install.sh | bash
                               +-------------+--------------+
                                             |
                                             v
-                                  patched Chromium binary
-                                  (canvas, WebGL, audio,
-                                   font, WebRTC fingerprints
-                                   spoofed at C++ level)
+                                  Chromium engine
+                                  (Chrome for Testing by default;
+                                   optional CloakBrowser adapter)
 ```
 
 Each profile is a real Chromium window with persistent state on disk. The MCP server speaks the standard Anthropic Model Context Protocol over Streamable HTTP (plus legacy SSE) so it works with any client. Browser-drive tools call into Chrome DevTools Protocol under the hood.
@@ -111,13 +110,13 @@ Each profile is a real Chromium window with persistent state on disk. The MCP se
 |  | What it does |
 | --- | --- |
 | **MCP server** | Native localhost endpoint. Works with Cursor, Claude Desktop, Cline, Continue, anything else that speaks MCP. |
-| **Anti-detect Chromium** | Source-patched browser engine (CloakBrowser). Canvas, WebGL, audio, fonts, WebRTC IP all spoofed at C++ level instead of JS injection. |
+| **Selectable Chromium engine** | Chrome for Testing (CFT) is the default stock runtime. An opt-in adapter can use CloakBrowser's third-party proprietary binary and its native fingerprint flags when the binary is available and separately licensed. CFT uses weaker CDP/JavaScript emulation for several surfaces and does not mitigate Canvas or AudioContext. |
 | **Persistent state** | Cookies, login, IndexedDB, localStorage stay per-profile across launches and across AI sessions. |
 | **Human handoff** | AI gets stuck on 2FA or CAPTCHA, you take over in the same Chromium window, the agent continues when you are done. |
-| **Cross-platform persona** | Run a Windows persona on a Mac host (or vice versa). C++ patches keep the fingerprint coherent across V8, Blink, and CSS feature signatures. |
-| **Proxy + persona alignment** | Per-profile HTTP or SOCKS5 proxy with a local SOCKS5 bridge so DNS resolution stays remote. Auto-aligns timezone, locale, and `navigator.geolocation` to the proxy egress IP. |
+| **Cross-platform persona** | The opt-in CloakBrowser path passes a native platform control to its proprietary binary. Stock CFT limits the persona to the host OS family because cross-OS coherence is not available there. |
+| **Proxy + persona alignment** | Per-profile HTTP or SOCKS5 proxy with a local SOCKS5 bridge so URL-load DNS resolution stays remote. A successful launch-time proxy probe aligns timezone and, on CloakBrowser, can pass coordinates for `navigator.geolocation`; locale and languages require the separate locale-matching action. Probe failure does not currently block launch. |
 | **Self-hosted** | Profiles live on your disk in plain SQLite plus Chromium user-data-dir format. No account, no license server, no telemetry. |
-| **Open source** | MIT for the entire app, MCP server, and CDP driver. Patched Chromium engine is also open source. |
+| **Open-source app** | The Phantom/MultiZen app, MCP server, CDP driver, and public CloakBrowser wrapper are MIT-licensed. CloakBrowser's compiled binary, build configuration, and C++ patches are proprietary third-party components with separate terms; they are not shipped as open-source engine code by this repository. |
 
 ## Onboarding
 
@@ -186,7 +185,7 @@ Restart your client. The agent now has tools: `list_profiles`, `launch_profile`,
 | MCP server | `@modelcontextprotocol/sdk` over Streamable HTTP + SSE |
 | Profile storage | better-sqlite3 with idempotent migrations |
 | Browser driver | chrome-remote-interface over CDP |
-| Browser engine | CloakBrowser (open-source patched Chromium) |
+| Browser engine | Chrome for Testing (default stock runtime); optional CloakBrowser adapter (proprietary third-party binary) |
 | Build | Yarn 4 workspaces, electron-vite, electron-builder |
 | CI | GitHub Actions matrix on macOS, Windows, Linux |
 
@@ -223,7 +222,7 @@ packages/
 
 Things landing in upcoming releases.
 
-- **multizen-pro patched Chromium**: TLS JA3/JA4 spoof, HTTP/2 SETTINGS fingerprint, native Sec-CH-UA-* overrides. Bumps the anti-detect ceiling well past 90/100 on fingerprint-scan.
+- **Reproducible engine integration**: pin and authenticate optional engine artifacts, expose resolved versions, and add browser-level probes before making native fingerprint coverage claims.
 - **Behavioral injection**: humanized mouse paths, keystroke timing, scroll jitter applied at the CDP input layer.
 - **Per-profile cloud sync** (opt-in, end-to-end encrypted): so the same profile follows you across laptops.
 - **Team workspaces**: shared profile pool with audit log.
@@ -234,7 +233,7 @@ Things landing in upcoming releases.
 | --- | :---: | :---: | :---: |
 | Native MCP server | yes | yes | profile CRUD only |
 | Drives the browser through MCP | yes | yes | no |
-| Anti-detect at C++ level | yes | partial | yes |
+| Native anti-detect engine included by default | no — stock CFT default; optional third-party adapter | partial | varies |
 | Persistent login across sessions | yes | per-session | yes |
 | Self-hosted | yes | no | no |
 | Manual GUI for operators | yes | no | yes |
@@ -247,13 +246,13 @@ Building a multi-account browser is dual-use. We support QA testing across roles
 
 ## Status and history
 
-`v0.2.x` is the current AI-native MCP rewrite (Electron + React + TS + patched Chromium engine).
+`v0.2.x` is the current AI-native MCP rewrite (Electron + React + TypeScript, with stock CFT by default and an optional third-party CloakBrowser adapter).
 
 The legacy `v0.1.1` codebase (Electron + Vue 2 multi-session browser, no MCP) is preserved on the [`archive/vue-v1-legacy`](https://github.com/multizenteam/multizen-browser/tree/archive/vue-v1-legacy) branch and tag [`v0.1.1-legacy-final`](https://github.com/multizenteam/multizen-browser/releases/tag/v0.1.1-legacy-final).
 
 ## License
 
-[MIT](LICENSE). Use it however you want.
+[MIT](LICENSE) covers this repository's code. Optional third-party browser binaries are governed by their own licenses; in particular, CloakBrowser's compiled binary and unpublished build configuration/C++ patches are proprietary and are not covered by this repository's MIT license.
 
 <div align="center">
   <br/>

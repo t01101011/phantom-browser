@@ -226,10 +226,21 @@ export interface LaunchedProfile {
   cdpEndpoint: string;
   pid: number;
   startedAt: string;
+  coherence?: {
+    status: "coherent" | "degraded";
+    issues: string[];
+    geolocationCoverage: "native-upstream" | "cdp-weaker" | "unavailable";
+  };
 }
 
 export interface McpToolError {
-  code: "PROFILE_NOT_FOUND" | "PROFILE_ALREADY_RUNNING" | "PROFILE_NOT_RUNNING" | "LAUNCH_FAILED" | "INVALID_INPUT" | "INTERNAL_ERROR";
+  code:
+    | "PROFILE_NOT_FOUND"
+    | "PROFILE_ALREADY_RUNNING"
+    | "PROFILE_NOT_RUNNING"
+    | "LAUNCH_FAILED"
+    | "INVALID_INPUT"
+    | "INTERNAL_ERROR";
   message: string;
   details?: Record<string, unknown>;
 }
@@ -245,7 +256,13 @@ export interface McpToolError {
  *   dev-system     — dev mode, using system Chrome (no patches)
  */
 export type ChromiumStatus =
-  | { kind: "ready"; version: string; binaryPath: string }
+  | {
+      kind: "ready";
+      engine: "cft" | "cloakbrowser";
+      version: string;
+      releaseTag?: string;
+      binaryPath: string;
+    }
   | { kind: "missing" }
   | { kind: "fetching-manifest" }
   | { kind: "downloading"; bytesReceived: number; bytesTotal: number; version: string }

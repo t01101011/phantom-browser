@@ -26,12 +26,8 @@ export function ChromiumBootstrapModal(): JSX.Element | null {
   if (status.kind === "ready" || status.kind === "dev-system") return null;
 
   return (
-    <div
-      className="phantom-modal-backdrop fixed inset-0 z-[70] flex items-center justify-center"
-    >
-      <div
-        className="phantom-bootstrap p-6 w-full max-w-md mx-6"
-      >
+    <div className="phantom-modal-backdrop fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="phantom-bootstrap p-6 w-full max-w-md mx-6">
         <div className="flex items-center gap-3 mb-4">
           <Cube size={36} glow={false} />
           <div>
@@ -70,7 +66,7 @@ function subtitleFor(status: ChromiumStatus): string {
     case "missing":
       return "First-run download. About 150-550 MB.";
     case "fetching-manifest":
-      return "Resolving the latest compatible build";
+      return "Resolving the configured browser build";
     case "downloading":
       return `Runtime ${status.version}`;
     case "verifying":
@@ -98,7 +94,7 @@ function Body({ status }: { status: ChromiumStatus }): JSX.Element {
     return (
       <div className="flex items-center gap-2 text-[12px] text-slate-400">
         <Loader2 size={14} className="animate-spin text-[#42f58d]" />
-        Resolving latest stable version…
+        Resolving browser version…
       </div>
     );
   }
@@ -119,9 +115,7 @@ function Body({ status }: { status: ChromiumStatus }): JSX.Element {
         : 0;
     return (
       <>
-        <div
-          className="phantom-progress-track relative h-2 rounded-full overflow-hidden mb-3"
-        >
+        <div className="phantom-progress-track relative h-2 rounded-full overflow-hidden mb-3">
           <div
             className="phantom-progress-value absolute inset-y-0 left-0 transition-[width] duration-200"
             style={{ width: `${pct}%` }}
@@ -141,7 +135,7 @@ function Body({ status }: { status: ChromiumStatus }): JSX.Element {
     return (
       <div className="flex items-center gap-2 text-[12px] text-slate-400">
         <Loader2 size={14} className="animate-spin text-[#42f58d]" />
-        Verifying SHA-256 checksum…
+        Verifying signed manifest and SHA-256 checksum…
       </div>
     );
   }

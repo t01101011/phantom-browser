@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Pill } from "../atoms";
 import { relativeTime } from "../../lib/relativeTime";
-import type { AppSettings, SystemInfo, UpdateStatus } from "../../types";
+import type { AppSettings, ChromiumStatus, SystemInfo, UpdateStatus } from "../../types";
 
 interface Props {
   onImport: () => void;
@@ -28,6 +28,7 @@ export function Settings({ onImport }: Props): JSX.Element {
   const [tokenShown, setTokenShown] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [lastChecked, setLastChecked] = useState<number>(0);
+  const [chromiumStatus, setChromiumStatus] = useState<ChromiumStatus | null>(null);
 
   useEffect(() => {
     if (!window.multizen) return;
@@ -35,12 +36,18 @@ export function Settings({ onImport }: Props): JSX.Element {
     void window.multizen.system.info().then(setInfo);
     void window.multizen.update.status().then(setUpdateStatus);
     void window.multizen.update.lastChecked().then(setLastChecked);
+    void window.multizen.chromium.status().then(setChromiumStatus);
     // Refresh "last checked" on every status change too, so a background
     // auto-check updates the label live while Settings is open.
-    return window.multizen.update.onStatus((s) => {
+    const offUpdate = window.multizen.update.onStatus((s) => {
       setUpdateStatus(s);
       void window.multizen.update.lastChecked().then(setLastChecked);
     });
+    const offChromium = window.multizen.chromium.onStatus(setChromiumStatus);
+    return () => {
+      offUpdate();
+      offChromium();
+    };
   }, []);
 
   async function patch(p: Partial<AppSettings>): Promise<void> {
@@ -81,8 +88,8 @@ export function Settings({ onImport }: Props): JSX.Element {
       <div className="max-w-[720px] mx-auto">
         <div className="text-lg font-bold tracking-tight text-slate-100 mb-1.5">Settings</div>
         <div className="text-[13px] text-slate-500 mb-5">
-          MCP server, archives, build info. Configuration is local — Phantom Browser does not call any
-          external API on your behalf.
+          MCP server, archives, build info. Configuration is local — Phantom Browser does not call
+          any external API on your behalf.
         </div>
 
         <Row
@@ -124,8 +131,8 @@ export function Settings({ onImport }: Props): JSX.Element {
             <div className="mt-2">
               <div className="text-[11px] text-slate-500 mb-1">
                 Auth token — required. Send as{" "}
-                <span className="mono text-slate-400">Authorization: Bearer &lt;token&gt;</span>. Keep
-                it secret.
+                <span className="mono text-slate-400">Authorization: Bearer &lt;token&gt;</span>.
+                Keep it secret.
               </div>
               <div
                 className="flex items-center gap-2"
@@ -202,6 +209,13 @@ export function Settings({ onImport }: Props): JSX.Element {
               );
             })}
           </div>
+          {chromiumStatus?.kind === "ready" && (
+            <div className="mono text-[11px] text-slate-500 mt-2">
+              Resolved: {chromiumStatus.engine} ·{" "}
+              {chromiumStatus.releaseTag ?? chromiumStatus.version} · Chromium{" "}
+              {chromiumStatus.version}
+            </div>
+          )}
         </Row>
 
         <Row
@@ -253,7 +267,8 @@ export function Settings({ onImport }: Props): JSX.Element {
             <span className="text-[12px] text-slate-400">{updateLabel(updateStatus)}</span>
           </div>
           <div className="text-[11px] text-slate-600 mt-2">
-            Last checked: {lastChecked ? relativeTime(new Date(lastChecked).toISOString()) : "never"}
+            Last checked:{" "}
+            {lastChecked ? relativeTime(new Date(lastChecked).toISOString()) : "never"}
           </div>
           <label className="flex items-center gap-2.5 mt-3 text-[12px] text-slate-400 cursor-pointer">
             <input
@@ -281,11 +296,11 @@ export function Settings({ onImport }: Props): JSX.Element {
             Send an anonymous daily heartbeat
           </label>
           <div className="text-[11px] text-slate-600 mt-2 leading-relaxed">
-            When on, sends once a day: app version, OS family, and a random
-            single-use token — <b>no</b> account, <b>no</b> persistent ID, and your IP is
-            never stored (a coarse country is derived server-side then discarded). No
-            profiles, proxies, or browsing are ever included. Set{" "}
-            <code className="text-slate-500">MULTIZEN_NO_TELEMETRY=1</code> to force it off.
+            When on, sends once a day: app version, OS family, and a random single-use token —{" "}
+            <b>no</b> account, <b>no</b> persistent ID, and your IP is never stored (a coarse
+            country is derived server-side then discarded). No profiles, proxies, or browsing are
+            ever included. Set <code className="text-slate-500">MULTIZEN_NO_TELEMETRY=1</code> to
+            force it off.
           </div>
         </Row>
 
@@ -312,14 +327,15 @@ const engineOptions: Array<{
   description: string;
 }> = [
   {
-    value: "cloakbrowser",
-    label: "CloakBrowser",
-    description: "Source-patched Chromium from CloakHQ releases. Primary runtime.",
-  },
-  {
     value: "cft",
     label: "Chrome for Testing",
-    description: "Compatibility fallback using Google's official automation build.",
+    description: "Default stock runtime from Google's official automation channel.",
+  },
+  {
+    value: "cloakbrowser",
+    label: "CloakBrowser",
+    description:
+      "Opt-in proprietary third-party binary with native fingerprint flags. Separate CloakHQ terms apply.",
   },
 ];
 

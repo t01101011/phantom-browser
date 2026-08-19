@@ -20,6 +20,9 @@
     "typecheck": "yarn workspaces foreach -A run typecheck",
     "lint": "yarn workspaces foreach -A run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,astro}\"",
+    "coverage:native": "node scripts/native-coverage/run.mjs",
+    "coverage:native:test": "node --test scripts/native-coverage/*.test.mjs",
+    "test": "node --test --experimental-strip-types apps/desktop/src/main/*.test.ts apps/desktop/src/renderer/src/lib/*.test.ts packages/profile-manager/scripts/*.test.ts scripts/native-coverage/*.test.mjs",
     "mcp:dev": "yarn workspace @multizen/mcp-server dev",
     "clean": "rm -rf apps/*/dist apps/*/out packages/*/dist node_modules/.cache"
   },

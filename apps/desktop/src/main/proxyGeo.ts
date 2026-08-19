@@ -1,4 +1,5 @@
 import { request } from "node:https";
+import { isIP } from "node:net";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import type { ProxyConfig } from "@multizen/types";
@@ -29,15 +30,29 @@ export interface ProxyGeoResult {
  */
 export async function probeProxyGeo(
   proxy: ProxyConfig,
-  opts: { timeoutMs?: number } = {},
+  opts: {
+    timeoutMs?: number;
+    requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<RawIpapi>;
+  } = {},
 ): Promise<ProxyGeoResult> {
+  const json = await (opts.requestJson ?? requestProxyGeoJson)(
+    proxy,
+    opts.timeoutMs ?? 10000,
+  );
+  return parseProxyGeoPayload(json);
+}
+
+async function requestProxyGeoJson(
+  proxy: ProxyConfig,
+  timeoutMs: number,
+): Promise<RawIpapi> {
   const proxyUrl = buildProxyUrl(proxy);
   const agent =
     proxy.type === "socks5"
       ? new SocksProxyAgent(proxyUrl)
       : new HttpsProxyAgent(proxyUrl);
 
-  const json = await new Promise<RawIpapi>((resolve, reject) => {
+  return new Promise<RawIpapi>((resolve, reject) => {
     const req = request(
       "https://ipapi.co/json/",
       {
@@ -74,18 +89,23 @@ export async function probeProxyGeo(
       },
     );
 
-    req.setTimeout(opts.timeoutMs ?? 10000, () => {
+    req.setTimeout(timeoutMs, () => {
       req.destroy(new Error("proxy probe timed out"));
     });
     req.on("error", reject);
     req.end();
   });
+}
 
+export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
   if (!json.country_code || !json.timezone) {
     if (json.error) {
       throw new Error(`ipapi.co error: ${json.reason ?? "rate-limit or block"}`);
     }
     throw new Error("ipapi.co returned an unexpected payload");
+  }
+  if (isIP(json.ip ?? "") === 0) {
+    throw new Error("ipapi.co returned no valid egress IP");
   }
 
   return {
@@ -93,13 +113,13 @@ export async function probeProxyGeo(
     countryName: json.country_name ?? json.country_code,
     timezone: json.timezone,
     city: json.city ?? "",
-    ip: json.ip ?? "",
+    ip: json.ip,
     latitude: typeof json.latitude === "number" ? json.latitude : undefined,
     longitude: typeof json.longitude === "number" ? json.longitude : undefined,
   };
 }
 
-interface RawIpapi {
+export interface RawIpapi {
   ip: string;
   city: string;
   country_code: string;

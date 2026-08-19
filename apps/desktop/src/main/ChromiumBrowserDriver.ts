@@ -19,6 +19,12 @@ import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
+import { applyCftGeolocationOverride } from "./cdpGeolocation";
+import {
+  ProxyCoherenceError,
+  resolveProxyCoherence,
+  type ProxyCoherenceResult,
+} from "./proxyCoherence";
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
@@ -101,7 +107,10 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     return super.emit(event, ...args);
   }
 
-  async launch(profileId: ProfileId): Promise<LaunchedProfile> {
+  async launch(
+    profileId: ProfileId,
+    opts: { acceptDegradedCoherence?: boolean } = {},
+  ): Promise<LaunchedProfile> {
     const existing = this.running.get(profileId);
     if (existing) {
       return {
@@ -172,12 +181,21 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // and is out of scope for #13.
     let webrtcSpoofIp: string | null = null;
     let geoCoords: { latitude: number; longitude: number } | null = null;
+    let coherence: ProxyCoherenceResult | null = null;
     if (profile.proxy) {
       try {
         const geo = await probeProxyGeo(profile.proxy, { timeoutMs: 4000 });
-        webrtcSpoofIp = geo.ip;
-        if (typeof geo.latitude === "number" && typeof geo.longitude === "number") {
-          geoCoords = { latitude: geo.latitude, longitude: geo.longitude };
+        coherence = resolveProxyCoherence({
+          engine,
+          fingerprint: fp,
+          geo,
+          acceptDegraded: opts.acceptDegradedCoherence,
+        });
+        fp = coherence.fingerprint;
+        webrtcSpoofIp = coherence.webrtcIp;
+        geoCoords = coherence.coordinates;
+        if (JSON.stringify(fp) !== JSON.stringify(profile.fingerprint)) {
+          this.profileManager.update(profileId, { fingerprint: fp });
         }
         // Cache the resolved country on the profile so the GUI flag chip
         // matches the proxy's egress (Luxembourg proxy → LU flag, not the
@@ -185,17 +203,15 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         if (geo.country) {
           this.profileManager.setProxyCountry(profileId, geo.country.toLowerCase());
         }
-        if (geo.timezone && geo.timezone !== fp.timezone) {
-          console.log(
-            `[multizen] aligning fingerprint timezone ${fp.timezone} → ${geo.timezone} (proxy geo)`,
-          );
-          fp = { ...fp, timezone: geo.timezone };
-        }
       } catch (e) {
-        console.warn(
-          "[multizen] proxy IP probe failed; using WebRTC block fallback:",
-          (e as Error).message,
-        );
+        if (e instanceof ProxyCoherenceError) throw e;
+        coherence = resolveProxyCoherence({
+          engine,
+          fingerprint: fp,
+          probeError: e,
+          acceptDegraded: opts.acceptDegradedCoherence,
+        });
+        console.warn(`[phantom] proxy coherence degraded: ${coherence.issues.join("; ")}`);
       }
     }
     // No-proxy: fp.timezone is left as the profile configured it (issue #13).
@@ -358,9 +374,8 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // use --host-resolver-rules: it triggers the "unsupported flag"
       // infobar (visible to the user, even though JS can't probe it),
       // and a SOCKS5 upstream makes it redundant anyway. Real anti-
-      // detect products (Multilogin Mimic) solve the residual leak
-      // with a custom DNS-resolver source patch — a Phase-1 item for
-      // multizen-pro, not the open-source build.
+      // detect products may solve the residual leak with custom resolver
+      // patches. This repository does not own or ship such a Chromium patch.
       args.push("--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction");
       args.push("--dns-over-https-mode=off");
       args.push("--dns-prefetch-disable");
@@ -396,17 +411,11 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       args.push(`--disable-extensions-except=${joined}`);
     }
 
-    // NOTE on Sec-CH-UA: The Client Hints headers (`Sec-CH-UA`,
-    // `Sec-CH-UA-Platform`, `Sec-CH-UA-Platform-Version`, `Sec-CH-UA-Arch`,
-    // `Sec-CH-UA-Bitness`, etc.) and `navigator.userAgentData` are NOT
-    // overridable via CLI flags. They are baked into the compiled Chromium
-    // binary at build time. To make them coherent with our chosen `userAgent`
-    // we need our patched Chromium build (multizen-pro) which applies native
-    // overrides. Until that ships, system Chrome will emit its real Client
-    // Hints and detection vendors will see a UA-vs-CH mismatch.
-    //
-    // The full ClientHints object is stored in `profile.fingerprint.clientHints`
-    // and will be picked up by the patched binary's launch wrapper when present.
+    // NOTE on Sec-CH-UA: these values are not fully controllable through CLI
+    // flags. On stock CFT we apply `userAgentMetadata` through CDP below; the
+    // result is emulation rather than native engine behavior. The opt-in
+    // CloakBrowser adapter instead passes the native brand/platform-version
+    // controls exposed by its proprietary third-party binary.
 
     // Build a minimal env for the child — Electron's main process
     // accumulates a pile of ELECTRON_*, CHROME_*, V8_*, DYLD_* env vars
@@ -567,11 +576,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
             console.error("[multizen] setDeviceMetricsOverride failed:", e);
           }
         }
+        // CFT has no native location control. CDP is a useful but explicitly
+        // weaker, potentially observable fallback.
+        if (ctx.isRoot && engine === "cft" && geoCoords) {
+          await applyCftGeolocationOverride(send, geoCoords, coherence ?? undefined);
+        }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.
         //
-        // ONLY run for CFT. CloakBrowser sets these natively at C++ level
-        // through --fingerprint-timezone / --fingerprint-locale /
-        // --fingerprint-brand-version. Layering CDP `Emulation.*` on top
+        // Run this full block only for CFT. CloakBrowser exposes native
+        // timezone and brand/version controls, but no verified native locale
+        // switch. Layering CDP UA/timezone `Emulation.*` on top
         // produces subtle disagreements between layers (e.g. our CDP UA
         // string ≠ CloakBrowser's native UA-CH brand list) that
         // composite scorers like fingerprint-scan.com flag as "Masking
@@ -663,6 +677,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         console.error("[multizen] CDP bootstrap failed:", e);
       });
 
+
     // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
     // to Web Store pages only (the host polls a DOM attribute there, never on
     // the user's normal browsing). The CDP session is profile-scoped, so any
@@ -727,7 +742,19 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     });
 
     this.emit("running-changed", { kind: "launched", profileId });
-    return { id: profileId, cdpEndpoint, pid: child.pid, startedAt };
+    return {
+      id: profileId,
+      cdpEndpoint,
+      pid: child.pid,
+      startedAt,
+      coherence: coherence
+        ? {
+            status: coherence.status,
+            issues: coherence.issues,
+            geolocationCoverage: coherence.geolocationCoverage,
+          }
+        : undefined,
+    };
   }
 
   async close(profileId: ProfileId): Promise<void> {

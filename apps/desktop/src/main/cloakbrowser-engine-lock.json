@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "engine": "cloakbrowser",
+  "upstreamRepository": "https://github.com/CloakHQ/CloakBrowser",
+  "upstreamWrapperRevision": "a5f2c33ff9aa27cabd93871d714ee1469fb8fcc5",
+  "publisherEd25519PublicKey": "MKFKwIhUcKWq5xTuNA0Ovg99njcDEcEJvmWYYhApvaU=",
+  "trustRootProvenance": "CloakHQ/CloakBrowser cloakbrowser/config.py BINARY_SIGNING_PUBKEYS at wrapper revision a5f2c33ff9aa27cabd93871d714ee1469fb8fcc5",
+  "platforms": {
+    "linux-x64": {
+      "releaseTag": "chromium-v146.0.7680.177.5",
+      "chromiumVersion": "146.0.7680.177.5",
+      "assetFilename": "cloakbrowser-linux-x64.tar.gz",
+      "sha256": "4a12bcde95fa1bb1beef2b41ab5e5c27c36be78e3be3d0dac8c64d705216670e",
+      "channel": "free-public",
+      "license": "proprietary-binary-separate-license"
+    },
+    "linux-arm64": {
+      "releaseTag": "chromium-v146.0.7680.177.3",
+      "chromiumVersion": "146.0.7680.177.3",
+      "assetFilename": "cloakbrowser-linux-arm64.tar.gz",
+      "sha256": "8b71ce53b4fd131327331a31fba3835d71882d19bfaabde78dd0f5390bd16f45",
+      "channel": "free-public",
+      "license": "proprietary-binary-separate-license"
+    },
+    "darwin-x64": {
+      "releaseTag": "chromium-v145.0.7632.109.2",
+      "chromiumVersion": "145.0.7632.109.2",
+      "assetFilename": "cloakbrowser-darwin-x64.tar.gz",
+      "sha256": "a0a061b1945db55b3bbe95986a82b67803311c0fedabb3946e7ab0172273daac",
+      "channel": "free-public",
+      "license": "proprietary-binary-separate-license"
+    },
+    "darwin-arm64": {
+      "releaseTag": "chromium-v145.0.7632.109.2",
+      "chromiumVersion": "145.0.7632.109.2",
+      "assetFilename": "cloakbrowser-darwin-arm64.tar.gz",
+      "sha256": "505582aa1bd3971c577f70e0cbbe016431702bdb693529abfd943b5bd9120c1c",
+      "channel": "free-public",
+      "license": "proprietary-binary-separate-license"
+    },
+    "win32-x64": {
+      "releaseTag": "chromium-v146.0.7680.177.5",
+      "chromiumVersion": "146.0.7680.177.5",
+      "assetFilename": "cloakbrowser-windows-x64.zip",
+      "sha256": "b213795cb32c3169f766c74ce1d0275fc89d3df256de39c04da7fb4c23b7fdbe",
+      "channel": "free-public",
+      "license": "proprietary-binary-separate-license"
+    }
+  }
+}

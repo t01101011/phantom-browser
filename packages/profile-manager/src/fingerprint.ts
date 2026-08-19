@@ -19,12 +19,12 @@ import type {
  * incompatible values without going through `applyOverrides()` (which
  * preserves coherence where it can).
  *
- * Limit of this open-source generator: only fields injectable via Chromium
- * launch flags or runtime preload scripts can be applied without a patched
- * binary. Sec-CH-UA / navigator.userAgentData / TLS JA3-JA4 / Canvas-Audio
- * noise require the closed-source patched Chromium build (multizen-pro).
- * The fingerprint we generate stores those fields anyway so the patched
- * binary can apply them when it ships.
+ * Application depends on the selected engine. Stock CFT uses launch flags,
+ * CDP emulation, or preload scripts and leaves some surfaces uncovered.
+ * Sec-CH-UA / navigator.userAgentData can be applied through CDP on CFT;
+ * native controls exposed by the opt-in CloakBrowser adapter depend on its
+ * proprietary third-party binary. The model stores the full persona so each
+ * engine path can apply its supported fields explicitly.
  */
 
 /** Current Chrome stable. Bumped when a new milestone goes stable on
@@ -1214,6 +1214,12 @@ const LOCALES: ReadonlyArray<LocaleGroup> = [
 export function findLocaleIdByCountry(cc: string): string | null {
   const found = findLocaleByCountry(cc);
   return found?.id ?? null;
+}
+
+/** Return a locale only for an unambiguous exact country mapping. */
+export function findDeterministicLocaleIdByCountry(cc: string): string | null {
+  const matches = LOCALES.filter((locale) => locale.country === cc.toLowerCase());
+  return matches.length === 1 ? matches[0]!.id : null;
 }
 
 function findLocaleByCountry(cc: string): LocaleGroup | null {
