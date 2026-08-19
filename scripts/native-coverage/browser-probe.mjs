@@ -104,6 +104,109 @@ export const BROWSER_PROBE_SOURCE = String.raw`async () => {
   await safe("timezone", () => ({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, offsetMinutes: new Date().getTimezoneOffset() }));
   await safe("localeLanguages", () => ({ language: navigator.language, languages: navigator.languages, intlLocale: Intl.DateTimeFormat().resolvedOptions().locale }));
 
+  // ── Extended surfaces (Item 7) ─────────────────────────────────────────
+  // Dedicated probes for fingerprint surfaces that the coarse screen/locale
+  // probes above only partially cover. These give the launch-contract test
+  // concrete runtime values to compare against the declared coverage level.
+
+  await safe("availScreen", () => {
+    // screen.availLeft/availTop expose taskbar position (Windows) or dock
+    // deduction (macOS). The delta between screen and avail dimensions reveals
+    // the OS-level chrome — a fingerprint surface that CFT cannot spoof
+    // natively (only the JS-level availWidth/availHeight are patched via
+    // preload-js on CFT; availLeft/availTop are NOT patched).
+    const availLeft = screen.availLeft ?? 0;
+    const availTop = screen.availTop ?? 0;
+    const taskbarWidth = screen.width - screen.availWidth;
+    const taskbarHeight = screen.height - screen.availHeight;
+    return {
+      availLeft,
+      availTop,
+      availWidth: screen.availWidth,
+      availHeight: screen.availHeight,
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      taskbarWidth,   // horizontal deduction (e.g., Windows taskbar on side)
+      taskbarHeight,  // vertical deduction (e.g., Windows/macOS dock)
+      digest: digest([availLeft, availTop, screen.availWidth, screen.availHeight, screen.width, screen.height].join(",")),
+    };
+  });
+
+  await safe("dprDepth", () => {
+    // devicePixelRatio quantization: most desktops report 1 or 2 (Retina),
+    // but some report 1.25, 1.5, 1.75 (Windows DPI scaling). Fractional DPR
+    // is a host-OS tell — CloakBrowser's native flags imply DPR from screen
+    // params, while CFT's CDP setDeviceMetricsOverride can set it precisely.
+    const dpr = devicePixelRatio;
+    const isInteger = Number.isInteger(dpr);
+    const isFractional = !isInteger;
+    // Probe via matchMedia resolution queries — a real GPU display + browser
+    // combo answers consistently, while a headless/virtual display may not.
+    const mediaResolutions = [];
+    for (const dppx of [1, 1.25, 1.5, 1.75, 2, 2.5, 3]) {
+      try {
+        const mql = window.matchMedia("(resolution: " + dppx + "dppx)");
+        mediaResolutions.push({ dppx: dppx, matches: mql.matches });
+      } catch { /* matchMedia may reject non-standard values */ }
+    }
+    const mediaStr = mediaResolutions.map(function(r) { return r.dppx + "=" + r.matches; }).join(",");
+    return {
+      dpr: dpr,
+      isInteger: isInteger,
+      isFractional: isFractional,
+      // CSS pixel ratio: how many device pixels per CSS pixel
+      cssPixelRatio: dpr,
+      mediaResolutions: mediaResolutions,
+      digest: digest(dpr + ":" + isInteger + ":" + mediaStr),
+    };
+  });
+
+  await safe("icuLocale", () => {
+    // Deep ICU locale probing — Intl.DateTimeFormat().resolvedOptions()
+    // exposes calendar, numberingSystem, hourCycle, timeZoneName which are
+    // derived from the V8 ICU data, NOT from --lang or --accept-lang flags.
+    // CloakBrowser has no native locale switch, so these leak the host ICU
+    // data unless CDP setLocaleOverride is applied (Item 6 contract: locale
+    // is the only CloakBrowser field that uses CDP).
+    var dtfOpts = Intl.DateTimeFormat().resolvedOptions();
+    var nfOpts = Intl.NumberFormat().resolvedOptions();
+    var lfOpts = Intl.Locale
+      ? (new Intl.Locale(navigator.language).resolvedOptions ? new Intl.Locale(navigator.language).resolvedOptions() : {})
+      : {};
+    var listFmt = Intl.ListFormat
+      ? new Intl.ListFormat(navigator.language).resolvedOptions()
+      : null;
+    var pluralRules = Intl.PluralRules
+      ? new Intl.PluralRules(navigator.language).resolvedOptions()
+      : null;
+    var collator = Intl.Collator
+      ? new Intl.Collator(navigator.language).resolvedOptions()
+      : null;
+    return {
+      locale: dtfOpts.locale,
+      calendar: dtfOpts.calendar,
+      numberingSystem: dtfOpts.numberingSystem,
+      hourCycle: dtfOpts.hourCycle,
+      timeZoneName: dtfOpts.timeZoneName,
+      nfLocale: nfOpts.locale,
+      nfNumberingSystem: nfOpts.numberingSystem,
+      lfBaseName: lfOpts.baseName || null,
+      lfCalendar: lfOpts.calendar || null,
+      lfNumberingSystem: lfOpts.numberingSystem || null,
+      lfHourCycle: lfOpts.hourCycle || null,
+      listFmtType: listFmt ? listFmt.type : null,
+      listFmtStyle: listFmt ? listFmt.style : null,
+      pluralRulesType: pluralRules ? pluralRules.type : null,
+      collatorSensitivity: collator ? collator.sensitivity : null,
+      collatorNumeric: collator ? collator.numeric : null,
+      digest: digest(JSON.stringify({
+        l: dtfOpts.locale, c: dtfOpts.calendar, n: dtfOpts.numberingSystem,
+        h: dtfOpts.hourCycle, t: dtfOpts.timeZoneName,
+        nf: nfOpts.numberingSystem, lf: lfOpts.baseName
+      })),
+    };
+  });
+
   await safe("geolocation", async () => {
     if (!navigator.geolocation) throw new Error("Geolocation API unavailable");
     const position = await new Promise((resolve, reject) => {

@@ -19,6 +19,13 @@ export const SURFACES = [
   "tlsJa3Ja4",
   "http2Settings",
   "http3Quic",
+  // ── Extended surfaces (Item 7) ───────────────────────────────────────
+  // Dedicated probes for fingerprint surfaces that the coarse screen/locale
+  // probes only partially cover. These connect runtime observations back to
+  // the launch-contract coverage declarations.
+  "availScreen",  // screen.availLeft/availTop + taskbar deduction (unpatched on CFT)
+  "dprDepth",     // devicePixelRatio quantization + matchMedia resolution queries
+  "icuLocale",    // deep ICU locale: calendar, numberingSystem, hourCycle, collation
 ];
 
 export function sha256(value) {

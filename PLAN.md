@@ -58,13 +58,22 @@ Key findings encoded in the contract:
 
 Verification: 21/21 new tests pass, 75/75 full suite pass, typecheck clean.
 
-### Item 7 — Extend browser-level probes
+### Item 7 — Extend browser-level probes — COMPLETE (2026-08-19)
 
-Harness has 11 surfaces OBSERVED. Add: `availScreen`, DPR depth, ICU locale depth, and connect probe results back to launch-config assertions.
+Extended the native-coverage harness from 11 to 14 observed surfaces:
 
-Files to touch:
-- `scripts/native-coverage/browser-probe.mjs`
-- `scripts/native-coverage/evidence.mjs`
+1. **`availScreen`** — `screen.availLeft`/`availTop` + taskbar deduction. Dedicated probe for the available-screen surface that CFT patches via preload-js but CloakBrowser leaves unsupported (`availLeft`/`availTop` are NOT patched on either engine).
+
+2. **`dprDepth`** — `devicePixelRatio` quantization (integer vs fractional), `matchMedia(resolution: Ndppx)` queries for 1/1.25/1.5/1.75/2/2.5/3. Fractional DPR is a host-OS tell (Windows DPI scaling).
+
+3. **`icuLocale`** — deep ICU locale probing: `calendar`, `numberingSystem`, `hourCycle`, `timeZoneName` from `DateTimeFormat/NumberFormat/Locale/ListFormat/PluralRules/Collator`. These are V8 ICU data, NOT controllable via `--lang`/`--accept-lang` flags. Connects to the Item 6 contract finding that locale is the only CloakBrowser field using CDP.
+
+**Probe-to-contract cross-reference:** created `launchContractProbe.ts` + test (16 tests) that maps each new probe surface to its `FingerprintConfig` field and assert the coverage level matches the launch contract:
+- `availScreen` → CFT: preload-js, CloakBrowser: unsupported
+- `dprDepth` → CFT: cdp, CloakBrowser: unsupported
+- `icuLocale` → CFT: cdp, CloakBrowser: cdp (the documented gap)
+
+Verification: 95/95 full suite pass (20 new), typecheck clean.
 
 ### Item 8 — Proxy-geo failure visibility
 

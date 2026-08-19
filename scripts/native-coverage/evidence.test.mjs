@@ -96,3 +96,54 @@ test("human summary includes immutable engine identity and UNKNOWN claim", () =>
   assert.match(summary, /Binary SHA-256: a{64}/);
   assert.match(summary, /Native coverage claim: UNKNOWN/);
 });
+
+test("extended surfaces (availScreen, dprDepth, icuLocale) are in the surface list and default to UNKNOWN", () => {
+  const report = buildReport({ ...BASE, observations: {} });
+  assert.ok(report.evidence.availScreen, "availScreen missing from evidence");
+  assert.ok(report.evidence.dprDepth, "dprDepth missing from evidence");
+  assert.ok(report.evidence.icuLocale, "icuLocale missing from evidence");
+  assert.equal(report.evidence.availScreen.status, "UNKNOWN");
+  assert.equal(report.evidence.dprDepth.status, "UNKNOWN");
+  assert.equal(report.evidence.icuLocale.status, "UNKNOWN");
+});
+
+test("extended surfaces accept observed browser-runtime evidence", () => {
+  const report = buildReport({
+    ...BASE,
+    observations: {
+      availScreen: {
+        status: "OBSERVED",
+        method: "browser-runtime",
+        value: { availLeft: 0, availTop: 0, taskbarWidth: 0, taskbarHeight: 40 },
+      },
+      dprDepth: {
+        status: "OBSERVED",
+        method: "browser-runtime",
+        value: { dpr: 2, isInteger: true },
+      },
+      icuLocale: {
+        status: "OBSERVED",
+        method: "browser-runtime",
+        value: { locale: "en-US", calendar: "gregory", numberingSystem: "latn" },
+      },
+    },
+  });
+  assert.equal(report.evidence.availScreen.status, "OBSERVED");
+  assert.equal(report.evidence.availScreen.value.taskbarHeight, 40);
+  assert.equal(report.evidence.dprDepth.status, "OBSERVED");
+  assert.equal(report.evidence.dprDepth.value.dpr, 2);
+  assert.equal(report.evidence.icuLocale.status, "OBSERVED");
+  assert.equal(report.evidence.icuLocale.value.calendar, "gregory");
+});
+
+test("extended surfaces reject launch-flag method like all other surfaces", () => {
+  const report = buildReport({
+    ...BASE,
+    observations: {
+      availScreen: { status: "PASS", method: "launch-flag", value: true },
+      dprDepth: { status: "NATIVE", method: "launch-flag", value: 2 },
+    },
+  });
+  assert.equal(report.evidence.availScreen.status, "UNKNOWN");
+  assert.equal(report.evidence.dprDepth.status, "UNKNOWN");
+});
