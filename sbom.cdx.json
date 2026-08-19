@@ -34,12 +34,12 @@
       }
     ],
     "component": {
-      "name": "multizen",
+      "name": "phantom-browser",
       "group": "",
-      "version": "0.3.0",
-      "description": "AI-native browser for agents and operators — desktop app + MCP server with anti-detect Chromium",
-      "purl": "pkg:npm/multizen@0.3.0",
-      "bom-ref": "pkg:npm/multizen@0.3.0",
+      "version": "0.4.0",
+      "description": "Phantom Browser \u2014 AI-native antidetect browser with persistent Chromium profiles, MCP server, and per-profile proxy/fingerprint",
+      "purl": "pkg:npm/phantom-browser@0.4.0",
+      "bom-ref": "pkg:npm/phantom-browser@0.4.0",
       "properties": [
         {
           "name": "cdx:npm:scripts",
@@ -88,11 +88,11 @@
       "externalReferences": [
         {
           "type": "website",
-          "url": "https://getmultizen.com"
+          "url": "https://github.com/t01101011/phantom-browser"
         },
         {
           "type": "vcs",
-          "url": "https://github.com/multizenteam/multizen-browser.git"
+          "url": "https://github.com/t01101011/phantom-browser.git"
         }
       ]
     },
@@ -22074,7 +22074,7 @@
       "group": "",
       "name": "bluebird-lst",
       "version": "1.0.9",
-      "description": "Bluebird — longStackTraces: true, cancellation: true",
+      "description": "Bluebird \u2014 longStackTraces: true, cancellation: true",
       "scope": "required",
       "hashes": [
         {
@@ -25738,7 +25738,7 @@
       "group": "",
       "name": "cacheable-lookup",
       "version": "5.0.4",
-      "description": "A cacheable dns.lookup(…) that respects the TTL",
+      "description": "A cacheable dns.lookup(\u2026) that respects the TTL",
       "scope": "required",
       "hashes": [
         {
@@ -61078,7 +61078,7 @@
       "group": "",
       "name": "log-symbols",
       "version": "4.1.0",
-      "description": "Colored symbols for various log levels. Example: `✔︎ Success`",
+      "description": "Colored symbols for various log levels. Example: `\u2714\ufe0e Success`",
       "scope": "required",
       "hashes": [
         {
@@ -77518,7 +77518,7 @@
       "group": "",
       "name": "quick-lru",
       "version": "5.1.1",
-      "description": "Simple “Least Recently Used” (LRU) cache",
+      "description": "Simple \u201cLeast Recently Used\u201d (LRU) cache",
       "scope": "required",
       "hashes": [
         {

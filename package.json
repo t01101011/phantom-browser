@@ -2,12 +2,12 @@
   "name": "phantom-browser",
   "version": "0.4.0",
   "productName": "Phantom Browser",
+  "homepage": "https://github.com/t01101011/phantom-browser",
   "private": true,
-  "description": "AI-native browser for agents and operators — desktop app + MCP server with anti-detect Chromium",
-  "homepage": "https://getmultizen.com",
+  "description": "Phantom Browser — AI-native antidetect browser with persistent Chromium profiles, MCP server, and per-profile proxy/fingerprint",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t01101011/multizen-browser.git"
+    "url": "https://github.com/t01101011/phantom-browser.git"
   },
   "license": "MIT",
   "workspaces": [

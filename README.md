@@ -1,9 +1,9 @@
 <div align="center">
-  <img src=".github/assets/logo.png" width="96" height="96" alt="MultiZen" />
+  <img src=".github/assets/logo.png" width="96" height="96" alt="Phantom Browser" />
 
-  <h1>MultiZen</h1>
+  <h1>Phantom Browser</h1>
 
-  <p><strong>A browser library for AI agents and human operators.</strong></p>
+  <p><strong>AI-native antidetect browser with persistent Chromium profiles.</strong></p>
 
   <p>
     Local Chromium profiles with their own cookies, fingerprint, and proxy.<br/>
@@ -12,252 +12,157 @@
   </p>
 
   <p>
-    <a href="https://github.com/multizenteam/multizen-browser/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/multizenteam/multizen-browser?style=for-the-badge&color=8b5cf6&labelColor=0a0b0f"></a>
-    <a href="https://github.com/multizenteam/multizen-browser/blob/master/LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/multizenteam/multizen-browser?style=for-the-badge&color=ec4899&labelColor=0a0b0f"></a>
-    <a href="https://github.com/multizenteam/multizen-browser/actions/workflows/release.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/multizenteam/multizen-browser/release.yml?style=for-the-badge&labelColor=0a0b0f"></a>
-    <a href="https://github.com/multizenteam/multizen-browser/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/multizenteam/multizen-browser/total?style=for-the-badge&color=3b82f6&labelColor=0a0b0f"></a>
-    <a href="https://github.com/multizenteam/multizen-browser/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/multizenteam/multizen-browser?style=for-the-badge&color=ff6b35&labelColor=0a0b0f"></a>
-    <a href="https://discord.gg/pd6MhzPbJ3"><img alt="Discord" src="https://img.shields.io/badge/discord-join-5865f2?style=for-the-badge&labelColor=0a0b0f"></a>
+    <a href="https://github.com/t01101011/phantom-browser/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/t01101011/phantom-browser?style=for-the-badge&color=42F58D&labelColor=0a0b0f"></a>
+    <a href="https://github.com/t01101011/phantom-browser/blob/master/LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/t01101011/phantom-browser?style=for-the-badge&color=42F58D&labelColor=0a0b0f"></a>
+    <a href="https://github.com/t01101011/phantom-browser/actions/workflows/release.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/t01101011/phantom-browser/release.yml?style=for-the-badge&labelColor=0a0b0f"></a>
+    <a href="https://github.com/t01101011/phantom-browser/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/t01101011/phantom-browser/total?style=for-the-badge&color=42F58D&labelColor=0a0b0f"></a>
   </p>
 
   <p>
-    <a href="https://getmultizen.com"><strong>getmultizen.com</strong></a>
-    &nbsp;·&nbsp;
-    <a href="https://github.com/multizenteam/multizen-browser/releases/latest">Download</a>
-    &nbsp;·&nbsp;
-    <a href="https://discord.gg/pd6MhzPbJ3">Discord</a>
+    <a href="https://github.com/t01101011/phantom-browser/releases/latest"><strong>Download</strong></a>
   </p>
-
-  <br/>
-
-  <img src=".github/assets/profiles-list.jpg" alt="MultiZen profile library with platform, proxy country, and AI-activity indicators" width="100%" />
-
-  <br/><br/>
 </div>
 
-## What it is
+---
 
-MultiZen is a desktop app that runs a library of isolated Chromium browser profiles. Each profile has its own cookies, login state, fingerprint, and proxy. A local MCP server on `127.0.0.1:7777` exposes browser-drive tools (navigate, click, type, extract, screenshot) to any MCP client.
+## What is Phantom Browser?
 
-The result: your AI agent in Cursor or Claude Desktop can complete real authenticated workflows. When it hits a 2FA prompt or CAPTCHA, you step in through the same Chromium window. When you are done, the agent picks up where it left off. Cookies and session state survive between launches.
+Phantom Browser is a desktop app that runs a library of isolated Chromium browser profiles. Each profile has its own cookies, login state, fingerprint, and proxy. A local MCP server on `127.0.0.1:7777` exposes browser-drive tools (navigate, click, type, extract, screenshot) to any MCP client.
 
-## Install
+This is a fork of [MultiZen](https://github.com/multizenteam/multizen-browser) (MIT-licensed) with independent branding, design system, and feature work. The upstream MIT license and attribution are preserved.
 
-### macOS
+### Key features
 
-The cleanest path. Homebrew handles the Gatekeeper quarantine for you:
+- **Persistent profiles** — each profile has its own user-data directory, cookies, localStorage, IndexedDB, and extension set
+- **Per-profile proxy** — HTTP/SOCKS5 proxy with DNS-over-proxy and WebRTC leak prevention
+- **Fingerprint management** — coherent fingerprints via Chrome for Testing (CFT) or CloakBrowser (opt-in evaluation)
+- **MCP server** — drive profiles from Cursor, Claude Desktop, or any MCP-compatible client
+- **Companion extension** — "Add to Phantom Browser" button on Chrome Web Store pages
+- **Encrypted archive export** — `.mzar` encrypted profile archives for backup/transfer
+- **Profile groups** — tag-based grouping with bulk launch/stop
+- **Dark UI** — near-black surfaces with restrained spectral-green accents
 
-```sh
-brew tap multizenteam/multizen
-brew install --cask multizen
-```
-
-Or grab the DMG straight from the [releases page](https://github.com/multizenteam/multizen-browser/releases/latest) and run this once after install to bypass the unsigned-app warning:
-
-```sh
-xattr -cr /Applications/MultiZen.app
-```
-
-### Linux
-
-```sh
-curl -LO https://github.com/multizenteam/multizen-browser/releases/latest/download/MultiZen-linux-x86_64.AppImage
-chmod +x MultiZen-linux-x86_64.AppImage
-./MultiZen-linux-x86_64.AppImage
-```
-
-Some distros need `libfuse2` (`apt install libfuse2t64` on Ubuntu 24.04+). If Chromium's sandbox refuses to start, add `--no-sandbox`.
+## Download
 
 ### Windows
 
-Download [MultiZen-win-x64.exe](https://github.com/multizenteam/multizen-browser/releases/latest/download/MultiZen-win-x64.exe). SmartScreen may flag the installer as unrecognized on first download. Click **More info**, then **Run anyway**.
+Download [Phantom-Browser-win-x64.exe](https://github.com/t01101011/phantom-browser/releases/latest/download/Phantom-Browser-win-x64.exe). SmartScreen may flag the installer as unrecognized on first download. Click **More info**, then **Run anyway**.
 
-### One-liner installer
+### macOS (Apple Silicon)
 
-For macOS and Linux:
+Download [Phantom-Browser-mac-arm64.dmg](https://github.com/t01101011/phantom-browser/releases/latest/download/Phantom-Browser-mac-arm64.dmg). Since the app is unsigned, run this once after install:
 
-```sh
-curl -sSL https://getmultizen.com/install.sh | bash
+```bash
+xattr -cr /Applications/Phantom\ Browser.app
+```
+
+### macOS (Intel)
+
+Download [Phantom-Browser-mac-x64.dmg](https://github.com/t01101011/phantom-browser/releases/latest/download/Phantom-Browser-mac-x64.dmg). Same quarantine bypass as above.
+
+### Linux
+
+```bash
+curl -LO https://github.com/t01101011/phantom-browser/releases/latest/download/Phantom-Browser-linux-x86_64.AppImage
+chmod +x Phantom-Browser-linux-x86_64.AppImage
+./Phantom-Browser-linux-x86_64.AppImage
 ```
 
 ## How it works
 
 ```
-+----------------------+         +-----------------------+
-|  Cursor / Claude     |  MCP    |  MultiZen Desktop App |
-|  Desktop / Cline     | <-----> |  127.0.0.1:7777       |
-+----------------------+         +-----------+-----------+
-                                             |
-                                             | spawn / drive (CDP)
-                                             v
-                              +--------------+--------------+
-                              |  Profile A  |  Profile B  | ...
-                              |  cookies    |  cookies    |
-                              |  proxy LU   |  proxy US   |
-                              |  Win 145    |  macOS 145  |
-                              +-------------+--------------+
-                                            |
-                                            v
-                                  Chromium engine
-                                  (Chrome for Testing by default;
-                                   optional CloakBrowser adapter)
+  Cursor / Claude Desktop  ──MCP──►  Phantom Browser Desktop App
+                                           │
+                                           ├──► SQLite (profiles.db)
+                                           │
+                                           └──► Chromium (per-profile user-data-dir + proxy + fingerprint)
 ```
 
-Each profile is a real Chromium window with persistent state on disk. The MCP server speaks the standard Anthropic Model Context Protocol over Streamable HTTP (plus legacy SSE) so it works with any client. Browser-drive tools call into Chrome DevTools Protocol under the hood.
+| Component | Tech |
+|---|---|
+| Desktop shell | Electron + React |
+| Profile store | SQLite (better-sqlite3) |
+| Browser engine | Chrome for Testing (default), CloakBrowser (opt-in) |
+| MCP transport | stdio + HTTP (SSE) |
+| IPC | Electron ipcMain/ipcRenderer + `window.multizen` bridge |
 
-## Features
+## MCP configuration
 
-|  | What it does |
-| --- | --- |
-| **MCP server** | Native localhost endpoint. Works with Cursor, Claude Desktop, Cline, Continue, anything else that speaks MCP. |
-| **Selectable Chromium engine** | Chrome for Testing (CFT) is the default stock runtime. An opt-in adapter can use CloakBrowser's third-party proprietary binary and its native fingerprint flags when the binary is available and separately licensed. CFT uses weaker CDP/JavaScript emulation for several surfaces and does not mitigate Canvas or AudioContext. |
-| **Persistent state** | Cookies, login, IndexedDB, localStorage stay per-profile across launches and across AI sessions. |
-| **Human handoff** | AI gets stuck on 2FA or CAPTCHA, you take over in the same Chromium window, the agent continues when you are done. |
-| **Cross-platform persona** | The opt-in CloakBrowser path passes a native platform control to its proprietary binary. Stock CFT limits the persona to the host OS family because cross-OS coherence is not available there. |
-| **Proxy + persona alignment** | Per-profile HTTP or SOCKS5 proxy with a local SOCKS5 bridge so URL-load DNS resolution stays remote. A successful launch-time proxy probe aligns timezone and, on CloakBrowser, can pass coordinates for `navigator.geolocation`; locale and languages require the separate locale-matching action. Probe failure does not currently block launch. |
-| **Self-hosted** | Profiles live on your disk in plain SQLite plus Chromium user-data-dir format. No account, no license server, no telemetry. |
-| **Open-source app** | The Phantom/MultiZen app, MCP server, CDP driver, and public CloakBrowser wrapper are MIT-licensed. CloakBrowser's compiled binary, build configuration, and C++ patches are proprietary third-party components with separate terms; they are not shipped as open-source engine code by this repository. |
+### Cursor
 
-## Onboarding
-
-<div align="center">
-  <img src=".github/assets/firstrun.jpg" alt="MultiZen first-run onboarding" width="85%" />
-</div>
-
-## Connect an agent (Codex, Cursor, Claude Desktop)
-
-After installing, the MCP server starts on `127.0.0.1:7777`. It serves the current
-**Streamable HTTP** transport at `http://127.0.0.1:7777/mcp` (plus a legacy HTTP+SSE
-endpoint at `/sse` for older clients).
-
-The server requires a **bearer token** — it is generated on first run and shown in
-the app under **MCP → Connect an agent** (also written to the `mcp-token` file in
-the app data directory). Every client config below must send it as
-`Authorization: Bearer <token>`. Replace `<token>` with your own. The app's MCP
-panel has a **Copy for LLM** button that hands the whole setup (token included) to
-a coding agent if you'd rather not edit config files by hand.
-
-**Codex CLI** (`~/.codex/config.toml`) — connects to Streamable HTTP directly:
-
-```toml
-[mcp_servers.multizen]
-url = "http://127.0.0.1:7777/mcp"
-http_headers = { Authorization = "Bearer <token>" }
-```
-
-**JSON URL clients — Cursor** (`~/.cursor/mcp.json`), Cline, Continue:
+Add to `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "multizen": {
-      "url": "http://127.0.0.1:7777/mcp",
-      "headers": { "Authorization": "Bearer <token>" }
-    }
-  }
-}
-```
-
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS)
-— its config has no `url` field, so bridge the endpoint through
-[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) (needs Node):
-
-```json
-{
-  "mcpServers": {
-    "multizen": {
+    "phantom": {
       "command": "npx",
-      "args": ["mcp-remote", "http://127.0.0.1:7777/mcp", "--header", "Authorization: Bearer <token>"]
+      "args": ["-y", "@multizen/mcp-server"]
     }
   }
 }
 ```
 
-Restart your client. The agent now has tools: `list_profiles`, `launch_profile`, `close_profile`, `navigate`, `click`, `type`, `extract`, `screenshot`.
+### Claude Desktop
 
-## Stack
+Add to `claude_desktop_config.json`:
 
-| Layer | Tech |
-| --- | --- |
-| Desktop shell | Electron 33 |
-| Renderer | React 19, Tailwind v4, TypeScript strict |
-| Main process | TypeScript ESM, electron-vite, native MCP SDK |
-| MCP server | `@modelcontextprotocol/sdk` over Streamable HTTP + SSE |
-| Profile storage | better-sqlite3 with idempotent migrations |
-| Browser driver | chrome-remote-interface over CDP |
-| Browser engine | Chrome for Testing (default stock runtime); optional CloakBrowser adapter (proprietary third-party binary) |
-| Build | Yarn 4 workspaces, electron-vite, electron-builder |
-| CI | GitHub Actions matrix on macOS, Windows, Linux |
+```json
+{
+  "mcpServers": {
+    "phantom": {
+      "command": "npx",
+      "args": ["-y", "@multizen/mcp-server"]
+    }
+  }
+}
+```
 
-## Develop
+## Development
 
-```sh
-git clone https://github.com/multizenteam/multizen-browser
-cd multizen-browser
+```bash
+git clone https://github.com/t01101011/phantom-browser
+cd phantom-browser
 yarn install
-yarn dev            # launch the desktop app in dev mode
-yarn mcp:dev        # run the MCP server standalone for testing
-yarn typecheck      # strict TS across all workspaces
-yarn build          # full release build (mac/win/linux per OS)
+yarn dev
 ```
 
-Requires Node 22+ and Yarn 4 (via Corepack).
+### Build
 
-## Repo layout
-
-```
-apps/
-  desktop/                Electron + React + Tailwind GUI + main process
-packages/
-  mcp-server/             MCP server exposing the browser-drive tools
-  cdp-driver/             Thin wrapper around chrome-remote-interface
-  profile-manager/        SQLite profile CRUD + encrypted local storage
-  settings-store/         App-level settings persistence
-  types/                  Shared TypeScript types
-.github/
-  workflows/release.yml   Matrix build, tag-triggered
+```bash
+yarn build          # typecheck + vite build + electron-builder
+yarn test           # 110 tests
+yarn typecheck      # workspace-wide
+yarn lint           # workspace-wide
 ```
 
-## Roadmap
+### Native Chromium coverage
 
-Things landing in upcoming releases.
+Phantom Browser includes a native Chromium coverage audit that maps every `FingerprintConfig` field to its coverage level per engine:
 
-- **Reproducible engine integration**: pin and authenticate optional engine artifacts, expose resolved versions, and add browser-level probes before making native fingerprint coverage claims.
-- **Behavioral injection**: humanized mouse paths, keystroke timing, scroll jitter applied at the CDP input layer.
-- **Per-profile cloud sync** (opt-in, end-to-end encrypted): so the same profile follows you across laptops.
-- **Team workspaces**: shared profile pool with audit log.
+| Level | Meaning |
+|---|---|
+| **native-flag** | C++ level via CloakBrowser `--fingerprint-*` CLI args |
+| **cli-flag** | Stock Chromium `--` CLI arg |
+| **cdp** | CDP `Emulation.*` (weaker than native, potentially observable) |
+| **preload-js** | `Page.addScriptToEvaluateOnNewDocument` (JS override) |
+| **unsupported** | Not applied |
 
-## Why MultiZen vs the alternatives
+See `NATIVE_CHROMIUM_COVERAGE_AUDIT.md` and `docs/audits/native-chromium-coverage.md` for the full audit results.
 
-| | MultiZen | Browserbase / Hyperbrowser | GoLogin / AdsPower / Multilogin |
-| --- | :---: | :---: | :---: |
-| Native MCP server | yes | yes | profile CRUD only |
-| Drives the browser through MCP | yes | yes | no |
-| Native anti-detect engine included by default | no — stock CFT default; optional third-party adapter | partial | varies |
-| Persistent login across sessions | yes | per-session | yes |
-| Self-hosted | yes | no | no |
-| Manual GUI for operators | yes | no | yes |
-| Pay per browser-hour | no | yes | varies |
-| Open source core | yes | SDK only | no |
+## Licensing
 
-## Acceptable use
+| Layer | License |
+|---|---|
+| App source (this repo) | MIT |
+| MCP server + CDP driver + profile manager | MIT |
+| Chrome for Testing (CFT) | Google ToS — redistributable |
+| CloakBrowser compiled binary | Proprietary — **not bundled/redistributed** without written OEM permission |
 
-Building a multi-account browser is dual-use. We support QA testing across roles and regions, agency workflows you are authorized to run, market research, multi-marketplace e-commerce ops, AI-driven sales engineering, and personal accounts you legitimately own. We do not support platform ToS violations, mass account farming, ban evasion, or fraud. Full policy at [getmultizen.com/acceptable-use](https://getmultizen.com/acceptable-use).
+This project is a fork of [MultiZen](https://github.com/multizenteam/multizen-browser) (MIT). The upstream license and attribution are preserved. Third-party notices are in `THIRD_PARTY_NOTICES.txt`.
 
-## Status and history
+## Acknowledgements
 
-`v0.2.x` is the current AI-native MCP rewrite (Electron + React + TypeScript, with stock CFT by default and an optional third-party CloakBrowser adapter).
-
-The legacy `v0.1.1` codebase (Electron + Vue 2 multi-session browser, no MCP) is preserved on the [`archive/vue-v1-legacy`](https://github.com/multizenteam/multizen-browser/tree/archive/vue-v1-legacy) branch and tag [`v0.1.1-legacy-final`](https://github.com/multizenteam/multizen-browser/releases/tag/v0.1.1-legacy-final).
-
-## License
-
-[MIT](LICENSE) covers this repository's code. Optional third-party browser binaries are governed by their own licenses; in particular, CloakBrowser's compiled binary and unpublished build configuration/C++ patches are proprietary and are not covered by this repository's MIT license.
-
-<div align="center">
-  <br/>
-  <sub>
-    Built in transit by <a href="https://github.com/oboshto">@oboshto</a>.<br/>
-    Star this repo if MultiZen is useful, it helps a lot.
-  </sub>
-</div>
+- [MultiZen](https://github.com/multizenteam/multizen-browser) — the upstream project this fork is based on
+- [Electron](https://www.electronjs.org/) — cross-platform desktop framework
+- [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/) — standalone Chromium for automation
