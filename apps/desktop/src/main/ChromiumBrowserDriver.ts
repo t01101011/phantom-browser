@@ -14,7 +14,7 @@ import type { ProfileManager } from "@multizen/profile-manager";
 import { reconcileDeviceFamilyToHost } from "@multizen/profile-manager";
 import type { ClientHints, FingerprintConfig, LaunchedProfile, ProfileId } from "@multizen/types";
 import { waitForCdpSessionReady } from "./cdpReadiness";
-import type { BrowserEngine } from "@multizen/settings-store";
+import type { BrowserEngine, AppSettings } from "@multizen/settings-store";
 import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
@@ -57,6 +57,10 @@ export interface ChromiumBrowserDriverOptions {
   /** Root of the shared extension store, e.g. `<userData>/data/extension-store`.
    *  Used to resolve shared extension references to their on-disk load dir. */
   extensionStoreRoot: string;
+  /** Live settings accessor — used for configurable timeouts (CDP readiness,
+   *  proxy probe, shutdown escalation). The driver reads the latest values
+   *  at launch/shutdown time so settings changes take effect immediately. */
+  getSettings: () => AppSettings;
 }
 
 export type RunningStateChange =
@@ -87,6 +91,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
   private readonly bootstrap: ChromiumBootstrap;
   private readonly onCompanionInstall?: (profileId: ProfileId, extensionId: string) => void;
   private readonly extensionStoreRoot: string;
+  private readonly getSettings: () => AppSettings;
 
   constructor(opts: ChromiumBrowserDriverOptions) {
     super();
@@ -94,6 +99,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     this.bootstrap = opts.chromiumBootstrap;
     this.onCompanionInstall = opts.onCompanionInstall;
     this.extensionStoreRoot = opts.extensionStoreRoot;
+    this.getSettings = opts.getSettings;
   }
 
   override on<K extends keyof DriverEvents>(event: K, listener: DriverEvents[K]): this {
@@ -184,7 +190,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     let coherence: ProxyCoherenceResult | null = null;
     if (profile.proxy) {
       try {
-        const geo = await probeProxyGeo(profile.proxy, { timeoutMs: 4000 });
+        const geo = await probeProxyGeo(profile.proxy, { timeoutMs: this.getSettings().proxyProbeTimeoutMs });
         coherence = resolveProxyCoherence({
           engine,
           fingerprint: fp,
@@ -472,7 +478,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // all within one budget. Guarantees the profile is actually drivable before
     // launch() resolves, so an MCP navigate/extract right after launch can't
     // race a not-yet-ready CDP endpoint.
-    await waitForCdpSessionReady(port, session, 15000);
+    await waitForCdpSessionReady(port, session, this.getSettings().cdpReadyTimeoutMs);
     if (startupPlan.openStartPage && profile.startUrl) {
       await fsp.writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8").catch(() => {});
     }
@@ -711,7 +717,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // we're terminating so the card stops showing "Stop" while it winds down.
       this.emit("running-changed", { kind: "closing", profileId });
       // Graceful CDP shutdown — preserves session-restore on CFT too.
-      void gracefulShutdown(r);
+      void this.gracefulShutdown(r);
     });
 
     const record: RunningProcess = {
@@ -775,7 +781,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // bridge's server.close() blocks until the browser's socks connection
       // ends, so stopping it before the browser is dead would hang close()
       // forever (the real bug behind "Stop leaves Chromium running").
-      await gracefulShutdown(r);
+      await this.gracefulShutdown(r);
       // Belt-and-suspenders: after the PID-based shutdown, sweep for ANY
       // process still holding this profile's user-data-dir and SIGKILL it.
       // Catches re-parented/forked survivors (or leftover helpers) that the
@@ -836,6 +842,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
   async closeAll(): Promise<void> {
     const ids = [...this.running.keys()];
     await Promise.all(ids.map((id) => this.close(id)));
+  }
+
+  /** Delegate to the free function, passing timeouts from live settings. */
+  private async gracefulShutdown(r: RunningProcess): Promise<void> {
+    const s = this.getSettings();
+    await gracefulShutdown(r, {
+      shutdownGraceMs: s.shutdownGraceMs,
+      shutdownSigtermMs: s.shutdownSigtermMs,
+      shutdownSigkillMs: s.shutdownSigkillMs,
+    });
   }
 
   private requireSession(profileId: ProfileId): CdpSession {
@@ -1142,6 +1158,12 @@ function browserDataDirForEngine(profileDataDir: string, engine: BrowserEngine):
   return profileDataDir;
 }
 
+interface ShutdownTimeouts {
+  shutdownGraceMs: number;
+  shutdownSigtermMs: number;
+  shutdownSigkillMs: number;
+}
+
 /**
  * Shut down a running Chromium child the canonical way: send `Browser.close`
  * over CDP (macOS ⌘Q equivalent — flushes session-restore data), then wait
@@ -1151,7 +1173,7 @@ function browserDataDirForEngine(profileDataDir: string, engine: BrowserEngine):
  * Idempotent — safe to call once from `close()` and again from the window
  * watcher; the second call no-ops because the child is already exiting.
  */
-async function gracefulShutdown(r: RunningProcess): Promise<void> {
+async function gracefulShutdown(r: RunningProcess, timeouts: ShutdownTimeouts): Promise<void> {
   const { pid } = r;
 
   // Source of truth is the OS, not `child.killed`/`exitCode`. Those flags lie
@@ -1167,8 +1189,9 @@ async function gracefulShutdown(r: RunningProcess): Promise<void> {
   //    websocket disconnects mid-call; timeout-bounded so a stuck send can
   //    never block the signal escalation below.
   await withTimeout(r.session.closeBrowser(), 3000);
-  // Chromium needs ~500ms–2s to flush session-restore on macOS; 4s is margin.
-  if (await waitForPidDeath(pid, 4000)) {
+  // Chromium needs ~500ms–2s to flush session-restore on macOS; grace period
+  // is configurable (default 4s).
+  if (await waitForPidDeath(pid, timeouts.shutdownGraceMs)) {
     await withTimeout(r.session.close(), 1000);
     return;
   }
@@ -1176,16 +1199,16 @@ async function gracefulShutdown(r: RunningProcess): Promise<void> {
   await withTimeout(r.session.close(), 1000);
 
   // 2. SIGTERM by PID (not r.child.kill — don't trust the child flags).
-  console.log(`[multizen] shutdown pid=${pid}: Browser.close didn't exit in 4s → SIGTERM`);
+  console.log(`[multizen] shutdown pid=${pid}: Browser.close didn't exit in ${timeouts.shutdownGraceMs}ms → SIGTERM`);
   killPid(pid, "SIGTERM");
-  if (await waitForPidDeath(pid, 2000)) return;
+  if (await waitForPidDeath(pid, timeouts.shutdownSigtermMs)) return;
 
   // 3. SIGKILL — the kernel guarantees this. We poll to confirm the process is
   //    genuinely gone before returning, so close() never reports a false
   //    "closed" while Chromium is still on screen.
-  console.log(`[multizen] shutdown pid=${pid}: SIGTERM didn't exit in 2s → SIGKILL`);
+  console.log(`[multizen] shutdown pid=${pid}: SIGTERM didn't exit in ${timeouts.shutdownSigtermMs}ms → SIGKILL`);
   killPid(pid, "SIGKILL");
-  await waitForPidDeath(pid, 2000);
+  await waitForPidDeath(pid, timeouts.shutdownSigkillMs);
 }
 
 /** All PIDs whose command line holds `--user-data-dir=<dataDir>` (main browser

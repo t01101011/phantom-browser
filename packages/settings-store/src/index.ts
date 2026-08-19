@@ -31,12 +31,36 @@ export interface AppSettings {
   autoUpdate: boolean;
   /**
    * Opt-in anonymous usage heartbeat. OFF by default — for an anti-detect
-   * audience any call-home must be an explicit choice. When on, the app sends
+   * audience any call-call must be an explicit choice. When on, the app sends
    * at most one ping/day carrying only app version + OS family + an ephemeral
    * single-use nonce — no persistent id, no IP sent. The MULTIZEN_NO_TELEMETRY
    * env var force-disables it regardless. See docs/TELEMETRY.md.
    */
   usageReporting: boolean;
+
+  // ---- Advanced timeouts (milliseconds) ----
+  // All exposed in Settings → Advanced so users on slow proxies or slow
+  // machines can bump them without editing config files.
+
+  /** Budget for CDP readiness: /json/version → page target → connect+attach.
+   *  Default 15s. If Chromium is slow to start (heavy AV scan, cold cache),
+   *  bump this to avoid "CDP not ready" launch failures. */
+  cdpReadyTimeoutMs: number;
+  /** Timeout for proxy geo-location probe during profile launch.
+   *  Default 4s. Slow residential proxies may need 8–10s. */
+  proxyProbeTimeoutMs: number;
+  /** Timeout for proxy geo probe during background country backfill.
+   *  Default 6s. Slightly more lenient than the launch-path probe. */
+  proxyBackfillTimeoutMs: number;
+  /** Grace period for `Browser.close` over CDP before escalating to SIGTERM.
+   *  Default 4s. macOS needs ~500ms–2s to flush session-restore. */
+  shutdownGraceMs: number;
+  /** Budget for SIGTERM → process exit before escalating to SIGKILL.
+   *  Default 2s. */
+  shutdownSigtermMs: number;
+  /** Budget for SIGKILL → confirmed process death.
+   *  Default 2s. */
+  shutdownSigkillMs: number;
 }
 
 const DEFAULTS: AppSettings = {
@@ -51,6 +75,22 @@ const DEFAULTS: AppSettings = {
   autoUpdate: true,
   // Opt-in. Never phone home unless the user explicitly turns this on.
   usageReporting: false,
+  // Advanced timeouts — see AppSettings docs above.
+  cdpReadyTimeoutMs: 15_000,
+  proxyProbeTimeoutMs: 4_000,
+  proxyBackfillTimeoutMs: 6_000,
+  shutdownGraceMs: 4_000,
+  shutdownSigtermMs: 2_000,
+  shutdownSigkillMs: 2_000,
+};
+
+const TIMEOUT_DEFAULTS: Record<string, number> = {
+  cdpReadyTimeoutMs: DEFAULTS.cdpReadyTimeoutMs,
+  proxyProbeTimeoutMs: DEFAULTS.proxyProbeTimeoutMs,
+  proxyBackfillTimeoutMs: DEFAULTS.proxyBackfillTimeoutMs,
+  shutdownGraceMs: DEFAULTS.shutdownGraceMs,
+  shutdownSigtermMs: DEFAULTS.shutdownSigtermMs,
+  shutdownSigkillMs: DEFAULTS.shutdownSigkillMs,
 };
 
 export class SettingsStore {
@@ -84,6 +124,14 @@ export class SettingsStore {
     }
     if (typeof merged.usageReporting !== "boolean") {
       merged.usageReporting = DEFAULTS.usageReporting;
+    }
+    // Validate timeout settings — clamp to defaults if invalid.
+    const mergedRec = merged as unknown as Record<string, unknown>;
+    for (const [key, def] of Object.entries(TIMEOUT_DEFAULTS)) {
+      const v = mergedRec[key];
+      if (typeof v !== "number" || !Number.isFinite(v) || v < 100) {
+        mergedRec[key] = def;
+      }
     }
     this.cache = merged;
     return merged;
