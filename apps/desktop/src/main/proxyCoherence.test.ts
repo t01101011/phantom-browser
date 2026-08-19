@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultFingerprint } from "../../../../packages/profile-manager/src/fingerprint.ts";
 import { parseProxyGeoPayload, probeProxyGeo, type ProxyGeoResult } from "./proxyGeo.ts";
-import { ProxyCoherenceError, resolveProxyCoherence } from "./proxyCoherence.ts";
+import {
+  ProxyCoherenceError,
+  canLaunchWithCoherence,
+  precheckProxyCoherence,
+  resolveProxyCoherence,
+  summarizeCoherenceIssues,
+} from "./proxyCoherence.ts";
 import { applyCftGeolocationOverride } from "./cdpGeolocation.ts";
 
 const PROXY = {
@@ -141,7 +147,13 @@ for (const ip of ["", "not-an-ip", "999.2.3.4"]) {
     assert.equal(accepted.webrtcIp, null);
     assert.match(accepted.issues.join("; "), /valid egress IP/);
 
-    const cft = resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ ip }) });
+    // CFT with invalid IP is now fail-closed (WebRTC spoofing can't work without
+    // a valid egress IP). It throws without acceptDegraded, returns degraded with it.
+    assert.throws(
+      () => resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ ip }) }),
+      ProxyCoherenceError,
+    );
+    const cft = resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ ip }), acceptDegraded: true });
     assert.equal(cft.status, "degraded");
   });
 }
@@ -206,4 +218,204 @@ test("CFT geolocation override reports failure instead of claiming CDP coverage"
   assert.equal(coherence.status, "degraded");
   assert.equal(coherence.geolocationCoverage, "unavailable");
   assert.match(coherence.issues.join("; "), /CDP geolocation fallback failed/);
+});
+
+// ── Item 8: recommendedAction + pre-launch visibility ─────────────────────
+
+test("coherent result recommends launch", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: { ...defaultFingerprint("coherent-action"), country: "jp", locale: "ja-JP" },
+    geo: geo(),
+  });
+  assert.equal(result.status, "coherent");
+  assert.equal(result.recommendedAction, "launch");
+});
+
+test("CloakBrowser with any issue recommends fail-closed", () => {
+  // Probe timeout
+  assert.throws(
+    () =>
+      resolveProxyCoherence({
+        engine: "cloakbrowser",
+        fingerprint: defaultFingerprint("cloak-probe-fail"),
+        probeError: new Error("proxy probe timed out"),
+      }),
+    ProxyCoherenceError,
+  );
+  const accepted = resolveProxyCoherence({
+    engine: "cloakbrowser",
+    fingerprint: defaultFingerprint("cloak-probe-accepted"),
+    probeError: new Error("proxy probe timed out"),
+    acceptDegraded: true,
+  });
+  assert.equal(accepted.recommendedAction, "fail-closed");
+  assert.equal(accepted.status, "degraded");
+});
+
+test("CFT with locale mismatch recommends accept-degraded (not fail-closed)", () => {
+  const fingerprint = {
+    ...defaultFingerprint("cft-locale-mismatch-action"),
+    country: "jp",
+    locale: "en-US",
+    languages: ["en-US", "en"],
+    acceptLanguage: "en-US,en;q=0.9",
+  };
+  // Without acceptDegraded, throws
+  assert.throws(
+    () => resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ country: "be", countryName: "Belgium", timezone: "Europe/Brussels" }) }),
+    ProxyCoherenceError,
+  );
+  // With acceptDegraded, returns accept-degraded
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint,
+    geo: geo({ country: "be", countryName: "Belgium", timezone: "Europe/Brussels" }),
+    acceptDegraded: true,
+  });
+  assert.equal(result.recommendedAction, "accept-degraded");
+});
+
+test("CFT with invalid egress IP recommends fail-closed", () => {
+  const fingerprint = { ...defaultFingerprint("cft-bad-ip-action"), country: "jp" };
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint,
+    geo: geo({ ip: "not-an-ip" }),
+    acceptDegraded: true,
+  });
+  assert.equal(result.recommendedAction, "fail-closed");
+});
+
+test("CFT with probe failure returns degraded (not fail-closed)", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: defaultFingerprint("cft-probe-fail-action"),
+    probeError: new Error("proxy probe timed out"),
+  });
+  assert.equal(result.status, "degraded");
+  assert.equal(result.recommendedAction, "accept-degraded");
+});
+
+// ── canLaunchWithCoherence ───────────────────────────────────────────────
+
+test("canLaunchWithCoherence: launch action always allows", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: { ...defaultFingerprint("can-launch-ok"), country: "jp", locale: "ja-JP" },
+    geo: geo(),
+  });
+  assert.equal(canLaunchWithCoherence(result, false), true);
+  assert.equal(canLaunchWithCoherence(result, true), true);
+});
+
+test("canLaunchWithCoherence: accept-degraded respects the flag", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: defaultFingerprint("can-launch-degraded"),
+    probeError: new Error("timed out"),
+    acceptDegraded: true,
+  });
+  assert.equal(result.recommendedAction, "accept-degraded");
+  assert.equal(canLaunchWithCoherence(result, false), false);
+  assert.equal(canLaunchWithCoherence(result, true), true);
+});
+
+test("canLaunchWithCoherence: fail-closed respects the flag", () => {
+  const result = resolveProxyCoherence({
+    engine: "cloakbrowser",
+    fingerprint: defaultFingerprint("can-launch-fail"),
+    probeError: new Error("timed out"),
+    acceptDegraded: true,
+  });
+  assert.equal(result.recommendedAction, "fail-closed");
+  assert.equal(canLaunchWithCoherence(result, false), false);
+  assert.equal(canLaunchWithCoherence(result, true), true);
+});
+
+// ── summarizeCoherenceIssues ─────────────────────────────────────────────
+
+test("summarizeCoherenceIssues: OK for coherent result", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: { ...defaultFingerprint("summary-ok"), country: "jp", locale: "ja-JP" },
+    geo: geo(),
+  });
+  assert.equal(summarizeCoherenceIssues(result), "Proxy coherence: OK");
+});
+
+test("summarizeCoherenceIssues: DEGRADED prefix for CFT issues", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: defaultFingerprint("summary-degraded"),
+    probeError: new Error("timed out"),
+    acceptDegraded: true,
+  });
+  const summary = summarizeCoherenceIssues(result);
+  assert.match(summary, /^Proxy coherence: DEGRADED — /);
+  assert.match(summary, /timeout/);
+});
+
+test("summarizeCoherenceIssues: FAIL prefix for CloakBrowser issues", () => {
+  const result = resolveProxyCoherence({
+    engine: "cloakbrowser",
+    fingerprint: defaultFingerprint("summary-fail"),
+    probeError: new Error("timed out"),
+    acceptDegraded: true,
+  });
+  const summary = summarizeCoherenceIssues(result);
+  assert.match(summary, /^Proxy coherence: FAIL — /);
+});
+
+// ── precheckProxyCoherence ────────────────────────────────────────────────
+
+test("precheckProxyCoherence: returns coherent result on successful probe", async () => {
+  const result = await precheckProxyCoherence({
+    engine: "cft",
+    fingerprint: { ...defaultFingerprint("precheck-ok"), country: "jp", locale: "ja-JP" },
+    proxy: PROXY,
+    probeGeo: async () => geo(),
+  });
+  assert.equal(result.status, "coherent");
+  assert.equal(result.recommendedAction, "launch");
+});
+
+test("precheckProxyCoherence: returns degraded result on probe failure", async () => {
+  const result = await precheckProxyCoherence({
+    engine: "cft",
+    fingerprint: defaultFingerprint("precheck-fail"),
+    proxy: PROXY,
+    probeGeo: async () => { throw new Error("proxy probe timed out"); },
+    acceptDegraded: true,
+  });
+  assert.equal(result.status, "degraded");
+  assert.equal(result.recommendedAction, "accept-degraded");
+  assert.match(result.issues.join("; "), /timeout/);
+});
+
+test("precheckProxyCoherence: throws ProxyCoherenceError for CloakBrowser without acceptDegraded", async () => {
+  await assert.rejects(
+    precheckProxyCoherence({
+      engine: "cloakbrowser",
+      fingerprint: defaultFingerprint("precheck-cloak-fail"),
+      proxy: PROXY,
+      probeGeo: async () => { throw new Error("proxy probe timed out"); },
+    }),
+    ProxyCoherenceError,
+  );
+});
+
+test("precheckProxyCoherence: uses injected probe function, not the real network", async () => {
+  let called = false;
+  const result = await precheckProxyCoherence({
+    engine: "cft",
+    fingerprint: { ...defaultFingerprint("precheck-injected"), country: "jp", locale: "ja-JP" },
+    proxy: PROXY,
+    probeGeo: async () => {
+      called = true;
+      return geo();
+    },
+  });
+  assert.equal(called, true);
+  assert.equal(result.status, "coherent");
 });

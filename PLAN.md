@@ -75,13 +75,28 @@ Extended the native-coverage harness from 11 to 14 observed surfaces:
 
 Verification: 95/95 full suite pass (20 new), typecheck clean.
 
-### Item 8 — Proxy-geo failure visibility
+### Item 8 — Proxy-geo failure visibility — COMPLETE (2026-08-19)
 
-`proxyCoherence.ts` has degraded-mode handling. Need: locale mismatch visibility before launch, fail-closed for stealth profiles, explicit acceptance of degraded coherence.
+Extended `proxyCoherence.ts` with structured pre-launch visibility, fail-closed for stealth engines, and explicit degraded acceptance.
 
-Files to touch:
-- `apps/desktop/src/main/proxyCoherence.ts`
-- `apps/desktop/src/main/proxyCoherence.test.ts`
+**New API:**
+- `recommendedAction: "launch" | "accept-degraded" | "fail-closed"` on every `ProxyCoherenceResult`
+- `precheckProxyCoherence()` — probes proxy geo and resolves coherence WITHOUT spawning a browser; GUI calls this before Launch to surface issues
+- `canLaunchWithCoherence(result, acceptDegraded)` — gate function for the launch path
+- `summarizeCoherenceIssues(result)` — human-readable string for UI dialogs/banners
+
+**Decision matrix:**
+| Issue | CFT | CloakBrowser |
+|---|---|---|
+| No issues | launch | launch |
+| Locale mismatch | accept-degraded (throws without acceptDegraded) | fail-closed |
+| Probe timeout/fail | accept-degraded | fail-closed |
+| Missing coords | accept-degraded | fail-closed |
+| Invalid egress IP | fail-closed | fail-closed |
+
+Key behavioral change: CFT with invalid egress IP is now `fail-closed` (was silently degraded). WebRTC spoofing can't work without a valid egress IP, so proceeding would create an active leak.
+
+Verification: 110/110 full suite pass (15 new tests), typecheck clean.
 
 ## Infrastructure notes
 
