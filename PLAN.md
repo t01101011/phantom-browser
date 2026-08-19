@@ -38,14 +38,25 @@ PR #11 merged to master at `ae1fc81`. All 10 Kanban cards done. Board `phantom-n
 
 ## Next implementation slice
 
-### Item 6 — Launch-contract tests (recommended first)
+### Item 6 — Launch-contract tests — COMPLETE (2026-08-19)
 
-Assert every intended `FingerprintConfig` field is either applied natively, applied through an explicitly weaker fallback, or reported unsupported. Currently no test covers this end-to-end.
+Created `apps/desktop/src/main/launchContract.ts` (pure module extracted from `ChromiumBrowserDriver.ts`) and `apps/desktop/src/main/launchContract.test.ts` (21 tests).
 
-Files to touch:
-- New: `apps/desktop/src/main/launchContract.test.ts`
-- Reference: `apps/desktop/src/main/ChromiumBrowserDriver.ts` (flag construction)
-- Reference: `packages/types/src/index.ts` (`FingerprintConfig` schema)
+The contract maps every `FingerprintConfig` field to its coverage level per engine:
+- **native-flag** — CloakBrowser `--fingerprint-*` CLI arg (C++ level)
+- **cli-flag** — stock Chromium `--` CLI arg
+- **cdp** — CDP `Emulation.*` (weaker than native, potentially observable)
+- **preload-js** — `Page.addScriptToEvaluateOnNewDocument` (JS override)
+- **unsupported** — documented as not applied
+
+Key findings encoded in the contract:
+- CloakBrowser has no native locale switch — CDP `setLocaleOverride` fills the gap (not a double-patch)
+- `clientHints.secChUaArch/Bitness/Mobile/Model` are CDP-only on CFT, unsupported on CloakBrowser
+- `country` is not a browser fingerprint surface (GUI/proxy-coherence only)
+- `seed` is CloakBrowser-only (canvas/audio/WebGL readback noise)
+- No field uses preload-js on CloakBrowser (would create double-spoof anomalies)
+
+Verification: 21/21 new tests pass, 75/75 full suite pass, typecheck clean.
 
 ### Item 7 — Extend browser-level probes
 
