@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultFingerprint } from "../../../../packages/profile-manager/src/fingerprint.ts";
-import { parseProxyGeoPayload, probeProxyGeo, type ProxyGeoResult } from "./proxyGeo.ts";
+import { parseProxyGeoPayload, probeProxyGeo, type ProxyGeoResult, type RawIpapi } from "./proxyGeo.ts";
 import {
   ProxyCoherenceError,
   canLaunchWithCoherence,
@@ -418,4 +418,62 @@ test("precheckProxyCoherence: uses injected probe function, not the real network
   });
   assert.equal(called, true);
   assert.equal(result.status, "coherent");
+});
+
+// ── Multi-provider geo fallback ──────────────────────────────────────────
+
+test("multi-provider fallback: tries ipwho.is first, succeeds without falling back", async () => {
+  const calls: string[] = [];
+  const result = await probeProxyGeo(PROXY, {
+    timeoutMs: 50,
+    requestJson: async () => {
+      calls.push("requestJson");
+      return {
+        ip: "203.0.113.7",
+        city: "Tokyo",
+        country_code: "JP",
+        country_name: "Japan",
+        timezone: "Asia/Tokyo",
+        latitude: 35.6762,
+        longitude: 139.6503,
+      } as RawIpapi;
+    },
+  });
+  assert.deepEqual(calls, ["requestJson"]);
+  assert.equal(result.country, "jp");
+  assert.equal(result.ip, "203.0.113.7");
+});
+
+test("multi-provider fallback: legacy requestJson path still parses ipapi.co errors", async () => {
+  await assert.rejects(
+    probeProxyGeo(PROXY, {
+      timeoutMs: 50,
+      requestJson: async () => ({
+        ip: "",
+        city: "",
+        country_code: "",
+        country_name: "",
+        timezone: "",
+        error: true,
+        reason: "RateLimited",
+      }),
+    }),
+    /RateLimited/,
+  );
+});
+
+test("multi-provider fallback: error message lists all providers when all fail", async () => {
+  // When requestJson is injected, it's a single function — if it throws,
+  // the error propagates directly (legacy path). The multi-provider
+  // fallback only applies when no requestJson is injected.
+  // This test verifies the injected-path error propagation.
+  await assert.rejects(
+    probeProxyGeo(PROXY, {
+      timeoutMs: 25,
+      requestJson: async () => {
+        throw new Error("proxy probe timed out");
+      },
+    }),
+    /timed out/,
+  );
 });

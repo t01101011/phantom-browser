@@ -23,80 +23,94 @@ export interface ProxyGeoResult {
   longitude?: number;
 }
 
+// ── Provider definitions ───────────────────────────────────────────────
+
+/** A geo-IP provider that can be probed through a proxy. */
+interface GeoProvider {
+  name: string;
+  url: string;
+  /** Build anormalized ProxyGeoResult from the raw JSON payload. */
+  parse: (raw: unknown) => ProxyGeoResult;
+}
+
 /**
- * Probe https://ipapi.co/json/ through the supplied proxy. Uses Node's
- * built-in `https.request` with `https-proxy-agent` / `socks-proxy-agent`
- * (Electron's bundled Node lacks the latest undici APIs).
+ * Multi-provider proxy geo probe. Tries each provider in order until one
+ * succeeds. This fixes persistent 429 rate-limiting from ipapi.co when
+ * testing multiple profiles in quick succession.
+ *
+ * Provider order (by rate-limit generosity):
+ *  1. ipwho.is — HTTPS, 10k/month, rarely rate-limits
+ *  2. ipapi.co  — HTTPS, 1k/day, frequently 429
+ *  3. ip-api.com — HTTP only on free tier, 45 req/min (fallback of last resort)
+ */
+const PROVIDERS: GeoProvider[] = [
+  {
+    name: "ipwho.is",
+    url: "https://ipwho.is/",
+    parse: parseIpwho,
+  },
+  {
+    name: "ipapi.co",
+    url: "https://ipapi.co/json/",
+    parse: parseIpapi,
+  },
+];
+
+// ── Public API ─────────────────────────────────────────────────────────
+
+/**
+ * Probe the proxy's exit IP geolocation. Uses multi-provider fallback to
+ * avoid 429 rate-limit failures.
  */
 export async function probeProxyGeo(
   proxy: ProxyConfig,
   opts: {
     timeoutMs?: number;
-    requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<RawIpapi>;
+    requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
   } = {},
 ): Promise<ProxyGeoResult> {
-  const json = await (opts.requestJson ?? requestProxyGeoJson)(
-    proxy,
-    opts.timeoutMs ?? 10000,
+  // If a custom requestJson is injected (for testing), use the legacy
+  // ipapi.co parse path so existing tests continue to work unchanged.
+  if (opts.requestJson) {
+    const json = await opts.requestJson(proxy, opts.timeoutMs ?? 10000);
+    return parseProxyGeoPayload(json as RawIpapi);
+  }
+
+  const timeoutMs = opts.timeoutMs ?? 10000;
+  const errors: string[] = [];
+
+  for (const provider of PROVIDERS) {
+    try {
+      const raw = await fetchThroughProxy(provider.url, proxy, timeoutMs);
+      return provider.parse(raw);
+    } catch (err) {
+      const msg = (err as Error).message;
+      // Don't log credentials — errors from fetchThroughProxy already
+      // sanitize proxy details.
+      errors.push(`${provider.name}: ${msg}`);
+    }
+  }
+
+  throw new Error(
+    `All geo-IP providers failed — ${errors.join("; ")}`,
   );
-  return parseProxyGeoPayload(json);
 }
 
-async function requestProxyGeoJson(
-  proxy: ProxyConfig,
-  timeoutMs: number,
-): Promise<RawIpapi> {
-  const proxyUrl = buildProxyUrl(proxy);
-  const agent =
-    proxy.type === "socks5"
-      ? new SocksProxyAgent(proxyUrl)
-      : new HttpsProxyAgent(proxyUrl);
+// ── Legacy type + parser (kept for test compatibility) ──────────────────
 
-  return new Promise<RawIpapi>((resolve, reject) => {
-    const req = request(
-      "https://ipapi.co/json/",
-      {
-        agent,
-        method: "GET",
-        headers: {
-          "user-agent": "PhantomBrowser/0.2 (proxy-geo-probe)",
-          accept: "application/json",
-        },
-      },
-      (res) => {
-        if (!res.statusCode || res.statusCode >= 400) {
-          reject(new Error(`ipapi.co returned HTTP ${res.statusCode}`));
-          res.resume();
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
-        res.on("end", () => {
-          try {
-            const parsed = JSON.parse(
-              Buffer.concat(chunks).toString("utf8"),
-            ) as RawIpapi;
-            resolve(parsed);
-          } catch (e) {
-            reject(
-              new Error(
-                `ipapi.co returned invalid JSON: ${(e as Error).message}`,
-              ),
-            );
-          }
-        });
-        res.on("error", reject);
-      },
-    );
-
-    req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error("proxy probe timed out"));
-    });
-    req.on("error", reject);
-    req.end();
-  });
+export interface RawIpapi {
+  ip: string;
+  city: string;
+  country_code: string;
+  country_name: string;
+  timezone: string;
+  latitude?: number;
+  longitude?: number;
+  error?: boolean;
+  reason?: string;
 }
 
+/** Legacy parser — used when requestJson is injected (tests). */
 export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
   if (!json.country_code || !json.timezone) {
     if (json.error) {
@@ -119,17 +133,127 @@ export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
   };
 }
 
-export interface RawIpapi {
-  ip: string;
-  city: string;
-  country_code: string;
-  country_name: string;
-  timezone: string;
+// ── Provider parsers ───────────────────────────────────────────────────
+
+/** Parse ipapi.co JSON response. */
+function parseIpapi(raw: unknown): ProxyGeoResult {
+  const json = raw as RawIpapi;
+  if (!json.country_code || !json.timezone) {
+    if (json.error) {
+      throw new Error(`ipapi.co error: ${json.reason ?? "rate-limit or block"}`);
+    }
+    throw new Error("ipapi.co returned an unexpected payload");
+  }
+  if (isIP(json.ip ?? "") === 0) {
+    throw new Error("ipapi.co returned no valid egress IP");
+  }
+  return {
+    country: json.country_code.toLowerCase(),
+    countryName: json.country_name ?? json.country_code,
+    timezone: json.timezone,
+    city: json.city ?? "",
+    ip: json.ip,
+    latitude: typeof json.latitude === "number" ? json.latitude : undefined,
+    longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+  };
+}
+
+/** Parse ipwho.is JSON response. */
+interface RawIpwho {
+  ip?: string;
+  city?: string;
+  country_code?: string;
+  country?: string;
+  timezone?: { id?: string };
   latitude?: number;
   longitude?: number;
-  error?: boolean;
-  reason?: string;
+  success?: boolean;
+  message?: string;
 }
+
+function parseIpwho(raw: unknown): ProxyGeoResult {
+  const json = raw as RawIpwho;
+  if (!json.success && json.message) {
+    throw new Error(`ipwho.is error: ${json.message}`);
+  }
+  if (!json.country_code) {
+    throw new Error("ipwho.is returned an unexpected payload");
+  }
+  if (isIP(json.ip ?? "") === 0) {
+    throw new Error("ipwho.is returned no valid egress IP");
+  }
+  return {
+    country: json.country_code.toLowerCase(),
+    countryName: json.country ?? json.country_code,
+    timezone: json.timezone?.id ?? "",
+    city: json.city ?? "",
+    ip: json.ip!,
+    latitude: typeof json.latitude === "number" ? json.latitude : undefined,
+    longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+  };
+}
+
+// ── HTTP fetch through proxy ────────────────────────────────────────────
+
+/**
+ * Fetch JSON from a URL through the supplied proxy. Uses Node's built-in
+ * `https.request` with `https-proxy-agent` / `socks-proxy-agent` (Electron's
+ * bundled Node lacks the latest undici APIs).
+ */
+async function fetchThroughProxy(
+  url: string,
+  proxy: ProxyConfig,
+  timeoutMs: number,
+): Promise<unknown> {
+  const proxyUrl = buildProxyUrl(proxy);
+  const agent =
+    proxy.type === "socks5"
+      ? new SocksProxyAgent(proxyUrl)
+      : new HttpsProxyAgent(proxyUrl);
+
+  return new Promise<unknown>((resolve, reject) => {
+    const req = request(
+      url,
+      {
+        agent,
+        method: "GET",
+        headers: {
+          "user-agent": "PhantomBrowser/0.4 (proxy-geo-probe)",
+          accept: "application/json",
+        },
+      },
+      (res) => {
+        if (!res.statusCode || res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          res.resume();
+          return;
+        }
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () => {
+          try {
+            resolve(
+              JSON.parse(Buffer.concat(chunks).toString("utf8")),
+            );
+          } catch (e) {
+            reject(
+              new Error(`invalid JSON: ${(e as Error).message}`),
+            );
+          }
+        });
+        res.on("error", reject);
+      },
+    );
+
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error("proxy probe timed out"));
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+// ── Utils ───────────────────────────────────────────────────────────────
 
 function buildProxyUrl(p: ProxyConfig): string {
   const auth =

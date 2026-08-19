@@ -56,6 +56,8 @@ docs/
 notes/
 specs/
 INTERNAL_*.md
+PLAN.md
+PROGRESS.md
 
 # Markdown is internal working material — the only doc we ship is README.md
 # (at any depth). Everything else (CONTRIBUTING, ROADMAP, specs, notes…) stays
