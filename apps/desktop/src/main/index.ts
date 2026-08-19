@@ -208,6 +208,7 @@ app.whenReady().then(async () => {
     profileManager,
     chromiumBootstrap,
     extensionStoreRoot,
+    getSettings: () => cachedSettings as AppSettings,
     // The companion's "Add to Phantom Browser" button routes here (profile-scoped).
     // Confirm natively first: any script on the store page could trigger the
     // channel, so an explicit OS dialog makes a drive-by install impossible.
@@ -638,7 +639,7 @@ async function backfillProxyCountries(): Promise<void> {
   for (const summary of profiles) {
     if (!summary.proxy || summary.proxyCountry) continue;
     try {
-      const geo = await probeProxyGeo(summary.proxy, { timeoutMs: 6000 });
+      const geo = await probeProxyGeo(summary.proxy, { timeoutMs: cachedSettings!.proxyBackfillTimeoutMs });
       if (geo.country) {
         profileManager.setProxyCountry(summary.id, geo.country.toLowerCase());
         // Nudge the renderer so it refetches the list and re-renders flags.

@@ -10,6 +10,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Timer,
   Zap,
 } from "lucide-react";
 import { Pill } from "../atoms";
@@ -304,6 +305,49 @@ export function Settings({ onImport }: Props): JSX.Element {
           </div>
         </Row>
 
+        <Row
+          icon={<Timer size={16} strokeWidth={1.5} />}
+          title="Advanced timeouts"
+          desc="Fine-tune internal timeouts for slow proxies, slow machines, or stubborn browser shutdowns. Changes take effect on the next launch. All values in milliseconds."
+        >
+          <TimeoutField
+            label="CDP readiness"
+            hint="How long to wait for Chromium's DevTools endpoint to become ready before failing a launch. Default 15000ms."
+            value={settings.cdpReadyTimeoutMs}
+            onChange={(v) => void patch({ cdpReadyTimeoutMs: v })}
+          />
+          <TimeoutField
+            label="Proxy geo probe (launch)"
+            hint="Timeout for probing the proxy's geolocation during profile launch. Slow residential proxies may need 8000–10000ms. Default 4000ms."
+            value={settings.proxyProbeTimeoutMs}
+            onChange={(v) => void patch({ proxyProbeTimeoutMs: v })}
+          />
+          <TimeoutField
+            label="Proxy geo probe (backfill)"
+            hint="Timeout for background country-code detection on existing profiles. Default 6000ms."
+            value={settings.proxyBackfillTimeoutMs}
+            onChange={(v) => void patch({ proxyBackfillTimeoutMs: v })}
+          />
+          <TimeoutField
+            label="Shutdown grace period"
+            hint="How long to wait for Browser.close to gracefully exit before escalating to SIGTERM. Default 4000ms."
+            value={settings.shutdownGraceMs}
+            onChange={(v) => void patch({ shutdownGraceMs: v })}
+          />
+          <TimeoutField
+            label="SIGTERM timeout"
+            hint="How long to wait after SIGTERM before escalating to SIGKILL. Default 2000ms."
+            value={settings.shutdownSigtermMs}
+            onChange={(v) => void patch({ shutdownSigtermMs: v })}
+          />
+          <TimeoutField
+            label="SIGKILL confirm"
+            hint="How long to poll for confirmed process death after SIGKILL. Default 2000ms."
+            value={settings.shutdownSigkillMs}
+            onChange={(v) => void patch({ shutdownSigkillMs: v })}
+          />
+        </Row>
+
         <Row icon={<Sparkles size={16} strokeWidth={1.5} />} title="About" desc="">
           <div className="text-[12px] text-slate-400 leading-relaxed">
             <div className="mono">
@@ -361,6 +405,42 @@ function updateLabel(status: UpdateStatus | null): string {
     default:
       return "";
   }
+}
+
+function TimeoutField({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  onChange: (v: number) => void;
+}): JSX.Element {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] text-slate-300">{label}</div>
+        <div className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{hint}</div>
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <input
+          type="number"
+          min={100}
+          step={500}
+          value={value}
+          onChange={(e) => {
+            const n = parseInt(e.target.value, 10);
+            if (Number.isFinite(n) && n >= 100) onChange(n);
+          }}
+          className="w-24 bg-transparent text-right mono text-[12px] text-slate-300 px-2 py-1 rounded-md"
+          style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+        />
+        <span className="text-[11px] text-slate-600">ms</span>
+      </div>
+    </div>
+  );
 }
 
 function Row({
