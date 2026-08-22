@@ -10,7 +10,7 @@ export interface TargetContext {
   /** True for the root (top-level page) session, false for nested iframes. */
   isRoot: boolean;
   /** Target type as reported by Target.attachedToTarget — "page" | "iframe" | etc. */
-  type: "page" | "iframe";
+  type: "page" | "iframe" | "shared_worker" | "service_worker";
 }
 
 export type TargetSender = <T = unknown>(
@@ -198,7 +198,18 @@ export class CdpSession {
     // services like browserscan's IP probe). Without iframe coverage,
     // RTCPeerConnection inside a cross-origin iframe goes un-spoofed and
     // leaks the real IP via STUN even when the parent page is patched.
-    const SETUP_TARGET_TYPES = new Set(["page", "iframe"]);
+    // "shared_worker" / "service_worker" cover Web Worker contexts —
+    // modern leak-detection sites (browserleaks, IPFighter) construct
+    // RTCPeerConnection inside a worker, which runs in a separate JS
+    // context that Page.addScriptToEvaluateOnNewDocument never reaches.
+    // STUN from the worker discovers the real public IP and posts it back
+    // to the page via postMessage, bypassing the page-level preload.
+    const SETUP_TARGET_TYPES = new Set([
+      "page",
+      "iframe",
+      "shared_worker",
+      "service_worker",
+    ]);
 
     try {
       const targets = await Target.getTargets();
@@ -210,7 +221,7 @@ export class CdpSession {
         });
         await setup(buildSender(client, sessionId), {
           isRoot: false,
-          type: t.type as "page" | "iframe",
+          type: t.type as TargetContext["type"],
         }).catch(() => {});
       }
     } catch {
@@ -230,7 +241,7 @@ export class CdpSession {
             if (SETUP_TARGET_TYPES.has(params.targetInfo.type)) {
               await setup(buildSender(client, params.sessionId), {
                 isRoot: false,
-                type: params.targetInfo.type as "page" | "iframe",
+                type: params.targetInfo.type as TargetContext["type"],
               }).catch(() => {});
             }
           } finally {

@@ -523,21 +523,36 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         : buildFingerprintPreloadScript(fp, { includeWebGl: true });
     await session
       .bootstrapTargets(async (send, ctx) => {
+        // Workers (shared_worker, service_worker) run in a separate JS
+        // context that has no Page domain — Page.addScriptToEvaluateOnNewDocument
+        // silently fails on them. For worker targets we skip the Page-domain
+        // preload and rely on Runtime.evaluate alone. That's sufficient
+        // because workers don't navigate: their global scope is alive from
+        // script start, so an immediate eval patches RTCPeerConnection
+        // before any leak-detection site can spin one up.
+        const isWorker =
+          ctx.type === "shared_worker" || ctx.type === "service_worker";
+
         // 1. WebRTC kill-switch / spoof when proxy is on.
         //    CloakBrowser handles WebRTC natively (webrtcScript is null).
         if (useProxy && webrtcScript) {
-          // addScriptToEvaluateOnNewDocument applies on EVERY future
-          // document load in this target — works for iframes too. The
-          // immediate Runtime.evaluate is a belt-and-braces patch of the
-          // currently-loaded document; it expects an active execution
-          // context which iframes that haven't finished navigating yet
-          // don't have. Silence "Cannot find default execution context"
-          // — addScript already covered the next load.
-          await send("Page.addScriptToEvaluateOnNewDocument", {
-            source: webrtcScript,
-          }).catch((e: unknown) => {
-            console.error("[multizen] WebRTC addScript failed:", e);
-          });
+          if (!isWorker) {
+            // addScriptToEvaluateOnNewDocument applies on EVERY future
+            // document load in this target — works for iframes too. The
+            // immediate Runtime.evaluate is a belt-and-braces patch of the
+            // currently-loaded document; it expects an active execution
+            // context which iframes that haven't finished navigating yet
+            // don't have. Silence "Cannot find default execution context"
+            // — addScript already covered the next load.
+            await send("Page.addScriptToEvaluateOnNewDocument", {
+              source: webrtcScript,
+            }).catch((e: unknown) => {
+              console.error("[multizen] WebRTC addScript failed:", e);
+            });
+          }
+          // Workers always get the eval (no navigation lifecycle).
+          // Pages/iframes get it as belt-and-braces; failure is expected
+          // if the execution context isn't ready yet.
           await send("Runtime.evaluate", { expression: webrtcScript }).catch((e: unknown) => {
             const msg = (e as Error).message;
             if (!/default execution context/i.test(msg)) {
@@ -549,11 +564,13 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         //     navigator.platform, WebGL UNMASKED_*). CloakBrowser handles
         //     these in C++ — skip our preload to avoid double-patching.
         if (fingerprintScript) {
-          await send("Page.addScriptToEvaluateOnNewDocument", {
-            source: fingerprintScript,
-          }).catch((e: unknown) => {
-            console.error("[multizen] fingerprint addScript failed:", e);
-          });
+          if (!isWorker) {
+            await send("Page.addScriptToEvaluateOnNewDocument", {
+              source: fingerprintScript,
+            }).catch((e: unknown) => {
+              console.error("[multizen] fingerprint addScript failed:", e);
+            });
+          }
           await send("Runtime.evaluate", { expression: fingerprintScript }).catch(
             (e: unknown) => {
               const msg = (e as Error).message;
