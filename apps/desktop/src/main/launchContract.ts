@@ -280,6 +280,7 @@ export function reconcileVersionInFingerprint(
 export type CoverageLevel =
   | "native-flag"
   | "cli-flag"
+  | "enterprise-policy"
   | "cdp"
   | "preload-js"
   | "unsupported";
@@ -469,6 +470,13 @@ export const LAUNCH_CONTRACT: FieldCoverage[] = [
     notes:
       "CFT: not applicable — no canvas/audio noise. CloakBrowser: drives --fingerprint= seed for canvas/audio/WebGL readback noise",
   },
+  {
+    field: "webrtcIPHandling",
+    cft: "enterprise-policy",
+    cloakbrowser: "native-flag",
+    notes:
+      "WebRTC IP handling is not a FingerprintConfig field — it is a launch artifact applied when a proxy is set. CFT: Chromium enterprise policy `WebRtcIPHandling=disable_non_proxied_udp` written via ensureWebRtcPolicy() before browser spawn. Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI flag, so policy is the only reliable vector on CFT 147+. CloakBrowser: `--fingerprint-webrtc-ip=auto` native flag",
+  },
 ];
 
 /**
@@ -530,10 +538,18 @@ export function verifyCloakBrowserNativeArgs(
     "deviceMemory": "--fingerprint-device-memory",
     "seed": "--fingerprint=",
     "device": "--fingerprint-platform",
+    "webrtcIPHandling": "--fingerprint-webrtc-ip",
   };
+
+  // Fields that are native-flag on CloakBrowser but are NOT produced by
+  // buildCloakBrowserFingerprintArgs — they are launch artifacts gated on
+  // profile.proxy, emitted by the driver, not the pure fingerprint-arg
+  // builder. Excluded from the "every native-flag appears in args" check.
+  const driverGatedFields = new Set(["webrtcIPHandling"]);
 
   const missing: string[] = [];
   for (const entry of nativeFields) {
+    if (driverGatedFields.has(entry.field)) continue;
     const expectedFlag = fieldToFlag[entry.field];
     if (!expectedFlag) {
       missing.push(`${entry.field} (no flag mapping)`);
