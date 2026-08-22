@@ -90,7 +90,7 @@ Legend:
 
 ### 1. README overstates the default runtime
 
-`README.md:101-120,187-190` describes a patched, open-source CloakBrowser engine as the product runtime. Actual default is CFT (`packages/settings-store/src/index.ts:42-50`). This matters because CFT has no Canvas/Audio mitigation and uses CDP/preload overrides for WebGL, platform, RAM/CPU, screen, UA-CH, locale, timezone, and WebRTC.
+`README.md:101-120,187-190` describes a patched, open-source CloakBrowser engine as the product runtime. Actual default is CFT (`packages/settings-store/src/index.ts:42-50`). This matters because CFT has no Canvas/Audio mitigation and uses CDP/preload overrides for WebGL, platform, RAM/CPU, screen, UA-CH, locale, timezone, and WebRTC. CFT WebRTC proxy protection is fail-closed: launch requires verified `WebRtcIPHandling=disable_non_proxied_udp` enterprise policy; source-level spoofing is defense in depth and is not evidence that the packaged policy applied.
 
 ### 2. Source comments contradict current implementation
 

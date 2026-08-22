@@ -270,6 +270,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // admin if the plist doesn't already exist or doesn't have the key.
     if (process.platform === "darwin" && engine === "cft") {
       await ensureCftInfobarSuppressed().catch((e: unknown) => {
+        if (profile.proxy) throw e;
         console.warn(
           "[multizen] failed to suppress CFT infobar (continuing):",
           (e as Error).message,
@@ -556,7 +557,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           await send("Runtime.evaluate", { expression: webrtcScript }).catch((e: unknown) => {
             const msg = (e as Error).message;
             if (!/default execution context/i.test(msg)) {
-              console.error("[multizen] WebRTC eval failed:", e);
+              throw new Error("WebRTC protection unavailable: target injection failed", { cause: e });
             }
           });
         }
@@ -701,7 +702,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         }
       })
       .catch((e: unknown) => {
-        console.error("[multizen] CDP bootstrap failed:", e);
+        throw new Error("WebRTC/CDP protection bootstrap failed; launch aborted", { cause: e });
       });
 
 
@@ -1347,10 +1348,11 @@ function createWindowWatcher(
  * naive `RTCPeerConnection.prototype.addEventListener.toString()` checks
  * still return `function addEventListener() { [native code] }`.
  */
-function buildWebRtcSpoofScript(proxyIp: string): string {
+export function buildWebRtcSpoofScript(proxyIp: string): string {
   return `
 (() => {
-  if (!window.RTCPeerConnection) return;
+  const root = globalThis;
+  if (!root.RTCPeerConnection) return;
   const PROXY_IP = ${JSON.stringify(proxyIp)};
   // Sentinel: patchEvent returns this when the candidate must be
   // silently suppressed. Listener wrappers check for it and skip
@@ -1432,10 +1434,10 @@ function buildWebRtcSpoofScript(proxyIp: string): string {
   }
 
   // ---- Hook prototype, leave constructor untouched ------------------------
-  const proto = window.RTCPeerConnection.prototype;
-  const ctorVariants = [window.RTCPeerConnection];
-  if (window.webkitRTCPeerConnection && window.webkitRTCPeerConnection !== window.RTCPeerConnection) {
-    ctorVariants.push(window.webkitRTCPeerConnection);
+  const proto = root.RTCPeerConnection.prototype;
+  const ctorVariants = [root.RTCPeerConnection];
+  if (root.webkitRTCPeerConnection && root.webkitRTCPeerConnection !== root.RTCPeerConnection) {
+    ctorVariants.push(root.webkitRTCPeerConnection);
   }
 
   // 1. addEventListener('icecandidate', ...)
@@ -1608,6 +1610,7 @@ function buildWebRtcSpoofScript(proxyIp: string): string {
  */
 const WEBRTC_BLOCK_SCRIPT = `
 (() => {
+  const root = globalThis;
   const noop = function () { throw new TypeError("WebRTC is disabled"); };
   // Make .toString() look like a native function so naive detection
   // (Function.prototype.toString.call(RTCPeerConnection)) returns
@@ -1624,7 +1627,7 @@ const WEBRTC_BLOCK_SCRIPT = `
 
   const kill = (name) => {
     try {
-      Object.defineProperty(window, name, {
+      Object.defineProperty(root, name, {
         get: () => undefined,
         set: () => {},
         configurable: false,
@@ -1734,8 +1737,26 @@ async function ensureWebRtcPolicy(
 ): Promise<void> {
   if (engine !== "cft") return; // CloakBrowser handles WebRTC natively
   const platform = process.platform;
-  // macOS — handled by ensureCftInfobarSuppressed's plist (runs earlier).
-  if (platform === "darwin") return;
+  // macOS — managed preferences are installed by ensureCftInfobarSuppressed.
+  // Verify the actual policy value; a declined admin prompt must fail closed.
+  if (platform === "darwin") {
+    try {
+      const { stdout } = await execFileP("defaults", [
+        "read",
+        "/Library/Managed Preferences/com.google.chrome.for.testing",
+        "WebRtcIPHandling",
+      ]);
+      if (stdout.trim() !== "disable_non_proxied_udp") {
+        throw new Error("managed preference value did not verify");
+      }
+    } catch (e) {
+      throw new Error(
+        "WebRTC protection unavailable: managed Chromium policy is not installed or verified. Launch aborted to prevent a direct UDP leak.",
+        { cause: e },
+      );
+    }
+    return;
+  }
   // Linux — managed-policy JSON file under /etc/opt.
   if (platform === "linux") {
     const policyDir = "/etc/opt/chrome-for-testing/policies/managed";
@@ -1746,18 +1767,24 @@ async function ensureWebRtcPolicy(
       await fsp.writeFile(policyPath, json, "utf8");
       console.log("[multizen] WebRTC enterprise policy written to", policyPath);
     } catch (e) {
-      // Non-root dev runs can't write /etc/opt — swallowed; WebRTC will
-      // leak in that environment. Production runs as root/admin.
-      console.warn(
-        "[multizen] failed to write WebRTC policy (continuing):",
-        (e as Error).message,
+      throw new Error(
+        `WebRTC protection unavailable: could not install Chromium policy at ${policyPath}. ` +
+          "Launch aborted to prevent a direct UDP leak. Run Phantom with permission to write the managed policy path.",
+        { cause: e },
       );
+    }
+    const applied = JSON.parse(await fsp.readFile(policyPath, "utf8")) as {
+      WebRtcIPHandling?: unknown;
+    };
+    if (applied.WebRtcIPHandling !== "disable_non_proxied_udp") {
+      throw new Error(`WebRTC protection unavailable: Chromium policy verification failed at ${policyPath}`);
     }
     return;
   }
-  // Windows — HKLM registry policy.
+  // Windows — use the per-user policy hive. HKLM requires elevation and a
+  // denied elevation must never silently turn into an unprotected launch.
   if (platform === "win32") {
-    const key = "HKLM\\SOFTWARE\\Policies\\Google\\Chrome for Testing";
+    const key = "HKCU\\SOFTWARE\\Policies\\Google\\Chrome for Testing";
     try {
       await execFileP("reg", [
         "ADD",
@@ -1770,15 +1797,21 @@ async function ensureWebRtcPolicy(
         "disable_non_proxied_udp",
         "/f",
       ]);
-      console.log("[multizen] WebRTC enterprise policy written to registry:", key);
+      const { stdout } = await execFileP("reg", ["QUERY", key, "/v", "WebRtcIPHandling"]);
+      if (!stdout.includes("disable_non_proxied_udp")) {
+        throw new Error("registry policy value did not verify");
+      }
+      console.log("[multizen] WebRTC enterprise policy verified in registry:", key);
     } catch (e) {
-      console.warn(
-        "[multizen] failed to write WebRTC registry policy (continuing):",
-        (e as Error).message,
+      throw new Error(
+        "WebRTC protection unavailable: could not install and verify the per-user Chromium policy. " +
+          "Launch aborted to prevent a direct UDP leak.",
+        { cause: e },
       );
     }
     return;
   }
+  throw new Error(`WebRTC protection unavailable: unsupported host platform ${platform}`);
 }
 
 /**

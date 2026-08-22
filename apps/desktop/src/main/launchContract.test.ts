@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { defaultFingerprint } from "../../../../packages/profile-manager/src/fingerprint.ts";
 import type { FingerprintConfig } from "@multizen/types";
 import {
@@ -19,7 +20,19 @@ import {
   type CoverageLevel,
 } from "./launchContract.ts";
 
+
 const TEST_FP: FingerprintConfig = defaultFingerprint("launch-contract-test");
+
+test("WebRTC spoof script is safe to evaluate in a worker global", () => {
+  // Keep this test dependency-light: importing the Electron driver would
+  // require its runtime-only extensionless imports under node --test.
+  const source = readFileSync(new URL("./ChromiumBrowserDriver.ts", import.meta.url), "utf8");
+  const script = source.slice(source.indexOf("export function buildWebRtcSpoofScript"));
+  assert.match(script, /const root = globalThis/);
+  assert.doesNotMatch(script, /if \(!window\.RTCPeerConnection\)/);
+  assert.match(script, /root\.RTCPeerConnection/);
+  assert.doesNotMatch(script, /window\.webkitRTCPeerConnection/);
+});
 
 // ── Contract completeness ───────────────────────────────────────────────────
 

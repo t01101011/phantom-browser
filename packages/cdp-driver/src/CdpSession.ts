@@ -222,10 +222,10 @@ export class CdpSession {
         await setup(buildSender(client, sessionId), {
           isRoot: false,
           type: t.type as TargetContext["type"],
-        }).catch(() => {});
+        });
       }
-    } catch {
-      // Best-effort — root is already covered.
+    } catch (e) {
+      throw new Error("CDP target bootstrap failed; WebRTC protection could not be installed", { cause: e });
     }
 
     await Target.setAutoAttach({
@@ -242,7 +242,7 @@ export class CdpSession {
               await setup(buildSender(client, params.sessionId), {
                 isRoot: false,
                 type: params.targetInfo.type as TargetContext["type"],
-              }).catch(() => {});
+              });
             }
           } finally {
             try {
