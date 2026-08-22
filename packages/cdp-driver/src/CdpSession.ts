@@ -30,11 +30,7 @@ function buildSender(client: CDP.Client, sessionId: string | undefined): TargetS
     }
     return (
       client as unknown as {
-        send: (
-          m: string,
-          p: Record<string, unknown> | undefined,
-          sid: string,
-        ) => Promise<unknown>;
+        send: (m: string, p: Record<string, unknown> | undefined, sid: string) => Promise<unknown>;
       }
     ).send(method, params, sessionId);
   }) as TargetSender;
@@ -204,12 +200,7 @@ export class CdpSession {
     // context that Page.addScriptToEvaluateOnNewDocument never reaches.
     // STUN from the worker discovers the real public IP and posts it back
     // to the page via postMessage, bypassing the page-level preload.
-    const SETUP_TARGET_TYPES = new Set([
-      "page",
-      "iframe",
-      "shared_worker",
-      "service_worker",
-    ]);
+    const SETUP_TARGET_TYPES = new Set(["page", "iframe", "shared_worker", "service_worker"]);
 
     try {
       const targets = await Target.getTargets();
@@ -225,7 +216,9 @@ export class CdpSession {
         });
       }
     } catch (e) {
-      throw new Error("CDP target bootstrap failed; WebRTC protection could not be installed", { cause: e });
+      throw new Error("CDP target bootstrap failed; WebRTC protection could not be installed", {
+        cause: e,
+      });
     }
 
     await Target.setAutoAttach({
@@ -237,6 +230,7 @@ export class CdpSession {
       "Target.attachedToTarget",
       (params: { sessionId: string; targetInfo: { type: string } }) => {
         void (async () => {
+          let setupSucceeded = false;
           try {
             if (SETUP_TARGET_TYPES.has(params.targetInfo.type)) {
               await setup(buildSender(client, params.sessionId), {
@@ -244,15 +238,18 @@ export class CdpSession {
                 type: params.targetInfo.type as TargetContext["type"],
               });
             }
+            setupSucceeded = true;
+          } catch (e) {
+            console.error("[cdp] target setup failed; closing browser fail-closed", e);
+            await this.closeBrowser().catch(() => {});
+            await this.close().catch(() => {});
           } finally {
-            try {
-              await client.send(
-                "Runtime.runIfWaitingForDebugger",
-                undefined,
-                params.sessionId,
-              );
-            } catch {
-              // Already detached.
+            if (setupSucceeded) {
+              try {
+                await client.send("Runtime.runIfWaitingForDebugger", undefined, params.sessionId);
+              } catch {
+                // Already detached.
+              }
             }
           }
         })();
@@ -407,7 +404,9 @@ export class CdpSession {
     // A "tracked" enable is one the safe layer is responsible for undoing:
     // an allowlisted domain that wasn't already enabled at connect.
     const tracked =
-      isEnable && SAFE_PAIRED_DISABLE_DOMAINS.has(domain) && !this.connectEnabledDomains.has(domain);
+      isEnable &&
+      SAFE_PAIRED_DISABLE_DOMAINS.has(domain) &&
+      !this.connectEnabledDomains.has(domain);
 
     if (tracked && this.opts.engine === "cloakbrowser" && CLOAK_RISKY_ENABLE_DOMAINS.has(domain)) {
       throw new Error(
@@ -432,7 +431,10 @@ export class CdpSession {
         const next = (this.safeEnableRefcount.get(domain) ?? 1) - 1;
         if (next <= 0) {
           this.safeEnableRefcount.delete(domain);
-          await buildSender(client, sessionId)(`${domain}.disable`).catch(() => {
+          await buildSender(
+            client,
+            sessionId,
+          )(`${domain}.disable`).catch(() => {
             // Domain may already be disabled / session gone — best effort.
           });
         } else {
@@ -442,7 +444,10 @@ export class CdpSession {
     }
   }
 
-  async navigate(url: string, opts: { timeoutMs?: number } = {}): Promise<{ url: string; title: string }> {
+  async navigate(
+    url: string,
+    opts: { timeoutMs?: number } = {},
+  ): Promise<{ url: string; title: string }> {
     const client = this.require();
     const { Page } = client;
     const timeoutMs = opts.timeoutMs ?? 30000;
@@ -488,8 +493,20 @@ export class CdpSession {
   private async dispatchMouseClick(x: number, y: number): Promise<void> {
     const client = this.require();
     await client.Input.dispatchMouseEvent({ type: "mouseMoved", x, y });
-    await client.Input.dispatchMouseEvent({ type: "mousePressed", x, y, button: "left", clickCount: 1 });
-    await client.Input.dispatchMouseEvent({ type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+    await client.Input.dispatchMouseEvent({
+      type: "mousePressed",
+      x,
+      y,
+      button: "left",
+      clickCount: 1,
+    });
+    await client.Input.dispatchMouseEvent({
+      type: "mouseReleased",
+      x,
+      y,
+      button: "left",
+      clickCount: 1,
+    });
   }
 
   /**
@@ -548,7 +565,10 @@ export class CdpSession {
       expression: "JSON.stringify({ url: location.href, title: document.title })",
       returnByValue: true,
     });
-    const { url, title } = JSON.parse(meta.result.value as string) as { url: string; title: string };
+    const { url, title } = JSON.parse(meta.result.value as string) as {
+      url: string;
+      title: string;
+    };
 
     // Enable Accessibility only for the duration of this snapshot —
     // keeping it enabled globally is a stealth-build DCHECK trigger.
@@ -636,7 +656,10 @@ function trimAccessibilityTree(rawNodes: RawAxNode[]): AccessibilityNode[] {
       role !== "presentation" &&
       role !== "none" &&
       role !== "InlineTextBox" &&
-      (name || value || description || ["link", "button", "textbox", "checkbox", "combobox", "option"].includes(role));
+      (name ||
+        value ||
+        description ||
+        ["link", "button", "textbox", "checkbox", "combobox", "option"].includes(role));
 
     if (!isInteresting) return children; // drop the generic wrapper, hoist its content
 

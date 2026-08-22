@@ -20,7 +20,6 @@ import {
   type CoverageLevel,
 } from "./launchContract.ts";
 
-
 const TEST_FP: FingerprintConfig = defaultFingerprint("launch-contract-test");
 
 test("WebRTC spoof script is safe to evaluate in a worker global", () => {
@@ -32,6 +31,18 @@ test("WebRTC spoof script is safe to evaluate in a worker global", () => {
   assert.doesNotMatch(script, /if \(!window\.RTCPeerConnection\)/);
   assert.match(script, /root\.RTCPeerConnection/);
   assert.doesNotMatch(script, /window\.webkitRTCPeerConnection/);
+});
+
+test("future target setup fails closed instead of resuming an unprotected target", () => {
+  const source = readFileSync(
+    new URL("../../../../packages/cdp-driver/src/CdpSession.ts", import.meta.url),
+    "utf8",
+  );
+  const handler = source.slice(source.indexOf('"Target.attachedToTarget"'));
+  assert.match(handler, /setupSucceeded = false/);
+  assert.match(handler, /target setup failed; closing browser fail-closed/);
+  assert.match(handler, /await this\.closeBrowser\(\)/);
+  assert.match(handler, /if \(setupSucceeded\)/);
 });
 
 // ── Contract completeness ───────────────────────────────────────────────────
@@ -94,10 +105,7 @@ test("no field is silently unsupported on both engines without a notes explanati
 // ── CloakBrowser native args ───────────────────────────────────────────────
 
 test("CloakBrowser CLI args include a --fingerprint flag for every native-flag field", () => {
-  const { args, missingNative } = verifyCloakBrowserNativeArgs(
-    "test-profile",
-    TEST_FP,
-  );
+  const { args, missingNative } = verifyCloakBrowserNativeArgs("test-profile", TEST_FP);
   assert.deepEqual(missingNative, [], `Missing native flags: ${missingNative.join(", ")}`);
   assert.ok(args.length >= 8, `Expected ≥8 CloakBrowser args, got ${args.length}`);
 });
@@ -187,34 +195,16 @@ test("CFT preload script injects the correct values from the fingerprint", () =>
     "deviceMemory not found",
   );
   // WebGL
-  assert.ok(
-    script.includes(JSON.stringify(TEST_FP.webgl.vendor)),
-    "webgl vendor not found",
-  );
-  assert.ok(
-    script.includes(JSON.stringify(TEST_FP.webgl.renderer)),
-    "webgl renderer not found",
-  );
+  assert.ok(script.includes(JSON.stringify(TEST_FP.webgl.vendor)), "webgl vendor not found");
+  assert.ok(script.includes(JSON.stringify(TEST_FP.webgl.renderer)), "webgl renderer not found");
   // Screen
-  assert.ok(
-    script.includes(`SCREEN_W = ${TEST_FP.screen.width}`),
-    "screen width not found",
-  );
-  assert.ok(
-    script.includes(`SCREEN_H = ${TEST_FP.screen.height}`),
-    "screen height not found",
-  );
+  assert.ok(script.includes(`SCREEN_W = ${TEST_FP.screen.width}`), "screen width not found");
+  assert.ok(script.includes(`SCREEN_H = ${TEST_FP.screen.height}`), "screen height not found");
   // DPR
-  assert.ok(
-    script.includes(`DPR = ${TEST_FP.dpr}`),
-    "dpr not found",
-  );
+  assert.ok(script.includes(`DPR = ${TEST_FP.dpr}`), "dpr not found");
   // AvailScreen (falls back to screen if unset)
   const expectedAvailW = TEST_FP.availScreen?.width ?? TEST_FP.screen.width;
-  assert.ok(
-    script.includes(`AVAIL_W = ${expectedAvailW}`),
-    "availScreen width not found",
-  );
+  assert.ok(script.includes(`AVAIL_W = ${expectedAvailW}`), "availScreen width not found");
 });
 
 test("preload script with includeWebGl=false omits WebGL patches", () => {
@@ -276,7 +266,11 @@ test("deviceMemoryApiValue quantizes physical RAM to powers of two, capped at 8"
   assert.equal(deviceMemoryApiValue(4), 4);
   assert.equal(deviceMemoryApiValue(2), 2);
   assert.equal(deviceMemoryApiValue(6), 8, "6 → round(log2(6))=round(2.58)=3 → 2^3=8");
-  assert.equal(deviceMemoryApiValue(12), 8, "12 → round(log2(12))=round(3.58)=4 → 2^4=16 → capped 8");
+  assert.equal(
+    deviceMemoryApiValue(12),
+    8,
+    "12 → round(log2(12))=round(3.58)=4 → 2^4=16 → capped 8",
+  );
   assert.equal(deviceMemoryApiValue(0), 8, "0 → default 8");
   assert.equal(deviceMemoryApiValue(-1), 8, "negative → default 8");
 });
@@ -289,14 +283,8 @@ test("reconcileVersionInFingerprint rewrites UA and Client Hints versions", () =
     full: "151.0.7922.47",
   });
 
-  assert.ok(
-    result.userAgent.includes("Chrome/151.0.7922.47"),
-    "UA should contain the new version",
-  );
-  assert.ok(
-    !result.userAgent.includes("Chrome/148."),
-    "UA should not contain old version",
-  );
+  assert.ok(result.userAgent.includes("Chrome/151.0.7922.47"), "UA should contain the new version");
+  assert.ok(!result.userAgent.includes("Chrome/148."), "UA should not contain old version");
   assert.ok(
     result.clientHints.secChUa.includes(`v="151"`),
     "secChUa should contain new major version",
@@ -373,10 +361,7 @@ test("no field is applied via preload-js on CloakBrowser", () => {
 test("fields with cdt coverage also have a notes entry", () => {
   for (const entry of LAUNCH_CONTRACT) {
     if (entry.cft === "cdp" || entry.cloakbrowser === "cdp") {
-      assert.ok(
-        entry.notes,
-        `${entry.field} uses CDP but has no notes explaining the method`,
-      );
+      assert.ok(entry.notes, `${entry.field} uses CDP but has no notes explaining the method`);
     }
   }
 });

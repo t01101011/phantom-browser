@@ -144,9 +144,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // so that probe visibly opens and closes a throwaway Chrome window.
     const bootstrapStatus = this.bootstrap.getStatus();
     const actualVersion =
-      bootstrapStatus.kind === "ready"
-        ? parseChromiumVersion(bootstrapStatus.version)
-        : null;
+      bootstrapStatus.kind === "ready" ? parseChromiumVersion(bootstrapStatus.version) : null;
     // Reconcile (1) device family to host OS (claiming Win on a Mac
     //   binary is detected via V8/CSS feature signatures), then
     //   (2) Chrome version to the actual binary version. Both run
@@ -190,7 +188,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     let coherence: ProxyCoherenceResult | null = null;
     if (profile.proxy) {
       try {
-        const geo = await probeProxyGeo(profile.proxy, { timeoutMs: this.getSettings().proxyProbeTimeoutMs });
+        const geo = await probeProxyGeo(profile.proxy, {
+          timeoutMs: this.getSettings().proxyProbeTimeoutMs,
+        });
         coherence = resolveProxyCoherence({
           engine,
           fingerprint: fp,
@@ -256,7 +256,10 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // window in addition to the positional start URL window.
     if (startupPlan.writeRestorePreference) {
       await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
-        console.warn("[multizen] failed to write session restore preference:", (e as Error).message);
+        console.warn(
+          "[multizen] failed to write session restore preference:",
+          (e as Error).message,
+        );
       });
     }
     if (startupPlan.writeStartPagePreference) {
@@ -387,7 +390,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // and a SOCKS5 upstream makes it redundant anyway. Real anti-
       // detect products may solve the residual leak with custom resolver
       // patches. This repository does not own or ship such a Chromium patch.
-      args.push("--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction");
+      args.push(
+        "--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction",
+      );
       args.push("--dns-over-https-mode=off");
       args.push("--dns-prefetch-disable");
       args.push("--disable-async-dns");
@@ -485,7 +490,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // race a not-yet-ready CDP endpoint.
     await waitForCdpSessionReady(port, session, this.getSettings().cdpReadyTimeoutMs);
     if (startupPlan.openStartPage && profile.startUrl) {
-      await fsp.writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8").catch(() => {});
+      await fsp
+        .writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8")
+        .catch(() => {});
     }
 
     // Apply per-target emulation: timezone, locale, Sec-CH-UA via
@@ -519,9 +526,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // natively in C++, so we skip our preload entirely on it — double-
     // patching produces inconsistent values that detection vendors flag.
     const fingerprintScript =
-      engine === "cloakbrowser"
-        ? null
-        : buildFingerprintPreloadScript(fp, { includeWebGl: true });
+      engine === "cloakbrowser" ? null : buildFingerprintPreloadScript(fp, { includeWebGl: true });
     await session
       .bootstrapTargets(async (send, ctx) => {
         // Workers (shared_worker, service_worker) run in a separate JS
@@ -531,8 +536,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         // because workers don't navigate: their global scope is alive from
         // script start, so an immediate eval patches RTCPeerConnection
         // before any leak-detection site can spin one up.
-        const isWorker =
-          ctx.type === "shared_worker" || ctx.type === "service_worker";
+        const isWorker = ctx.type === "shared_worker" || ctx.type === "service_worker";
 
         // 1. WebRTC kill-switch / spoof when proxy is on.
         //    CloakBrowser handles WebRTC natively (webrtcScript is null).
@@ -547,19 +551,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
             // — addScript already covered the next load.
             await send("Page.addScriptToEvaluateOnNewDocument", {
               source: webrtcScript,
-            }).catch((e: unknown) => {
-              console.error("[multizen] WebRTC addScript failed:", e);
             });
           }
           // Workers always get the eval (no navigation lifecycle).
           // Pages/iframes get it as belt-and-braces; failure is expected
           // if the execution context isn't ready yet.
-          await send("Runtime.evaluate", { expression: webrtcScript }).catch((e: unknown) => {
-            const msg = (e as Error).message;
-            if (!/default execution context/i.test(msg)) {
-              throw new Error("WebRTC protection unavailable: target injection failed", { cause: e });
-            }
-          });
+          await send("Runtime.evaluate", { expression: webrtcScript });
         }
         // 1b. Generic fingerprint patches (deviceMemory, hwConcurrency,
         //     navigator.platform, WebGL UNMASKED_*). CloakBrowser handles
@@ -572,14 +569,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
               console.error("[multizen] fingerprint addScript failed:", e);
             });
           }
-          await send("Runtime.evaluate", { expression: fingerprintScript }).catch(
-            (e: unknown) => {
-              const msg = (e as Error).message;
-              if (!/default execution context/i.test(msg)) {
-                console.error("[multizen] fingerprint eval failed:", e);
-              }
-            },
-          );
+          await send("Runtime.evaluate", { expression: fingerprintScript }).catch((e: unknown) => {
+            const msg = (e as Error).message;
+            if (!/default execution context/i.test(msg)) {
+              console.error("[multizen] fingerprint eval failed:", e);
+            }
+          });
         }
         // 1c. Screen / device metrics — TOP-LEVEL TARGETS ONLY. iframes
         //     reject with "Command can only be executed on top-level
@@ -705,7 +700,6 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         throw new Error("WebRTC/CDP protection bootstrap failed; launch aborted", { cause: e });
       });
 
-
     // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
     // to Web Store pages only (the host polls a DOM attribute there, never on
     // the user's normal browsing). The CDP session is profile-scoped, so any
@@ -813,7 +807,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // anyway so a stuck socket can never strand Stop.
       await withTimeout(stopBridgeForProfile(profileId), 2000);
     } finally {
-      console.log(`[multizen] close() done profile=${profileId} pid=${r.pid} alive=${isPidAlive(r.pid)}`);
+      console.log(
+        `[multizen] close() done profile=${profileId} pid=${r.pid} alive=${isPidAlive(r.pid)}`,
+      );
       this.emit("running-changed", { kind: "closed", profileId, reason: "user-close" });
     }
   }
@@ -1221,14 +1217,18 @@ async function gracefulShutdown(r: RunningProcess, timeouts: ShutdownTimeouts): 
   await withTimeout(r.session.close(), 1000);
 
   // 2. SIGTERM by PID (not r.child.kill — don't trust the child flags).
-  console.log(`[multizen] shutdown pid=${pid}: Browser.close didn't exit in ${timeouts.shutdownGraceMs}ms → SIGTERM`);
+  console.log(
+    `[multizen] shutdown pid=${pid}: Browser.close didn't exit in ${timeouts.shutdownGraceMs}ms → SIGTERM`,
+  );
   killPid(pid, "SIGTERM");
   if (await waitForPidDeath(pid, timeouts.shutdownSigtermMs)) return;
 
   // 3. SIGKILL — the kernel guarantees this. We poll to confirm the process is
   //    genuinely gone before returning, so close() never reports a false
   //    "closed" while Chromium is still on screen.
-  console.log(`[multizen] shutdown pid=${pid}: SIGTERM didn't exit in ${timeouts.shutdownSigtermMs}ms → SIGKILL`);
+  console.log(
+    `[multizen] shutdown pid=${pid}: SIGTERM didn't exit in ${timeouts.shutdownSigtermMs}ms → SIGKILL`,
+  );
   killPid(pid, "SIGKILL");
   await waitForPidDeath(pid, timeouts.shutdownSigkillMs);
 }
@@ -1258,14 +1258,22 @@ async function pidsUsingDataDir(dataDir: string): Promise<number[]> {
 async function killBrowsersUsingDataDir(dataDir: string): Promise<void> {
   const pids = await pidsUsingDataDir(dataDir);
   if (pids.length === 0) return;
-  console.log(`[multizen] sweep: SIGKILL ${pids.length} lingering proc(s) for ${dataDir}: ${pids.join(", ")}`);
+  console.log(
+    `[multizen] sweep: SIGKILL ${pids.length} lingering proc(s) for ${dataDir}: ${pids.join(", ")}`,
+  );
   for (const pid of pids) killPid(pid, "SIGKILL");
 }
 
 /** Resolve when `p` settles or after `ms`, whichever comes first. Never
  *  rejects — a hung or failing shutdown step must not block the kill path. */
 function withTimeout(p: Promise<unknown>, ms: number): Promise<void> {
-  return Promise.race([p.then(() => {}, () => {}), sleep(ms)]);
+  return Promise.race([
+    p.then(
+      () => {},
+      () => {},
+    ),
+    sleep(ms),
+  ]);
 }
 
 function killPid(pid: number, signal: NodeJS.Signals): void {
@@ -1731,10 +1739,7 @@ function reconcileVersionInFingerprint(
  * Only called when `profile.proxy` is set — direct profiles intentionally
  * expose the real IP.
  */
-async function ensureWebRtcPolicy(
-  engine: BrowserEngine,
-  _dataDir: string,
-): Promise<void> {
+async function ensureWebRtcPolicy(engine: BrowserEngine, _dataDir: string): Promise<void> {
   if (engine !== "cft") return; // CloakBrowser handles WebRTC natively
   const platform = process.platform;
   // macOS — managed preferences are installed by ensureCftInfobarSuppressed.
@@ -1777,7 +1782,9 @@ async function ensureWebRtcPolicy(
       WebRtcIPHandling?: unknown;
     };
     if (applied.WebRtcIPHandling !== "disable_non_proxied_udp") {
-      throw new Error(`WebRTC protection unavailable: Chromium policy verification failed at ${policyPath}`);
+      throw new Error(
+        `WebRTC protection unavailable: Chromium policy verification failed at ${policyPath}`,
+      );
     }
     return;
   }
