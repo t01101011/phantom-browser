@@ -19,8 +19,36 @@ import {
   verifyPreloadScriptFields,
   type CoverageLevel,
 } from "./launchContract.ts";
+import {
+  buildWebRtcPolicyAddCommand,
+  buildWebRtcPolicyQueryCommand,
+  CFT_WINDOWS_POLICY_KEY,
+  registryContainsWebRtcPolicy,
+  windowsRegExe,
+} from "./windowsPolicy.ts";
 
 const TEST_FP: FingerprintConfig = defaultFingerprint("launch-contract-test");
+
+test("Windows CFT policy uses the elevated machine hive and absolute reg.exe", () => {
+  const env = { SystemRoot: "C:\\Windows" };
+  assert.equal(windowsRegExe(env), "C:\\Windows\\System32\\reg.exe");
+  const add = buildWebRtcPolicyAddCommand(env);
+  const query = buildWebRtcPolicyQueryCommand(env);
+  assert.equal(add.file, "C:\\Windows\\System32\\reg.exe");
+  assert.equal(add.args[1], CFT_WINDOWS_POLICY_KEY);
+  assert.deepEqual(add.args.slice(-1), ["/reg:64"]);
+  assert.deepEqual(query.args.slice(-1), ["/reg:64"]);
+  assert.equal(CFT_WINDOWS_POLICY_KEY.startsWith("HKLM\\"), true);
+});
+
+test("Windows CFT policy readback requires the exact REG_SZ value", () => {
+  assert.equal(
+    registryContainsWebRtcPolicy(`    WebRtcIPHandling    REG_SZ    disable_non_proxied_udp\r\n`),
+    true,
+  );
+  assert.equal(registryContainsWebRtcPolicy("WebRtcIPHandling REG_SZ allow_all"), false);
+  assert.equal(registryContainsWebRtcPolicy("WebRtcIPHandling REG_DWORD 1"), false);
+});
 
 test("WebRTC spoof script is safe to evaluate in a worker global", () => {
   // Keep this test dependency-light: importing the Electron driver would

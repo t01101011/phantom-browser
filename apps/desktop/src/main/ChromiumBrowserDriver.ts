@@ -30,6 +30,7 @@ import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
 import { sessionStartupPlan } from "./sessionStartup";
 import { parseChromiumVersion } from "./chromiumVersion";
+import { installAndVerifyWindowsWebRtcPolicy, CFT_WINDOWS_POLICY_KEY } from "./windowsPolicy";
 
 interface RunningProcess {
   child: ChildProcess;
@@ -1788,31 +1789,21 @@ async function ensureWebRtcPolicy(engine: BrowserEngine, _dataDir: string): Prom
     }
     return;
   }
-  // Windows — use the per-user policy hive. HKLM requires elevation and a
-  // denied elevation must never silently turn into an unprotected launch.
+  // Windows — CFT reads its enterprise policy from HKLM, not HKCU. A
+  // successful HKCU write is therefore not proof that the browser is
+  // protected. Installation is intentionally fail-closed and may require a
+  // one-time administrator approval.
   if (platform === "win32") {
-    const key = "HKCU\\SOFTWARE\\Policies\\Google\\Chrome for Testing";
     try {
-      await execFileP("reg", [
-        "ADD",
-        key,
-        "/v",
-        "WebRtcIPHandling",
-        "/t",
-        "REG_SZ",
-        "/d",
-        "disable_non_proxied_udp",
-        "/f",
-      ]);
-      const { stdout } = await execFileP("reg", ["QUERY", key, "/v", "WebRtcIPHandling"]);
-      if (!stdout.includes("disable_non_proxied_udp")) {
-        throw new Error("registry policy value did not verify");
-      }
-      console.log("[multizen] WebRTC enterprise policy verified in registry:", key);
+      await installAndVerifyWindowsWebRtcPolicy();
+      console.log(
+        "[multizen] WebRTC enterprise policy verified in registry:",
+        CFT_WINDOWS_POLICY_KEY,
+      );
     } catch (e) {
       throw new Error(
-        "WebRTC protection unavailable: could not install and verify the per-user Chromium policy. " +
-          "Launch aborted to prevent a direct UDP leak.",
+        "WebRTC protection unavailable: could not install and verify the Chrome for Testing machine policy at " +
+          `${CFT_WINDOWS_POLICY_KEY}. Launch aborted to prevent a direct UDP leak.`,
         { cause: e },
       );
     }
