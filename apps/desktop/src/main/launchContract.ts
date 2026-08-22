@@ -475,7 +475,7 @@ export const LAUNCH_CONTRACT: FieldCoverage[] = [
     cft: "enterprise-policy",
     cloakbrowser: "native-flag",
     notes:
-      "WebRTC IP handling is not a FingerprintConfig field — it is a launch artifact applied when a proxy is set. CFT: Chromium enterprise policy `WebRtcIPHandling=disable_non_proxied_udp` written via ensureWebRtcPolicy() before browser spawn. Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI flag, so policy is the only reliable vector on CFT 147+. CloakBrowser: `--fingerprint-webrtc-ip=auto` native flag",
+      "WebRTC IP handling is not a FingerprintConfig field — it is a launch artifact applied when a proxy is set. CFT: Chromium enterprise policy `WebRtcIPHandling=disable_non_proxied_udp` written via ensureWebRtcPolicy() before browser spawn. Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI flag, so policy is the only reliable vector on CFT 147+. The JS-level WebRTC spoof/block script (`buildWebRtcSpoofScript`) is also injected via CDP `Page.addScriptToEvaluateOnNewDocument` on page + iframe targets, plus `Runtime.evaluate` as belt-and-braces — workers (shared_worker, service_worker) get Runtime.evaluate only since they have no Page domain. CloakBrowser: `--fingerprint-webrtc-ip=auto` native flag",
   },
 ];
 
