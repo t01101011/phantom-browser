@@ -50,6 +50,7 @@ test("every contract entry has a valid coverage level for both engines", () => {
   const valid: CoverageLevel[] = [
     "native-flag",
     "cli-flag",
+    "enterprise-policy",
     "cdp",
     "preload-js",
     "unsupported",
@@ -319,6 +320,16 @@ test("getCoverage returns the right level for known fields", () => {
 test("getCoverage returns unsupported for unknown fields", () => {
   assert.equal(getCoverage("nonexistent", "cft"), "unsupported");
   assert.equal(getCoverage("nonexistent", "cloakbrowser"), "unsupported");
+});
+
+test("WebRTC IP handling coverage reflects enterprise policy on CFT and native flag on CloakBrowser", () => {
+  // WebRTC IP handling is the only non-FingerprintConfig field in the contract
+  // (launch artifact gated on profile.proxy). Previously a dead CLI flag, now
+  // a platform-appropriate enterprise policy.
+  const cft = getCoverage("webrtcIPHandling", "cft");
+  const cloak = getCoverage("webrtcIPHandling", "cloakbrowser");
+  assert.equal(cft, "enterprise-policy");
+  assert.equal(cloak, "native-flag");
 });
 
 // ── CloakBrowser locale is the documented gap ──────────────────────────────

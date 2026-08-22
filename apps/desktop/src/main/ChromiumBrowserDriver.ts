@@ -357,12 +357,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // is proxied — STUN uses UDP and bypasses HTTP proxies by default.
       // `disable_non_proxied_udp` forces WebRTC to either go through a
       // SOCKS proxy that supports UDP, or fall back to TCP through the
-      // configured proxy. Without this flag, browserscan / browserleaks /
+      // configured proxy. Without this, browserscan / browserleaks /
       // ipleak.net all show the user's real IP next to the proxy IP.
       // Only set when a proxy is configured — direct profiles intentionally
       // expose their real IP.
-      args.push("--force-webrtc-ip-handling-policy=disable_non_proxied_udp");
-      args.push("--enforce-webrtc-ip-permission-check");
+      //
+      // Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI
+      // flag (silently ignored on CFT 147+), so we write a Chromium
+      // enterprise policy (`WebRtcIPHandling`) before browser spawn
+      // instead. Chrome 147+ still honors enterprise policy.
+      await ensureWebRtcPolicy(engine, browserDataDir);
       // ── DNS leak prevention ─────────────────────────────────────────
       // Chromium does *remote* DNS for socks5:// proxies natively — our
       // local SOCKS5 bridge gets the hostname (not an IP) and forwards
@@ -1685,6 +1689,82 @@ function reconcileVersionInFingerprint(
 }
 
 /**
+ * Write the Chromium enterprise policy `WebRtcIPHandling` =
+ * `disable_non_proxied_udp` BEFORE browser spawn. Chrome 107+ removed
+ * the `--force-webrtc-ip-handling-policy` CLI flag, so on CFT 147+
+ * the only reliable way to prevent STUN UDP from bypassing the SOCKS5
+ * bridge (which only does TCP CONNECT) is enterprise policy.
+ *
+ * Platform handling:
+ *   • macOS — the policy is baked into the same managed-preferences plist
+ *     written by {@link ensureCftInfobarSuppressed} (which runs earlier in
+ *     the launch path). This function is therefore a no-op on darwin; if
+ *     the user declined admin, the plist was never written and we can't
+ *     escalate again here without re-prompting. The CloakBlog engine
+ *     doesn't reach this call at all (CloakBrowser uses --fingerprint-webrtc-ip=auto).
+ *   • Linux — write to `/etc/opt/chrome-for-testing/policies/managed/webrtc.json`
+ *     (requires root; in dev/no-root environments the write is best-effort
+ *     and silently skipped).
+ *   • Windows — write to registry `HKLM\SOFTWARE\Policies\Google\Chrome for Testing`
+ *     via `reg.exe ADD` (requires admin; best-effort if denied).
+ *
+ * Only called when `profile.proxy` is set — direct profiles intentionally
+ * expose the real IP.
+ */
+async function ensureWebRtcPolicy(
+  engine: BrowserEngine,
+  _dataDir: string,
+): Promise<void> {
+  if (engine !== "cft") return; // CloakBrowser handles WebRTC natively
+  const platform = process.platform;
+  // macOS — handled by ensureCftInfobarSuppressed's plist (runs earlier).
+  if (platform === "darwin") return;
+  // Linux — managed-policy JSON file under /etc/opt.
+  if (platform === "linux") {
+    const policyDir = "/etc/opt/chrome-for-testing/policies/managed";
+    const policyPath = `${policyDir}/webrtc.json`;
+    const json = JSON.stringify({ WebRtcIPHandling: "disable_non_proxied_udp" });
+    try {
+      await fsp.mkdir(policyDir, { recursive: true }).catch(() => {});
+      await fsp.writeFile(policyPath, json, "utf8");
+      console.log("[multizen] WebRTC enterprise policy written to", policyPath);
+    } catch (e) {
+      // Non-root dev runs can't write /etc/opt — swallowed; WebRTC will
+      // leak in that environment. Production runs as root/admin.
+      console.warn(
+        "[multizen] failed to write WebRTC policy (continuing):",
+        (e as Error).message,
+      );
+    }
+    return;
+  }
+  // Windows — HKLM registry policy.
+  if (platform === "win32") {
+    const key = "HKLM\\SOFTWARE\\Policies\\Google\\Chrome for Testing";
+    try {
+      await execFileP("reg", [
+        "ADD",
+        key,
+        "/v",
+        "WebRtcIPHandling",
+        "/t",
+        "REG_SZ",
+        "/d",
+        "disable_non_proxied_udp",
+        "/f",
+      ]);
+      console.log("[multizen] WebRTC enterprise policy written to registry:", key);
+    } catch (e) {
+      console.warn(
+        "[multizen] failed to write WebRTC registry policy (continuing):",
+        (e as Error).message,
+      );
+    }
+    return;
+  }
+}
+
+/**
  * Suppress Chrome for Testing's "this build is only for automated testing"
  * infobar by writing the macOS managed-preference plist that the CfT
  * policy `CommandLineFlagSecurityWarningsEnabled` lives in. The path is
@@ -1728,12 +1808,18 @@ async function ensureCftInfobarSuppressed(): Promise<void> {
   // then `cp` it to /Library/Managed Preferences/ via osascript admin.
   // Avoids the shell-escaping nightmare of putting XML inside a nested
   // AppleScript double-quoted string.
+  // WebRtcIPHandling is baked into the same plist so the policy is active on
+  // every launch where the infobar is suppressed. ensureWebRtcPolicy() also
+  // writes this key when a proxy is configured — but having it here means the
+  // plist already carries it after the first admin prompt.
   const plistXml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CommandLineFlagSecurityWarningsEnabled</key>
   <false/>
+  <key>WebRtcIPHandling</key>
+  <string>disable_non_proxied_udp</string>
 </dict>
 </plist>
 `;
