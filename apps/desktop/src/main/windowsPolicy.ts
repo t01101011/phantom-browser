@@ -15,6 +15,10 @@ export interface RegCommand {
   args: string[];
 }
 
+export interface ElevatedRegCommand extends RegCommand {
+  script: string;
+}
+
 /** Resolve reg.exe without relying on Electron's potentially minimal PATH. */
 export function windowsRegExe(env: NodeJS.ProcessEnv = process.env): string {
   const systemRoot = env.SystemRoot ?? env.SYSTEMROOT;
@@ -46,22 +50,69 @@ export function buildWebRtcPolicyQueryCommand(env: NodeJS.ProcessEnv = process.e
   };
 }
 
+function powershellExe(env: NodeJS.ProcessEnv = process.env): string {
+  const systemRoot = env.SystemRoot ?? env.SYSTEMROOT;
+  return systemRoot
+    ? `${systemRoot}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+    : "powershell.exe";
+}
+
+function quotePowerShellLiteral(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+/** Build a command that triggers the normal Windows UAC consent dialog. */
+export function buildElevatedWebRtcPolicyInstallCommand(
+  env: NodeJS.ProcessEnv = process.env,
+): ElevatedRegCommand {
+  const add = buildWebRtcPolicyAddCommand(env);
+  // Start-Process flattens ArgumentList into a single command line. Preserve
+  // arguments containing spaces by embedding Windows command-line quotes.
+  const argumentList = add.args
+    .map((arg) => (arg.includes(" ") ? `\"${arg.replaceAll('"', '\\"')}\"` : arg))
+    .map(quotePowerShellLiteral)
+    .join(", ");
+  const script =
+    `$process = Start-Process -FilePath ${quotePowerShellLiteral(add.file)} ` +
+    `-ArgumentList @(${argumentList}) -Verb RunAs -Wait -PassThru; ` +
+    `exit $process.ExitCode`;
+  return {
+    file: powershellExe(env),
+    args: ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+    script,
+  };
+}
+
 export function registryContainsWebRtcPolicy(stdout: string): boolean {
-  return new RegExp(`${WEBRTC_POLICY_NAME}\\s+REG_SZ\\s+${WEBRTC_POLICY_VALUE}`, "i").test(stdout);
+  return new RegExp(
+    `^\\s*${WEBRTC_POLICY_NAME}\\s+REG_SZ\\s+${WEBRTC_POLICY_VALUE}\\s*$`,
+    "im",
+  ).test(stdout);
 }
 
 export async function installAndVerifyWindowsWebRtcPolicy(): Promise<void> {
-  const add = buildWebRtcPolicyAddCommand();
   const query = buildWebRtcPolicyQueryCommand();
+  let installed = false;
   try {
-    await execFileP(add.file, add.args, { windowsHide: true });
-  } catch (cause) {
-    throw new Error(
-      "Chrome for Testing WebRTC policy requires one-time administrator approval. " +
-        "Run Phantom elevated or ask an administrator to install the policy, then retry.",
-      { cause },
-    );
+    const { stdout } = await execFileP(query.file, query.args, { windowsHide: true });
+    installed = registryContainsWebRtcPolicy(stdout);
+  } catch {
+    // Missing key/value is expected on first launch; install it below.
   }
+
+  if (!installed) {
+    const elevated = buildElevatedWebRtcPolicyInstallCommand();
+    try {
+      await execFileP(elevated.file, elevated.args, { windowsHide: true });
+    } catch (cause) {
+      throw new Error(
+        "Chrome for Testing WebRTC policy requires one-time administrator approval. " +
+          "Approve the Windows UAC prompt or ask an administrator to install the policy, then retry.",
+        { cause },
+      );
+    }
+  }
+
   const { stdout } = await execFileP(query.file, query.args, { windowsHide: true });
   if (!registryContainsWebRtcPolicy(stdout)) {
     throw new Error(`registry policy value did not verify at ${CFT_WINDOWS_POLICY_KEY}`);

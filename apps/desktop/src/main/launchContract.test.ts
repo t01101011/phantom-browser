@@ -20,6 +20,7 @@ import {
   type CoverageLevel,
 } from "./launchContract.ts";
 import {
+  buildElevatedWebRtcPolicyInstallCommand,
   buildWebRtcPolicyAddCommand,
   buildWebRtcPolicyQueryCommand,
   CFT_WINDOWS_POLICY_KEY,
@@ -48,6 +49,30 @@ test("Windows CFT policy readback requires the exact REG_SZ value", () => {
   );
   assert.equal(registryContainsWebRtcPolicy("WebRtcIPHandling REG_SZ allow_all"), false);
   assert.equal(registryContainsWebRtcPolicy("WebRtcIPHandling REG_DWORD 1"), false);
+});
+
+test("Windows CFT policy installer requests elevation through PowerShell", () => {
+  const env = { SystemRoot: "C:\\Windows" };
+  const command = buildElevatedWebRtcPolicyInstallCommand(env);
+  assert.equal(command.file, "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+  const script = command.args.at(-1) ?? "";
+  assert.match(script, /-Verb RunAs/);
+  assert.match(script, /-Wait/);
+  assert.match(script, /-PassThru/);
+  assert.match(script, /ExitCode/);
+  assert.match(script, /reg\.exe/);
+});
+
+test("Windows CFT elevated installer preserves the policy key as one quoted argument", () => {
+  const command = buildElevatedWebRtcPolicyInstallCommand({ SystemRoot: "C:\\Windows" });
+  assert.equal(command.script.includes(`'"${CFT_WINDOWS_POLICY_KEY}"'`), true);
+});
+
+test("Windows CFT policy readback rejects values with a matching prefix", () => {
+  assert.equal(
+    registryContainsWebRtcPolicy("WebRtcIPHandling REG_SZ disable_non_proxied_udp_evil\r\n"),
+    false,
+  );
 });
 
 test("WebRTC spoof script is safe to evaluate in a worker global", () => {
