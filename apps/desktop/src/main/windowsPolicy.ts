@@ -73,9 +73,9 @@ export function buildElevatedWebRtcPolicyInstallCommand(
     .map(quotePowerShellLiteral)
     .join(", ");
   const script =
-    `$process = Start-Process -FilePath ${quotePowerShellLiteral(add.file)} ` +
-    `-ArgumentList @(${argumentList}) -Verb RunAs -Wait -PassThru; ` +
-    `exit $process.ExitCode`;
+    `try { $process = Start-Process -FilePath ${quotePowerShellLiteral(add.file)} ` +
+    `-ArgumentList @(${argumentList}) -Verb RunAs -Wait -PassThru -ErrorAction Stop; ` +
+    `if ($null -eq $process) { exit 1 }; exit $process.ExitCode } catch { exit 1 }`;
   return {
     file: powershellExe(env),
     args: ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],

@@ -59,6 +59,9 @@ test("Windows CFT policy installer requests elevation through PowerShell", () =>
   assert.match(script, /-Verb RunAs/);
   assert.match(script, /-Wait/);
   assert.match(script, /-PassThru/);
+  assert.match(script, /-ErrorAction Stop/);
+  assert.match(script, /if \(\$null -eq \$process\)/);
+  assert.match(script, /catch \{ exit 1 \}/);
   assert.match(script, /ExitCode/);
   assert.match(script, /reg\.exe/);
 });
