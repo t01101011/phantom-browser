@@ -19,7 +19,7 @@ import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
-import { applyCftGeolocationOverride } from "./cdpGeolocation";
+import { applyCftGeolocationOverride, shouldApplyCftGeolocationOverride } from "./cdpGeolocation";
 import {
   ProxyCoherenceError,
   resolveProxyCoherence,
@@ -602,7 +602,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         }
         // CFT has no native location control. CDP is a useful but explicitly
         // weaker, potentially observable fallback.
-        if (ctx.isRoot && engine === "cft" && geoCoords) {
+        if (engine === "cft" && geoCoords && shouldApplyCftGeolocationOverride(ctx)) {
           await applyCftGeolocationOverride(send, geoCoords, coherence ?? undefined);
         }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.

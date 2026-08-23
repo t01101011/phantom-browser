@@ -1,6 +1,11 @@
 import type { ProxyCoherenceResult } from "./proxyCoherence";
+import type { TargetContext } from "@multizen/cdp-driver";
 
 export type CdpSender = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
+
+export function shouldApplyCftGeolocationOverride(ctx: TargetContext): boolean {
+  return ctx.type === "page";
+}
 
 /** Apply CFT's weaker CDP geolocation fallback and report whether it landed. */
 export async function applyCftGeolocationOverride(

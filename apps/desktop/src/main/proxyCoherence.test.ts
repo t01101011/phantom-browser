@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defaultFingerprint } from "../../../../packages/profile-manager/src/fingerprint.ts";
-import { parseProxyGeoPayload, probeProxyGeo, type ProxyGeoResult, type RawIpapi } from "./proxyGeo.ts";
+import {
+  parseProxyGeoPayload,
+  probeProxyGeo,
+  type ProxyGeoResult,
+  type RawIpapi,
+} from "./proxyGeo.ts";
 import {
   ProxyCoherenceError,
   canLaunchWithCoherence,
@@ -9,7 +14,10 @@ import {
   resolveProxyCoherence,
   summarizeCoherenceIssues,
 } from "./proxyCoherence.ts";
-import { applyCftGeolocationOverride } from "./cdpGeolocation.ts";
+import {
+  applyCftGeolocationOverride,
+  shouldApplyCftGeolocationOverride,
+} from "./cdpGeolocation.ts";
 
 const PROXY = {
   type: "http" as const,
@@ -153,7 +161,12 @@ for (const ip of ["", "not-an-ip", "999.2.3.4"]) {
       () => resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ ip }) }),
       ProxyCoherenceError,
     );
-    const cft = resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ ip }), acceptDegraded: true });
+    const cft = resolveProxyCoherence({
+      engine: "cft",
+      fingerprint,
+      geo: geo({ ip }),
+      acceptDegraded: true,
+    });
     assert.equal(cft.status, "degraded");
   });
 }
@@ -196,6 +209,13 @@ test("reports native-upstream Cloak coverage and weaker CFT CDP coverage", () =>
   const cft = resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo() });
   assert.equal(cloak.geolocationCoverage, "native-upstream");
   assert.equal(cft.geolocationCoverage, "cdp-weaker");
+});
+
+test("CFT geolocation override applies to the root and every attached page target", () => {
+  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: true, type: "page" }), true);
+  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "page" }), true);
+  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "iframe" }), false);
+  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "service_worker" }), false);
 });
 
 test("CFT geolocation override reports failure instead of claiming CDP coverage", async () => {
@@ -263,7 +283,12 @@ test("CFT with locale mismatch recommends accept-degraded (not fail-closed)", ()
   };
   // Without acceptDegraded, throws
   assert.throws(
-    () => resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo({ country: "be", countryName: "Belgium", timezone: "Europe/Brussels" }) }),
+    () =>
+      resolveProxyCoherence({
+        engine: "cft",
+        fingerprint,
+        geo: geo({ country: "be", countryName: "Belgium", timezone: "Europe/Brussels" }),
+      }),
     ProxyCoherenceError,
   );
   // With acceptDegraded, returns accept-degraded
@@ -385,7 +410,9 @@ test("precheckProxyCoherence: returns degraded result on probe failure", async (
     engine: "cft",
     fingerprint: defaultFingerprint("precheck-fail"),
     proxy: PROXY,
-    probeGeo: async () => { throw new Error("proxy probe timed out"); },
+    probeGeo: async () => {
+      throw new Error("proxy probe timed out");
+    },
     acceptDegraded: true,
   });
   assert.equal(result.status, "degraded");
@@ -399,7 +426,9 @@ test("precheckProxyCoherence: throws ProxyCoherenceError for CloakBrowser withou
       engine: "cloakbrowser",
       fingerprint: defaultFingerprint("precheck-cloak-fail"),
       proxy: PROXY,
-      probeGeo: async () => { throw new Error("proxy probe timed out"); },
+      probeGeo: async () => {
+        throw new Error("proxy probe timed out");
+      },
     }),
     ProxyCoherenceError,
   );
