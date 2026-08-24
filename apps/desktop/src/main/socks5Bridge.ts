@@ -2,6 +2,7 @@ import { createServer, type Socket, type AddressInfo } from "node:net";
 import { connect as netConnect } from "node:net";
 import { SocksClient } from "socks";
 import type { ProfileId, ProxyConfig } from "@multizen/types";
+import { createWarningThrottle } from "./upstreamHardening.ts";
 
 /**
  * Local SOCKS5 → upstream-proxy bridge, per profile.
@@ -37,6 +38,9 @@ interface BridgeHandle {
 }
 
 const byProfile = new Map<ProfileId, BridgeHandle>();
+const warnBridgeThrottled = createWarningThrottle(30_000, Date.now, (message) => {
+  console.warn("[multizen] socks5 bridge:", message);
+});
 
 export async function startBridgeForProfile(
   profileId: ProfileId,
@@ -84,7 +88,7 @@ async function startBridge(upstream: ProxyConfig): Promise<BridgeHandle> {
         sock.destroy();
         return;
       }
-      console.warn("[multizen] socks5 bridge:", msg);
+      warnBridgeThrottled(msg);
       sock.destroy();
     });
   });

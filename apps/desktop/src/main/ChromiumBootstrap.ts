@@ -2,11 +2,12 @@ import { app, net } from "electron";
 import { EventEmitter } from "node:events";
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { createReadStream, createWriteStream, existsSync, readFileSync } from "node:fs";
 import { chmod, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import extract from "extract-zip";
+import { versionsEligibleForGc } from "./upstreamHardening.ts";
 
 /**
  * Extract a zip or tar.gz archive preserving all attributes the OS cares
@@ -203,6 +204,10 @@ export class ChromiumBootstrap extends EventEmitter {
       return this.status;
     }
 
+    // Snapshot before current.json is replaced: a browser may still be
+    // executing the previous tree while a repaired/new engine installs.
+    const previouslyActiveVersion = this.readCurrentVersion();
+
     try {
       this.setStatus({ kind: "fetching-manifest" });
       const manifest = await this.fetchManifest();
@@ -321,7 +326,7 @@ export class ChromiumBootstrap extends EventEmitter {
       const finalBinary = binaryPath.replace(tmpExtract, versionDir);
 
       // Best-effort GC: keep current + previous, drop everything older.
-      await this.gcOldVersions(manifest.version).catch(() => {});
+      await this.gcOldVersions(manifest.version, previouslyActiveVersion).catch(() => {});
 
       this.setStatus({
         kind: "ready",
@@ -773,16 +778,23 @@ export class ChromiumBootstrap extends EventEmitter {
     }
   }
 
-  private async gcOldVersions(keep: string): Promise<void> {
+  private readCurrentVersion(): string | null {
+    try {
+      const raw = JSON.parse(readFileSync(join(this.cacheDir, "current.json"), "utf8")) as {
+        version?: unknown;
+      };
+      return typeof raw.version === "string" ? raw.version : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async gcOldVersions(keep: string, alsoKeep?: string | null): Promise<void> {
     const { readdir } = await import("node:fs/promises");
     const entries = await readdir(this.cacheDir, { withFileTypes: true });
-    for (const e of entries) {
-      if (!e.isDirectory()) continue;
-      if (e.name === keep) continue;
-      // Conservative: only delete directories that look like a CFT
-      // version (\d+\.\d+\.\d+\.\d+). Don't nuke arbitrary dirs.
-      if (!/^\d+(?:\.\d+){3,4}$/.test(e.name)) continue;
-      await rm(join(this.cacheDir, e.name), {
+    const directories = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    for (const version of versionsEligibleForGc(directories, keep, alsoKeep)) {
+      await rm(join(this.cacheDir, version), {
         recursive: true,
         force: true,
       }).catch(() => {});

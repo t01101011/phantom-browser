@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -107,6 +108,9 @@ async function harness(options: {
   geolocationError?: Error;
   futureProtectionFailure?: boolean;
   futurePageMissingContext?: boolean;
+  changedStartPage?: boolean;
+  protectionMethodError?: { method: string; error: Error };
+  navigationError?: Error;
 }) {
   const root = await mkdtemp(join(tmpdir(), "phantom-launch-boundary-"));
   const calls: string[] = [];
@@ -121,6 +125,7 @@ async function harness(options: {
     bootstrapTargets: (
       configure: (send: (method: string) => Promise<unknown>, ctx: object) => Promise<void>,
     ) => Promise<void>;
+    navigate: (url: string) => Promise<{ url: string; title: string }>;
     watchUrlForBinding: () => Promise<void>;
   } = {
     closeBrowser: async () => {
@@ -137,6 +142,9 @@ async function harness(options: {
       if (options.bootstrapError) throw options.bootstrapError;
       await configure(
         async (method: string) => {
+          if (method === options.protectionMethodError?.method) {
+            throw options.protectionMethodError.error;
+          }
           if (method === "Emulation.setGeolocationOverride" && options.geolocationError) {
             throw options.geolocationError;
           }
@@ -144,6 +152,11 @@ async function harness(options: {
         },
         { targetId: "page-1", type: "page", isRoot: true },
       );
+    },
+    navigate: async (url: string) => {
+      calls.push(`navigate:${url}`);
+      if (options.navigationError) throw options.navigationError;
+      return { url, title: "" };
     },
     watchUrlForBinding: async () => {},
   };
@@ -155,9 +168,18 @@ async function harness(options: {
     proxy,
     fingerprint,
     dataDir: root,
+    startUrl: options.changedStartPage ? "https://example.com/new" : undefined,
     createdAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
   };
+  const browserRoot =
+    options.engine === "cloakbrowser" ? join(root, "engines", "cloakbrowser") : root;
+  const savedTabs = join(browserRoot, "Default", "Sessions", "Tabs_1");
+  if (options.changedStartPage) {
+    await mkdir(join(browserRoot, "Default", "Sessions"), { recursive: true });
+    await writeFile(savedTabs, "restored-tab");
+    await writeFile(join(browserRoot, ".phantom-last-start-url"), "https://example.com/old");
+  }
   const profileManager = {
     get: () => profile,
     markOpened: () => {},
@@ -182,6 +204,9 @@ async function harness(options: {
     },
     ensureWebRtcPolicy: async () => {},
     spawn: () => {
+      if (options.changedStartPage && !existsSync(savedTabs)) {
+        calls.push("session-cleared-before-spawn");
+      }
       calls.push("spawn");
       return child;
     },
@@ -219,6 +244,10 @@ async function harness(options: {
         realSession.closeBrowser = async () => {
           calls.push("close-browser");
           child.kill();
+        };
+        realSession.navigate = async (url: string) => {
+          calls.push(`navigate:${url}`);
+          return { url, title: "" };
         };
         session = realSession as unknown as typeof session;
       }
@@ -270,6 +299,7 @@ async function harness(options: {
     driver,
     profileId,
     root,
+    startPageMarker: join(browserRoot, ".phantom-last-start-url"),
     triggerFutureProtectionFailure,
     triggerFuturePageMissingContext,
   };
@@ -389,6 +419,58 @@ test("future paused page without a default execution context stays open after it
     assert.equal(h.calls.includes("stop-bridge"), false);
   } finally {
     await h.driver.close(h.profileId);
+    await rm(h.root, { recursive: true, force: true });
+  }
+});
+
+for (const engine of ["cft", "cloakbrowser"] as const) {
+  test(`changed start page clears ${engine} restored tabs before browser spawn and protection bootstrap`, async () => {
+    const h = await harness({ engine, changedStartPage: true });
+    try {
+      await h.driver.launch(h.profileId);
+      assert.deepEqual(h.calls.slice(0, 5), [
+        "start-bridge",
+        "session-cleared-before-spawn",
+        "spawn",
+        "readiness",
+        "bootstrap",
+      ]);
+      assert.equal(h.calls[5], "navigate:https://example.com/new");
+    } finally {
+      await h.driver.close(h.profileId);
+      await rm(h.root, { recursive: true, force: true });
+    }
+  });
+}
+
+for (const [engine, method] of [
+  ["cft", "Page.addScriptToEvaluateOnNewDocument"],
+  ["cloakbrowser", "Emulation.setLocaleOverride"],
+] as const) {
+  test(`${engine} launch fails closed when required ${method} protection is rejected`, async () => {
+    const primary = new Error(`${method} rejected`);
+    const h = await harness({ engine, protectionMethodError: { method, error: primary } });
+    try {
+      await expectPrimaryCause(h.driver.launch(h.profileId), primary);
+      assert.equal(
+        h.calls.some((call) => call.startsWith("navigate:")),
+        false,
+      );
+      assert.equal(h.child.killed, true);
+    } finally {
+      await rm(h.root, { recursive: true, force: true });
+    }
+  });
+}
+
+test("failed start-page navigation leaves the old marker so retry applies the new URL", async () => {
+  const primary = new Error("navigation rejected");
+  const h = await harness({ changedStartPage: true, navigationError: primary });
+  try {
+    await expectPrimaryCause(h.driver.launch(h.profileId), primary);
+    assert.equal(await readFile(h.startPageMarker, "utf8"), "https://example.com/old");
+    assert.equal(h.child.killed, true);
+  } finally {
     await rm(h.root, { recursive: true, force: true });
   }
 });

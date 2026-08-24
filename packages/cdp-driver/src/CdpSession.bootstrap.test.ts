@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-// Node's strip-types runner resolves the source file directly in this test.
+
 // @ts-expect-error TS5097: runtime test imports the adjacent TypeScript source.
 import { CdpSession, type TargetContext, type TargetSender } from "./CdpSession.ts";
 

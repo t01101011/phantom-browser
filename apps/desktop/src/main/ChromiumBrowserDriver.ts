@@ -32,7 +32,8 @@ import {
 import { companionDir } from "./extensions/companion";
 import { resolveLoadDir } from "./extensions/extensionStore.ts";
 import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
-import { sessionStartupPlan } from "./sessionStartup";
+import { discardRestorableSession, sessionStartupPlan } from "./sessionStartup";
+import { buildChromiumChildEnv, shouldRunBootstrapDiagnostics } from "./upstreamHardening";
 import { parseChromiumVersion } from "./chromiumVersion";
 import { installAndVerifyWindowsWebRtcPolicy, CFT_WINDOWS_POLICY_KEY } from "./windowsPolicy";
 import { cleanupFailedBrowserLaunch } from "./launchFailureCleanup";
@@ -292,22 +293,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     // during shutdown, making mtime ordering inherently racy on Windows.
     const startPageChanged = shouldApplyStartUrl(profile.startUrl, lastAppliedStartUrl);
     const startupPlan = sessionStartupPlan(restorableSession, startPageChanged);
-    // Only force restore preferences when real session files exist. On a fresh
-    // profile, setting restore_on_startup=1 makes Chromium create its own default
-    // window in addition to the positional start URL window.
-    if (startupPlan.writeRestorePreference) {
-      await ensureSessionRestore(browserDataDir).catch((e: unknown) => {
-        console.warn(
-          "[multizen] failed to write session restore preference:",
-          (e as Error).message,
-        );
-      });
+    if (restorableSession && startPageChanged) {
+      await discardRestorableSession(browserDataDir);
     }
-    if (startupPlan.writeStartPagePreference) {
-      await disableSessionRestore(browserDataDir).catch((e: unknown) => {
-        console.warn("[multizen] failed to disable stale session restore:", (e as Error).message);
-      });
-    }
+    // Restore behavior is command-line-only. session.restore_on_startup is an
+    // integrity-protected Chromium preference; out-of-process mutation can
+    // trigger the search-engine/settings reset dialog.
 
     // Best-effort: suppress CFT's "is only for automated testing" infobar
     // via the macOS managed-preference. Idempotent — only prompts for
@@ -478,26 +469,13 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // that some stealth Chromium forks (CloakBrowser) interpret as
       // "I'm running inside an Electron host" and SIGTRAP early to prevent
       // automation. Pass only the strict minimum a desktop browser needs.
-      const cleanEnv: NodeJS.ProcessEnv = {
-        PATH: process.env.PATH ?? "/usr/bin:/bin:/usr/sbin:/sbin",
-        HOME: process.env.HOME ?? "",
-        USER: process.env.USER ?? "",
-        LOGNAME: process.env.LOGNAME ?? process.env.USER ?? "",
-        SHELL: process.env.SHELL ?? "/bin/sh",
-        LANG: process.env.LANG ?? "en_US.UTF-8",
-        LC_ALL: process.env.LC_ALL ?? "",
-        TMPDIR: process.env.TMPDIR ?? "/tmp",
-        // macOS app bundles need this to find their frameworks.
-        DYLD_FALLBACK_FRAMEWORK_PATH: process.env.DYLD_FALLBACK_FRAMEWORK_PATH ?? "",
-      };
+      const cleanEnv = buildChromiumChildEnv(process.env, process.platform);
       // Start page (positional URL) — only on first run, i.e. when there is no
       // restorable session. Returning profiles get --restore-last-session instead.
-      // Passing both restore + a positional URL can make Chromium create two
-      // windows/tabs during startup, so these paths are deliberately exclusive.
+      // Launch through an inert document. The real start URL is navigated only
+      // after target protection has been installed below.
       if (startupPlan.openStartPage) {
-        // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
-        // Chromium would treat as switches) → falls back to the default.
-        args.push(sanitizeStartUrl(profile.startUrl));
+        args.push("about:blank");
       }
 
       const child = this.launchDeps.spawn(chromiumPath, args, {
@@ -540,12 +518,6 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         session,
         this.getSettings().cdpReadyTimeoutMs,
       );
-      if (startupPlan.openStartPage && profile.startUrl) {
-        await fsp
-          .writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8")
-          .catch(() => {});
-      }
-
       // Apply per-target emulation: timezone, locale, Sec-CH-UA via
       // userAgentMetadata (works on stock Chromium — no patches needed!),
       // plus a WebRTC handler when a proxy is configured. Runs on the
@@ -625,16 +597,16 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           if (!isWorker) {
             await send("Page.addScriptToEvaluateOnNewDocument", {
               source: fingerprintScript,
-            }).catch((e: unknown) => {
-              console.error("[multizen] fingerprint addScript failed:", e);
             });
           }
-          await send("Runtime.evaluate", { expression: fingerprintScript }).catch((e: unknown) => {
-            const msg = (e as Error).message;
-            if (!/default execution context/i.test(msg)) {
-              console.error("[multizen] fingerprint eval failed:", e);
-            }
-          });
+          await send("Runtime.evaluate", { expression: fingerprintScript }).catch(
+            (error: unknown) => {
+              // Pages are safe on this transient miss because their preload was
+              // installed above. Workers have no Page preload and must fail closed.
+              if (!isWorker && /default execution context/i.test((error as Error).message)) return;
+              throw error;
+            },
+          );
         }
         // 1c. Screen / device metrics — TOP-LEVEL TARGETS ONLY. iframes
         //     reject with "Command can only be executed on top-level
@@ -645,19 +617,15 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         //     window.innerWidth vs screen.width values that detection
         //     vendors flag.
         if (ctx.isRoot && engine !== "cloakbrowser") {
-          try {
-            await send("Emulation.setDeviceMetricsOverride", {
-              width: 0,
-              height: 0,
-              deviceScaleFactor: fp.dpr,
-              mobile: false,
-              screenWidth: fp.screen.width,
-              screenHeight: fp.screen.height,
-              screenOrientation: { type: "landscapePrimary", angle: 0 },
-            });
-          } catch (e) {
-            console.error("[multizen] setDeviceMetricsOverride failed:", e);
-          }
+          await send("Emulation.setDeviceMetricsOverride", {
+            width: 0,
+            height: 0,
+            deviceScaleFactor: fp.dpr,
+            mobile: false,
+            screenWidth: fp.screen.width,
+            screenHeight: fp.screen.height,
+            screenOrientation: { type: "landscapePrimary", angle: 0 },
+          });
         }
         // The pinned CloakBrowser build has no documented native location flag;
         // --fingerprint-location is ignored. Apply the target-scoped CDP command
@@ -676,37 +644,26 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         // composite scorers like fingerprint-scan.com flag as "Masking
         // detected". Trust the native binary on CloakBrowser.
         if (engine !== "cloakbrowser") {
-          try {
-            await send("Emulation.setTimezoneOverride", {
-              timezoneId: fp.timezone,
-            });
-          } catch (e) {
-            console.error("[multizen] setTimezoneOverride failed:", e);
-          }
+          await send("Emulation.setTimezoneOverride", {
+            timezoneId: fp.timezone,
+          });
           try {
             await send("Emulation.setLocaleOverride", { locale: fp.locale });
-          } catch (e) {
+          } catch (error) {
             // "Another locale override is already in effect" fires when
             // Target.setAutoAttach re-attaches an already-configured target;
             // the override is in place, we just can't replace it. Harmless.
-            const msg = (e as Error).message;
-            if (!/already in effect/i.test(msg)) {
-              console.error("[multizen] setLocaleOverride failed:", e);
-            }
+            if (!/already in effect/i.test((error as Error).message)) throw error;
           }
           const meta = safeBuildUserAgentMetadata(fp);
-          try {
-            const params: Record<string, unknown> = {
-              userAgent: fp.userAgent,
-              // Plain language list — see --accept-lang comment above.
-              acceptLanguage: acceptLangPlain,
-              platform: fp.platform,
-            };
-            if (meta) params.userAgentMetadata = meta;
-            await send("Emulation.setUserAgentOverride", params);
-          } catch (e) {
-            console.error("[multizen] setUserAgentOverride failed:", e);
-          }
+          const params: Record<string, unknown> = {
+            userAgent: fp.userAgent,
+            // Plain language list — see --accept-lang comment above.
+            acceptLanguage: acceptLangPlain,
+            platform: fp.platform,
+          };
+          if (meta) params.userAgentMetadata = meta;
+          await send("Emulation.setUserAgentOverride", params);
         } else {
           // CloakBrowser: we skip the CDP UA/timezone overrides above because
           // those have native --fingerprint-* patches that a CDP layer would
@@ -722,42 +679,47 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           // navigator.language(s) come from --accept-lang and stay untouched.
           try {
             await send("Emulation.setLocaleOverride", { locale: fp.locale });
-          } catch (e) {
-            const msg = (e as Error).message;
-            if (!/already in effect/i.test(msg)) {
-              console.error("[multizen] setLocaleOverride (cloakbrowser) failed:", e);
-            }
+          } catch (error) {
+            if (!/already in effect/i.test((error as Error).message)) throw error;
           }
         }
         // Diagnostic: capture what the page actually sees AFTER overrides.
-        // Logs once per session — if browserscan reports "Different browser
-        // name", these values tell us whether our override landed.
-        try {
-          const probe = await send<{
-            result?: { value?: string };
-          }>("Runtime.evaluate", {
-            expression: `JSON.stringify({
-              ua: navigator.userAgent,
-              brands: navigator.userAgentData ? navigator.userAgentData.brands : null,
-              platform: navigator.platform,
-              tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              icuLocale: Intl.DateTimeFormat().resolvedOptions().locale,
-              calendar: Intl.DateTimeFormat().resolvedOptions().calendar,
-              lang: navigator.language,
-              langs: navigator.languages,
-              deviceMemory: navigator.deviceMemory,
-              hardwareConcurrency: navigator.hardwareConcurrency,
-              hasRTCPC: typeof window.RTCPeerConnection !== "undefined",
-            })`,
-            returnByValue: true,
-          });
-          const value = probe?.result?.value;
-          if (value) console.log("[multizen] post-bootstrap probe:", value);
-        } catch (e) {
-          // Non-fatal — diagnostic only.
-          void e;
+        // Opt-in only: ordinary launches must not probe/log fingerprint values.
+        if (shouldRunBootstrapDiagnostics(process.env)) {
+          try {
+            const probe = await send<{
+              result?: { value?: string };
+            }>("Runtime.evaluate", {
+              expression: `JSON.stringify({
+                ua: navigator.userAgent,
+                brands: navigator.userAgentData ? navigator.userAgentData.brands : null,
+                platform: navigator.platform,
+                tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                icuLocale: Intl.DateTimeFormat().resolvedOptions().locale,
+                calendar: Intl.DateTimeFormat().resolvedOptions().calendar,
+                lang: navigator.language,
+                langs: navigator.languages,
+                deviceMemory: navigator.deviceMemory,
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                hasRTCPC: typeof window.RTCPeerConnection !== "undefined",
+              })`,
+              returnByValue: true,
+            });
+            const value = probe?.result?.value;
+            if (value) console.log("[multizen] post-bootstrap probe:", value);
+          } catch (e) {
+            // Non-fatal — diagnostic only.
+            void e;
+          }
         }
       });
+
+      if (startupPlan.openStartPage) {
+        await session.navigate(sanitizeStartUrl(profile.startUrl));
+        if (profile.startUrl) {
+          await writeStartPageMarkerAtomic(startPageMarker, sanitizeStartUrl(profile.startUrl));
+        }
+      }
 
       // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
       // to Web Store pages only (the host polls a DOM attribute there, never on
@@ -1258,6 +1220,16 @@ function browserDataDirForEngine(profileDataDir: string, engine: BrowserEngine):
   return profileDataDir;
 }
 
+async function writeStartPageMarkerAtomic(path: string, value: string): Promise<void> {
+  const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    await fsp.writeFile(temporary, value, "utf8");
+    await fsp.rename(temporary, path);
+  } finally {
+    await fsp.rm(temporary, { force: true }).catch(() => {});
+  }
+}
+
 interface ShutdownTimeouts {
   shutdownGraceMs: number;
   shutdownSigtermMs: number;
@@ -1752,13 +1724,6 @@ const WEBRTC_BLOCK_SCRIPT = `
 `;
 
 /**
- * Ensure the profile's Chrome `Default/Preferences` JSON has
- * `session.restore_on_startup = 1` so a relaunch reopens the tabs that
- * were open when the user last closed the window. Called before each
- * spawn — Chromium must NOT be running, otherwise we'll corrupt its
- * pref file (Chromium writes Preferences atomically with no flock).
- */
-/**
  * Rewrite the version-bearing fields of a fingerprint to match the
  * actual Chromium binary. Returns a new object — does NOT persist; if
  * the user wants the persisted profile updated they should hit Regen.
@@ -2132,62 +2097,6 @@ async function hasRestorableSession(dataDir: string): Promise<boolean> {
     // no Sessions dir yet
   }
   return existsSync(join(dataDir, "Default", "Current Session"));
-}
-
-async function ensureSessionRestore(dataDir: string): Promise<void> {
-  const prefsPath = join(dataDir, "Default", "Preferences");
-  let prefs: Record<string, unknown> = {};
-  try {
-    const raw = await fsp.readFile(prefsPath, "utf8");
-    prefs = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    // Profile hasn't been launched yet — create minimal prefs and let
-    // Chromium fill in the rest on first run.
-  }
-  const session = (prefs.session as Record<string, unknown>) ?? {};
-  const profileSection = (prefs.profile as Record<string, unknown>) ?? {};
-
-  // 1 = restore last session ("Continue where you left off")
-  // 5 = new tab page (Chromium default)
-  session.restore_on_startup = 1;
-
-  // Mark the previous run as a clean exit. If Chromium crashed or we
-  // killed it ungracefully, exit_type gets stuck on "Crashed" and the
-  // next launch shows the "Restore tabs?" infobar (or silently skips
-  // restore on some builds, including CloakBrowser). Forcing "Normal"
-  // here defuses both — combined with --restore-last-session CLI flag
-  // and our gracefulShutdown via CDP Browser.close, tabs reliably come
-  // back across stop → launch cycles.
-  profileSection.exit_type = "Normal";
-  profileSection.exited_cleanly = true;
-
-  prefs.session = session;
-  prefs.profile = profileSection;
-
-  await fsp.mkdir(join(dataDir, "Default"), { recursive: true });
-  // Atomic-ish write: write to .tmp then rename.
-  const tmpPath = `${prefsPath}.multizen.tmp`;
-  await fsp.writeFile(tmpPath, JSON.stringify(prefs));
-  await fsp.rename(tmpPath, prefsPath);
-}
-
-async function disableSessionRestore(dataDir: string): Promise<void> {
-  const prefsPath = join(dataDir, "Default", "Preferences");
-  let prefs: Record<string, unknown> = {};
-  try {
-    prefs = JSON.parse(await fsp.readFile(prefsPath, "utf8")) as Record<string, unknown>;
-  } catch {
-    // Missing/malformed preferences: Chromium will recreate them.
-  }
-  const session = (prefs.session as Record<string, unknown>) ?? {};
-  // 5 = open the New Tab page. The positional URL then becomes the only
-  // explicit startup navigation; stale `1` would restore the old DDG tab.
-  session.restore_on_startup = 5;
-  prefs.session = session;
-  await fsp.mkdir(join(dataDir, "Default"), { recursive: true });
-  const tmpPath = `${prefsPath}.multizen.tmp`;
-  await fsp.writeFile(tmpPath, JSON.stringify(prefs));
-  await fsp.rename(tmpPath, prefsPath);
 }
 
 function sleep(ms: number): Promise<void> {

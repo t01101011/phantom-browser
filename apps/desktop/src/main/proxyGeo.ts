@@ -1,4 +1,6 @@
-import { request } from "node:https";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import type { Agent } from "node:http";
 import { isIP } from "node:net";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
@@ -67,6 +69,9 @@ export async function probeProxyGeo(
   opts: {
     timeoutMs?: number;
     requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
+    /** Test seams for deterministic absolute-deadline coverage. */
+    now?: () => number;
+    fetchJson?: (url: string, proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
   } = {},
 ): Promise<ProxyGeoResult> {
   // If a custom requestJson is injected (for testing), use the legacy
@@ -77,11 +82,19 @@ export async function probeProxyGeo(
   }
 
   const timeoutMs = opts.timeoutMs ?? 10000;
+  const now = opts.now ?? Date.now;
+  const fetchJson = opts.fetchJson ?? fetchThroughProxy;
+  const deadline = now() + timeoutMs;
   const errors: string[] = [];
 
   for (const provider of PROVIDERS) {
+    const remaining = deadline - now();
+    if (remaining <= 0) {
+      errors.push(`${provider.name}: skipped (probe deadline reached)`);
+      break;
+    }
     try {
-      const raw = await fetchThroughProxy(provider.url, proxy, timeoutMs);
+      const raw = await fetchJson(provider.url, proxy, remaining);
       return provider.parse(raw);
     } catch (err) {
       const msg = (err as Error).message;
@@ -91,9 +104,7 @@ export async function probeProxyGeo(
     }
   }
 
-  throw new Error(
-    `All geo-IP providers failed — ${errors.join("; ")}`,
-  );
+  throw new Error(`All geo-IP providers failed — ${errors.join("; ")}`);
 }
 
 // ── Legacy type + parser (kept for test compatibility) ──────────────────
@@ -207,12 +218,27 @@ async function fetchThroughProxy(
 ): Promise<unknown> {
   const proxyUrl = buildProxyUrl(proxy);
   const agent =
-    proxy.type === "socks5"
-      ? new SocksProxyAgent(proxyUrl)
-      : new HttpsProxyAgent(proxyUrl);
+    proxy.type === "socks5" ? new SocksProxyAgent(proxyUrl) : new HttpsProxyAgent(proxyUrl);
 
+  return fetchJsonWithAbsoluteDeadline(url, agent, timeoutMs);
+}
+
+export function fetchJsonWithAbsoluteDeadline(
+  url: string,
+  agent: Agent | undefined,
+  timeoutMs: number,
+  maxResponseBytes = 256 * 1024,
+): Promise<unknown> {
   return new Promise<unknown>((resolve, reject) => {
-    const req = request(
+    let settled = false;
+    const finish = (fn: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadlineTimer);
+      fn();
+    };
+    const requestForUrl = new URL(url).protocol === "http:" ? httpRequest : httpsRequest;
+    const req = requestForUrl(
       url,
       {
         agent,
@@ -224,31 +250,40 @@ async function fetchThroughProxy(
       },
       (res) => {
         if (!res.statusCode || res.statusCode >= 400) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          res.resume();
+          const error = new Error(`HTTP ${res.statusCode}`);
+          finish(() => reject(error));
+          res.destroy(error);
+          req.destroy(error);
           return;
         }
         const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
+        let received = 0;
+        res.on("data", (c: Buffer) => {
+          received += c.length;
+          if (received > maxResponseBytes) {
+            const error = new Error("proxy probe response too large");
+            finish(() => reject(error));
+            res.destroy();
+            req.destroy();
+            return;
+          }
+          chunks.push(c);
+        });
         res.on("end", () => {
           try {
-            resolve(
-              JSON.parse(Buffer.concat(chunks).toString("utf8")),
-            );
+            const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+            finish(() => resolve(parsed));
           } catch (e) {
-            reject(
-              new Error(`invalid JSON: ${(e as Error).message}`),
-            );
+            finish(() => reject(new Error(`invalid JSON: ${(e as Error).message}`)));
           }
         });
-        res.on("error", reject);
+        res.on("error", (error) => finish(() => reject(error)));
       },
     );
-
-    req.setTimeout(timeoutMs, () => {
+    const deadlineTimer = setTimeout(() => {
       req.destroy(new Error("proxy probe timed out"));
-    });
-    req.on("error", reject);
+    }, timeoutMs);
+    req.on("error", (error) => finish(() => reject(error)));
     req.end();
   });
 }

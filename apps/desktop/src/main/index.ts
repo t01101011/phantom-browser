@@ -34,6 +34,7 @@ import {
   readManifestIcon,
 } from "./extensions/extensionStore.ts";
 import { probeProxyGeo, type ProxyGeoResult } from "./proxyGeo.ts";
+import { sendToRendererSafely } from "./upstreamHardening.ts";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -74,6 +75,10 @@ let settingsStore: SettingsStore;
 let httpTransport: HttpTransport | null = null;
 let mcpAuthToken: string | null = null;
 let cachedSettings: AppSettings | null = null;
+
+function sendToRenderer(channel: string, ...args: unknown[]): boolean {
+  return sendToRendererSafely(mainWindow, channel, ...args);
+}
 
 function createWindow(): void {
   const iconPath = resolveAppIcon();
@@ -167,7 +172,7 @@ app.whenReady().then(async () => {
     engine: cachedSettings.browserEngine,
   });
   chromiumBootstrap.on("status", (status: ChromiumStatus) => {
-    mainWindow?.webContents.send("chromium:status", status);
+    sendToRenderer("chromium:status", status);
   });
   // Kick off the ensure() in the background so the UI can render immediately
   // and show download progress. Profile launches will wait until ready.
@@ -179,7 +184,7 @@ app.whenReady().then(async () => {
   // settings live so the autoUpdate toggle takes effect without restart.
   updater = new UpdaterService({ getSettings: () => cachedSettings as AppSettings });
   updater.on("status", (status: UpdateStatus) => {
-    mainWindow?.webContents.send("update:status", status);
+    sendToRenderer("update:status", status);
   });
   updater.init();
 
@@ -232,7 +237,7 @@ app.whenReady().then(async () => {
         if (choice.response !== 0) return;
         try {
           const extension = await extensionsService.installFromWebStore(profileId, extensionId);
-          mainWindow?.webContents.send("extensions:installed", { ok: true, profileId, extension });
+          sendToRenderer("extensions:installed", { ok: true, profileId, extension });
           // Apply immediately: Chromium only reads --load-extension at startup,
           // so relaunch the profile (session restore brings tabs back) instead
           // of making the user close + reopen it by hand.
@@ -241,7 +246,7 @@ app.whenReady().then(async () => {
             await browserDriver.launch(profileId).catch((e: unknown) => {
               // The profile is now closed and didn't reopen — tell the user so
               // they're not left wondering where their browser went.
-              mainWindow?.webContents.send("extensions:installed", {
+              sendToRenderer("extensions:installed", {
                 ok: false,
                 profileId,
                 error: `Added it, but the profile didn't reopen — launch it again. (${(e as Error).message})`,
@@ -249,7 +254,7 @@ app.whenReady().then(async () => {
             });
           }
         } catch (e) {
-          mainWindow?.webContents.send("extensions:installed", {
+          sendToRenderer("extensions:installed", {
             ok: false,
             profileId,
             error: (e as Error).message,
@@ -264,14 +269,14 @@ app.whenReady().then(async () => {
 
   // Forward activity events to renderer
   activityLog.on("event", (e: ActivityEvent) => {
-    mainWindow?.webContents.send("activity:event", e);
+    sendToRenderer("activity:event", e);
   });
 
   // Forward profile running-state changes (manual launch, manual close,
   // and — most importantly — external Chromium close where the user quits
   // the browser window directly).
   browserDriver.on("running-changed", (change) => {
-    mainWindow?.webContents.send("profiles:running-changed", change);
+    sendToRenderer("profiles:running-changed", change);
   });
 
   // Background-probe proxies for profiles missing a cached country code
@@ -643,7 +648,7 @@ async function backfillProxyCountries(): Promise<void> {
       if (geo.country) {
         profileManager.setProxyCountry(summary.id, geo.country.toLowerCase());
         // Nudge the renderer so it refetches the list and re-renders flags.
-        mainWindow?.webContents.send("profiles:proxy-country-updated", {
+        sendToRenderer("profiles:proxy-country-updated", {
           id: summary.id,
           country: geo.country.toLowerCase(),
         });
