@@ -126,19 +126,12 @@ export function resolveProxyCoherence(params: {
   // throw for locale mismatches (preserving the old behavior the tests
   // depend on), but NOT for probe failures alone — those return a degraded
   // result so the GUI can surface the issue without blocking.
-  if (
-    recommendedAction === "fail-closed" &&
-    !params.acceptDegraded
-  ) {
+  if (recommendedAction === "fail-closed" && !params.acceptDegraded) {
     throw new ProxyCoherenceError(issues);
   }
 
   // CFT locale mismatch: preserve old behavior (throw without acceptDegraded)
-  if (
-    recommendedAction === "accept-degraded" &&
-    hasLocaleMismatch &&
-    !params.acceptDegraded
-  ) {
+  if (recommendedAction === "accept-degraded" && hasLocaleMismatch && !params.acceptDegraded) {
     throw new ProxyCoherenceError(issues);
   }
 
@@ -154,11 +147,9 @@ export function resolveProxyCoherence(params: {
     country: geo?.country.toLowerCase() || null,
     status: issues.length === 0 ? "coherent" : "degraded",
     issues,
-    geolocationCoverage: coordinates
-      ? engine === "cloakbrowser"
-        ? "native-upstream"
-        : "cdp-weaker"
-      : "unavailable",
+    // The pinned CloakBrowser build does not expose a verified native
+    // geolocation flag. Both engines use the target-scoped CDP fallback.
+    geolocationCoverage: coordinates ? "cdp-weaker" : "unavailable",
     recommendedAction,
   };
 }

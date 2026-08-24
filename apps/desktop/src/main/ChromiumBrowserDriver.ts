@@ -19,7 +19,11 @@ import { CdpSession } from "@multizen/cdp-driver";
 import type { ChromiumBootstrap } from "./ChromiumBootstrap";
 import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
-import { applyCftGeolocationOverride, shouldApplyCftGeolocationOverride } from "./cdpGeolocation";
+import {
+  applyGeolocationOverride,
+  requireProxyGeolocationCoordinates,
+  shouldApplyGeolocationOverride,
+} from "./cdpGeolocation";
 import {
   ProxyCoherenceError,
   resolveProxyCoherence,
@@ -31,6 +35,7 @@ import { sanitizeStartUrl, shouldApplyStartUrl } from "./startPage";
 import { sessionStartupPlan } from "./sessionStartup";
 import { parseChromiumVersion } from "./chromiumVersion";
 import { installAndVerifyWindowsWebRtcPolicy, CFT_WINDOWS_POLICY_KEY } from "./windowsPolicy";
+import { cleanupFailedBrowserLaunch } from "./launchFailureCleanup";
 
 interface RunningProcess {
   child: ChildProcess;
@@ -62,7 +67,37 @@ export interface ChromiumBrowserDriverOptions {
    *  proxy probe, shutdown escalation). The driver reads the latest values
    *  at launch/shutdown time so settings changes take effect immediately. */
   getSettings: () => AppSettings;
+  /** Fault-injection seam for launch-boundary tests. Production omits this. */
+  launchDependencies?: Partial<LaunchDependencies>;
 }
+
+interface LaunchDependencies {
+  probeProxyGeo: typeof probeProxyGeo;
+  startBridgeForProfile: typeof startBridgeForProfile;
+  stopBridgeForProfile: typeof stopBridgeForProfile;
+  ensureWebRtcPolicy: typeof ensureWebRtcPolicy;
+  spawn: typeof spawn;
+  createSession: (opts: ConstructorParameters<typeof CdpSession>[0]) => CdpSession;
+  waitForCdpSessionReady: typeof waitForCdpSessionReady;
+  killBrowsersUsingDataDir: typeof killBrowsersUsingDataDir;
+  isPidAlive: typeof isPidAlive;
+  createWindowWatcher: typeof createWindowWatcher;
+  gracefulShutdown: typeof gracefulShutdown;
+}
+
+const DEFAULT_LAUNCH_DEPENDENCIES: LaunchDependencies = {
+  probeProxyGeo,
+  startBridgeForProfile,
+  stopBridgeForProfile,
+  ensureWebRtcPolicy,
+  spawn,
+  createSession: (opts) => new CdpSession(opts),
+  waitForCdpSessionReady,
+  killBrowsersUsingDataDir,
+  isPidAlive,
+  createWindowWatcher,
+  gracefulShutdown,
+};
 
 export type RunningStateChange =
   | { kind: "launched"; profileId: ProfileId }
@@ -93,6 +128,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
   private readonly onCompanionInstall?: (profileId: ProfileId, extensionId: string) => void;
   private readonly extensionStoreRoot: string;
   private readonly getSettings: () => AppSettings;
+  private readonly launchDeps: LaunchDependencies;
 
   constructor(opts: ChromiumBrowserDriverOptions) {
     super();
@@ -101,6 +137,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     this.onCompanionInstall = opts.onCompanionInstall;
     this.extensionStoreRoot = opts.extensionStoreRoot;
     this.getSettings = opts.getSettings;
+    this.launchDeps = { ...DEFAULT_LAUNCH_DEPENDENCIES, ...opts.launchDependencies };
   }
 
   override on<K extends keyof DriverEvents>(event: K, listener: DriverEvents[K]): this {
@@ -189,7 +226,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     let coherence: ProxyCoherenceResult | null = null;
     if (profile.proxy) {
       try {
-        const geo = await probeProxyGeo(profile.proxy, {
+        const geo = await this.launchDeps.probeProxyGeo(profile.proxy, {
           timeoutMs: this.getSettings().proxyProbeTimeoutMs,
         });
         coherence = resolveProxyCoherence({
@@ -220,6 +257,9 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
         });
         console.warn(`[phantom] proxy coherence degraded: ${coherence.issues.join("; ")}`);
       }
+    }
+    if (profile.proxy) {
+      geoCoords = requireProxyGeolocationCoordinates(geoCoords);
     }
     // No-proxy: fp.timezone is left as the profile configured it (issue #13).
 
@@ -329,12 +369,6 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       if (profile.proxy) {
         args.push("--fingerprint-webrtc-ip=auto");
       }
-      if (geoCoords) {
-        // Make navigator.geolocation report coordinates that match the
-        // proxy IP — without this, fingerprint-scan.com fires the "Check
-        // Geo API" warning when the location grant is exercised.
-        args.push(`--fingerprint-location=${geoCoords.latitude},${geoCoords.longitude}`);
-      }
     } else {
       // User-Agent (legacy header + navigator.userAgent). CFT needs this;
       // CloakBrowser keeps UA + Client Hints coherent via native flags.
@@ -347,189 +381,206 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
     if (engine === "cft") {
       args.push("--test-type=gpu");
     }
-    if (profile.proxy) {
-      // Chromium's --proxy-server= does NOT accept embedded credentials,
-      // and an HTTP-CONNECT relay leaks DNS (Chromium prefetch / DoH /
-      // background networking all hit the OS resolver before any proxy
-      // negotiation). The fix: spin up a localhost SOCKS5 bridge that
-      // forwards to the user's upstream proxy (HTTP CONNECT or SOCKS5
-      // chained). Chromium with --proxy-server=socks5://… does *remote*
-      // DNS by spec, so the egress IP becomes the only resolver test
-      // sites observe.
-      const localProxyUrl = await startBridgeForProfile(profileId, profile.proxy);
-      args.push(`--proxy-server=${localProxyUrl}`);
-      // WebRTC leaks the *real* public IP via STUN even when HTTP traffic
-      // is proxied — STUN uses UDP and bypasses HTTP proxies by default.
-      // `disable_non_proxied_udp` forces WebRTC to either go through a
-      // SOCKS proxy that supports UDP, or fall back to TCP through the
-      // configured proxy. Without this, browserscan / browserleaks /
-      // ipleak.net all show the user's real IP next to the proxy IP.
-      // Only set when a proxy is configured — direct profiles intentionally
-      // expose their real IP.
-      //
-      // Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI
-      // flag (silently ignored on CFT 147+), so we write a Chromium
-      // enterprise policy (`WebRtcIPHandling`) before browser spawn
-      // instead. Chrome 147+ still honors enterprise policy.
-      await ensureWebRtcPolicy(engine, browserDataDir);
-      // ── DNS leak prevention ─────────────────────────────────────────
-      // Chromium does *remote* DNS for socks5:// proxies natively — our
-      // local SOCKS5 bridge gets the hostname (not an IP) and forwards
-      // it to the upstream proxy, which resolves remotely. So URL-load
-      // DNS is already covered.
-      //
-      // What still leaks bypassing --proxy-server (per Chromium net/docs):
-      //   • DoH (DNS-over-HTTPS) — talks straight to Cloudflare/Google
-      //   • DNS prefetcher / predictor
-      //   • Background networking (component updater, GCM, safe-browsing)
-      //   • Domain Reliability beacons
-      //
-      // Disabling these via features+switches plugs every leak we can
-      // close without source-patching Chromium. We deliberately do NOT
-      // use --host-resolver-rules: it triggers the "unsupported flag"
-      // infobar (visible to the user, even though JS can't probe it),
-      // and a SOCKS5 upstream makes it redundant anyway. Real anti-
-      // detect products may solve the residual leak with custom resolver
-      // patches. This repository does not own or ship such a Chromium patch.
-      args.push(
-        "--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction",
-      );
-      args.push("--dns-over-https-mode=off");
-      args.push("--dns-prefetch-disable");
-      args.push("--disable-async-dns");
-      args.push("--no-prerender");
-      args.push("--no-pings");
-      args.push("--disable-background-networking");
-      args.push("--disable-component-update");
-      args.push("--disable-domain-reliability");
-      args.push("--disable-client-side-phishing-detection");
-    }
 
-    // Browser extensions: load this profile's enabled extensions plus the
-    // bundled companion (the "Add to Phantom Browser" injector). Same flag pair
-    // CloakBrowser's own `extension_paths` emits; requires the persistent
-    // user-data-dir we already use. Extensions live under the profile dir
-    // (shared across engines), so we pass absolute paths.
-    const extensionDirs: string[] = [];
-    const companion = companionDir();
-    if (companion) extensionDirs.push(companion);
-    for (const ext of profile.extensions ?? []) {
-      if (!ext.enabled) continue;
-      // Resolve both shared store entries and legacy per-profile copies.
-      const dir = resolveLoadDir(ext, profile.dataDir, this.extensionStoreRoot);
-      // Skip a missing dir: a single bad path makes Chromium drop the ENTIRE
-      // --load-extension list (the companion too), silently disabling all
-      // extensions for the launch.
-      if (existsSync(dir)) extensionDirs.push(dir);
-    }
-    if (extensionDirs.length > 0) {
-      const joined = extensionDirs.join(",");
-      args.push(`--load-extension=${joined}`);
-      args.push(`--disable-extensions-except=${joined}`);
-    }
-
-    // NOTE on Sec-CH-UA: these values are not fully controllable through CLI
-    // flags. On stock CFT we apply `userAgentMetadata` through CDP below; the
-    // result is emulation rather than native engine behavior. The opt-in
-    // CloakBrowser adapter instead passes the native brand/platform-version
-    // controls exposed by its proprietary third-party binary.
-
-    // Build a minimal env for the child — Electron's main process
-    // accumulates a pile of ELECTRON_*, CHROME_*, V8_*, DYLD_* env vars
-    // that some stealth Chromium forks (CloakBrowser) interpret as
-    // "I'm running inside an Electron host" and SIGTRAP early to prevent
-    // automation. Pass only the strict minimum a desktop browser needs.
-    const cleanEnv: NodeJS.ProcessEnv = {
-      PATH: process.env.PATH ?? "/usr/bin:/bin:/usr/sbin:/sbin",
-      HOME: process.env.HOME ?? "",
-      USER: process.env.USER ?? "",
-      LOGNAME: process.env.LOGNAME ?? process.env.USER ?? "",
-      SHELL: process.env.SHELL ?? "/bin/sh",
-      LANG: process.env.LANG ?? "en_US.UTF-8",
-      LC_ALL: process.env.LC_ALL ?? "",
-      TMPDIR: process.env.TMPDIR ?? "/tmp",
-      // macOS app bundles need this to find their frameworks.
-      DYLD_FALLBACK_FRAMEWORK_PATH: process.env.DYLD_FALLBACK_FRAMEWORK_PATH ?? "",
-    };
-    // Start page (positional URL) — only on first run, i.e. when there is no
-    // restorable session. Returning profiles get --restore-last-session instead.
-    // Passing both restore + a positional URL can make Chromium create two
-    // windows/tabs during startup, so these paths are deliberately exclusive.
-    if (startupPlan.openStartPage) {
-      // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
-      // Chromium would treat as switches) → falls back to the default.
-      args.push(sanitizeStartUrl(profile.startUrl));
-    }
-
-    const child = spawn(chromiumPath, args, {
-      detached: false,
-      stdio: ["ignore", "ignore", "pipe"],
-      env: cleanEnv,
-    });
-    if (!child.pid) throw new Error("Failed to spawn Chromium");
-    child.stderr?.on("data", (chunk: Buffer) => {
-      const line = chunk.toString("utf8").trim();
-      if (line) process.stderr.write(`[chromium ${child.pid}] ${line}\n`);
-    });
-    child.on("exit", (code, signal) => {
-      // First-line breadcrumb — child.on("exit") below also handles
-      // running-changed teardown.
-      if (code !== 0 && code !== null) {
-        process.stderr.write(
-          `[multizen] Chromium pid ${child.pid} exited code=${code} signal=${signal ?? "—"}\n`,
+    let ownedChild: ChildProcess | undefined;
+    let ownedSession: CdpSession | undefined;
+    let launchOwnershipTransferred = false;
+    try {
+      if (profile.proxy) {
+        // Chromium's --proxy-server= does NOT accept embedded credentials,
+        // and an HTTP-CONNECT relay leaks DNS (Chromium prefetch / DoH /
+        // background networking all hit the OS resolver before any proxy
+        // negotiation). The fix: spin up a localhost SOCKS5 bridge that
+        // forwards to the user's upstream proxy (HTTP CONNECT or SOCKS5
+        // chained). Chromium with --proxy-server=socks5://… does *remote*
+        // DNS by spec, so the egress IP becomes the only resolver test
+        // sites observe.
+        const localProxyUrl = await this.launchDeps.startBridgeForProfile(profileId, profile.proxy);
+        args.push(`--proxy-server=${localProxyUrl}`);
+        // WebRTC leaks the *real* public IP via STUN even when HTTP traffic
+        // is proxied — STUN uses UDP and bypasses HTTP proxies by default.
+        // `disable_non_proxied_udp` forces WebRTC to either go through a
+        // SOCKS proxy that supports UDP, or fall back to TCP through the
+        // configured proxy. Without this, browserscan / browserleaks /
+        // ipleak.net all show the user's real IP next to the proxy IP.
+        // Only set when a proxy is configured — direct profiles intentionally
+        // expose their real IP.
+        //
+        // Chrome 107+ removed the `--force-webrtc-ip-handling-policy` CLI
+        // flag (silently ignored on CFT 147+), so we write a Chromium
+        // enterprise policy (`WebRtcIPHandling`) before browser spawn
+        // instead. Chrome 147+ still honors enterprise policy.
+        await this.launchDeps.ensureWebRtcPolicy(engine, browserDataDir);
+        // ── DNS leak prevention ─────────────────────────────────────────
+        // Chromium does *remote* DNS for socks5:// proxies natively — our
+        // local SOCKS5 bridge gets the hostname (not an IP) and forwards
+        // it to the upstream proxy, which resolves remotely. So URL-load
+        // DNS is already covered.
+        //
+        // What still leaks bypassing --proxy-server (per Chromium net/docs):
+        //   • DoH (DNS-over-HTTPS) — talks straight to Cloudflare/Google
+        //   • DNS prefetcher / predictor
+        //   • Background networking (component updater, GCM, safe-browsing)
+        //   • Domain Reliability beacons
+        //
+        // Disabling these via features+switches plugs every leak we can
+        // close without source-patching Chromium. We deliberately do NOT
+        // use --host-resolver-rules: it triggers the "unsupported flag"
+        // infobar (visible to the user, even though JS can't probe it),
+        // and a SOCKS5 upstream makes it redundant anyway. Real anti-
+        // detect products may solve the residual leak with custom resolver
+        // patches. This repository does not own or ship such a Chromium patch.
+        args.push(
+          "--disable-features=DnsOverHttps,DnsOverHttpsUpgrade,EncryptedClientHello,AsyncDns,DnsHttpsSvcb,DnsHttpsSvcbAlpn,NetworkPrediction",
         );
+        args.push("--dns-over-https-mode=off");
+        args.push("--dns-prefetch-disable");
+        args.push("--disable-async-dns");
+        args.push("--no-prerender");
+        args.push("--no-pings");
+        args.push("--disable-background-networking");
+        args.push("--disable-component-update");
+        args.push("--disable-domain-reliability");
+        args.push("--disable-client-side-phishing-detection");
       }
-    });
 
-    const startedAt = new Date().toISOString();
-    const cdpEndpoint = `http://127.0.0.1:${port}`;
+      // Browser extensions: load this profile's enabled extensions plus the
+      // bundled companion (the "Add to Phantom Browser" injector). Same flag pair
+      // CloakBrowser's own `extension_paths` emits; requires the persistent
+      // user-data-dir we already use. Extensions live under the profile dir
+      // (shared across engines), so we pass absolute paths.
+      const extensionDirs: string[] = [];
+      const companion = companionDir();
+      if (companion) extensionDirs.push(companion);
+      for (const ext of profile.extensions ?? []) {
+        if (!ext.enabled) continue;
+        // Resolve both shared store entries and legacy per-profile copies.
+        const dir = resolveLoadDir(ext, profile.dataDir, this.extensionStoreRoot);
+        // Skip a missing dir: a single bad path makes Chromium drop the ENTIRE
+        // --load-extension list (the companion too), silently disabling all
+        // extensions for the launch.
+        if (existsSync(dir)) extensionDirs.push(dir);
+      }
+      if (extensionDirs.length > 0) {
+        const joined = extensionDirs.join(",");
+        args.push(`--load-extension=${joined}`);
+        args.push(`--disable-extensions-except=${joined}`);
+      }
 
-    const session = new CdpSession({ port, engine });
-    // Staged readiness: /json/version → a page target exists → connect+attach,
-    // all within one budget. Guarantees the profile is actually drivable before
-    // launch() resolves, so an MCP navigate/extract right after launch can't
-    // race a not-yet-ready CDP endpoint.
-    await waitForCdpSessionReady(port, session, this.getSettings().cdpReadyTimeoutMs);
-    if (startupPlan.openStartPage && profile.startUrl) {
-      await fsp
-        .writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8")
-        .catch(() => {});
-    }
+      // NOTE on Sec-CH-UA: these values are not fully controllable through CLI
+      // flags. On stock CFT we apply `userAgentMetadata` through CDP below; the
+      // result is emulation rather than native engine behavior. The opt-in
+      // CloakBrowser adapter instead passes the native brand/platform-version
+      // controls exposed by its proprietary third-party binary.
 
-    // Apply per-target emulation: timezone, locale, Sec-CH-UA via
-    // userAgentMetadata (works on stock Chromium — no patches needed!),
-    // plus a WebRTC handler when a proxy is configured. Runs on the
-    // root tab + every existing tab + every future tab.
-    //
-    // Order matters: WebRTC injection goes FIRST so that even if
-    // Emulation commands fail, the IP leak is already plugged.
-    const useProxy = !!profile.proxy;
+      // Build a minimal env for the child — Electron's main process
+      // accumulates a pile of ELECTRON_*, CHROME_*, V8_*, DYLD_* env vars
+      // that some stealth Chromium forks (CloakBrowser) interpret as
+      // "I'm running inside an Electron host" and SIGTRAP early to prevent
+      // automation. Pass only the strict minimum a desktop browser needs.
+      const cleanEnv: NodeJS.ProcessEnv = {
+        PATH: process.env.PATH ?? "/usr/bin:/bin:/usr/sbin:/sbin",
+        HOME: process.env.HOME ?? "",
+        USER: process.env.USER ?? "",
+        LOGNAME: process.env.LOGNAME ?? process.env.USER ?? "",
+        SHELL: process.env.SHELL ?? "/bin/sh",
+        LANG: process.env.LANG ?? "en_US.UTF-8",
+        LC_ALL: process.env.LC_ALL ?? "",
+        TMPDIR: process.env.TMPDIR ?? "/tmp",
+        // macOS app bundles need this to find their frameworks.
+        DYLD_FALLBACK_FRAMEWORK_PATH: process.env.DYLD_FALLBACK_FRAMEWORK_PATH ?? "",
+      };
+      // Start page (positional URL) — only on first run, i.e. when there is no
+      // restorable session. Returning profiles get --restore-last-session instead.
+      // Passing both restore + a positional URL can make Chromium create two
+      // windows/tabs during startup, so these paths are deliberately exclusive.
+      if (startupPlan.openStartPage) {
+        // sanitizeStartUrl rejects non-http(s)/about (incl. `-`-prefixed tokens
+        // Chromium would treat as switches) → falls back to the default.
+        args.push(sanitizeStartUrl(profile.startUrl));
+      }
 
-    // Probe the proxy's public IP so we can spoof WebRTC ICE candidates
-    // to match it (the convincing fingerprint pattern: VPN user with
-    // WebRTC enabled, candidates pointing to the egress IP). If the
-    // probe fails (proxy down, ipapi blocked) we fall back to disabling
-    // RTCPeerConnection entirely — less stealthy but still leak-proof.
-    // WebRTC: if we have a proxy with a known egress IP, spoof ICE
-    // candidates to match. Otherwise (or if probe failed) fall back to
-    // a kill-switch that disables RTCPeerConnection — less stealthy but
-    // leak-proof. CloakBrowser handles WebRTC natively when the
-    // --fingerprint-webrtc-ip=auto flag is set, so we skip this preload.
-    const webrtcScript =
-      engine === "cloakbrowser"
-        ? null
-        : webrtcSpoofIp
-          ? buildWebRtcSpoofScript(webrtcSpoofIp)
-          : WEBRTC_BLOCK_SCRIPT;
-    // Unified fingerprint preload — covers everything CDP `Emulation`
-    // domain doesn't (navigator.platform, hardwareConcurrency, deviceMemory,
-    // WebGL UNMASKED_VENDOR/RENDERER). CloakBrowser already handles these
-    // natively in C++, so we skip our preload entirely on it — double-
-    // patching produces inconsistent values that detection vendors flag.
-    const fingerprintScript =
-      engine === "cloakbrowser" ? null : buildFingerprintPreloadScript(fp, { includeWebGl: true });
-    await session
-      .bootstrapTargets(async (send, ctx) => {
+      const child = this.launchDeps.spawn(chromiumPath, args, {
+        detached: false,
+        stdio: ["ignore", "ignore", "pipe"],
+        env: cleanEnv,
+      });
+      ownedChild = child;
+      if (!child.pid) throw new Error("Failed to spawn Chromium");
+      child.stderr?.on("data", (chunk: Buffer) => {
+        const line = chunk.toString("utf8").trim();
+        if (line) process.stderr.write(`[chromium ${child.pid}] ${line}\n`);
+      });
+      child.on("exit", (code, signal) => {
+        // First-line breadcrumb — child.on("exit") below also handles
+        // running-changed teardown.
+        if (code !== 0 && code !== null) {
+          process.stderr.write(
+            `[multizen] Chromium pid ${child.pid} exited code=${code} signal=${signal ?? "—"}\n`,
+          );
+        }
+      });
+
+      const startedAt = new Date().toISOString();
+      const cdpEndpoint = `http://127.0.0.1:${port}`;
+
+      const session = this.launchDeps.createSession({
+        port,
+        engine,
+        protectionFailureTimeoutMs: 1000,
+        onProtectionFailure: () => this.close(profileId),
+      });
+      ownedSession = session;
+      // Staged readiness: /json/version → a page target exists → connect+attach,
+      // all within one budget. Guarantees the profile is actually drivable before
+      // launch() resolves, so an MCP navigate/extract right after launch can't
+      // race a not-yet-ready CDP endpoint.
+      await this.launchDeps.waitForCdpSessionReady(
+        port,
+        session,
+        this.getSettings().cdpReadyTimeoutMs,
+      );
+      if (startupPlan.openStartPage && profile.startUrl) {
+        await fsp
+          .writeFile(startPageMarker, sanitizeStartUrl(profile.startUrl), "utf8")
+          .catch(() => {});
+      }
+
+      // Apply per-target emulation: timezone, locale, Sec-CH-UA via
+      // userAgentMetadata (works on stock Chromium — no patches needed!),
+      // plus a WebRTC handler when a proxy is configured. Runs on the
+      // root tab + every existing tab + every future tab.
+      //
+      // Order matters: WebRTC injection goes FIRST so that even if
+      // Emulation commands fail, the IP leak is already plugged.
+      const useProxy = !!profile.proxy;
+
+      // Probe the proxy's public IP so we can spoof WebRTC ICE candidates
+      // to match it (the convincing fingerprint pattern: VPN user with
+      // WebRTC enabled, candidates pointing to the egress IP). If the
+      // probe fails (proxy down, ipapi blocked) we fall back to disabling
+      // RTCPeerConnection entirely — less stealthy but still leak-proof.
+      // WebRTC: if we have a proxy with a known egress IP, spoof ICE
+      // candidates to match. Otherwise (or if probe failed) fall back to
+      // a kill-switch that disables RTCPeerConnection — less stealthy but
+      // leak-proof. CloakBrowser handles WebRTC natively when the
+      // --fingerprint-webrtc-ip=auto flag is set, so we skip this preload.
+      const webrtcScript =
+        engine === "cloakbrowser"
+          ? null
+          : webrtcSpoofIp
+            ? buildWebRtcSpoofScript(webrtcSpoofIp)
+            : WEBRTC_BLOCK_SCRIPT;
+      // Unified fingerprint preload — covers everything CDP `Emulation`
+      // domain doesn't (navigator.platform, hardwareConcurrency, deviceMemory,
+      // WebGL UNMASKED_VENDOR/RENDERER). CloakBrowser already handles these
+      // natively in C++, so we skip our preload entirely on it — double-
+      // patching produces inconsistent values that detection vendors flag.
+      const fingerprintScript =
+        engine === "cloakbrowser"
+          ? null
+          : buildFingerprintPreloadScript(fp, { includeWebGl: true });
+      await session.bootstrapTargets(async (send, ctx) => {
         // Workers (shared_worker, service_worker) run in a separate JS
         // context that has no Page domain — Page.addScriptToEvaluateOnNewDocument
         // silently fails on them. For worker targets we skip the Page-domain
@@ -600,10 +651,12 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
             console.error("[multizen] setDeviceMetricsOverride failed:", e);
           }
         }
-        // CFT has no native location control. CDP is a useful but explicitly
-        // weaker, potentially observable fallback.
-        if (engine === "cft" && geoCoords && shouldApplyCftGeolocationOverride(ctx)) {
-          await applyCftGeolocationOverride(send, geoCoords, coherence ?? undefined);
+        // The pinned CloakBrowser build has no documented native location flag;
+        // --fingerprint-location is ignored. Apply the target-scoped CDP command
+        // for both engines so navigator.geolocation cannot fall through to the
+        // host OS location provider.
+        if (geoCoords && shouldApplyGeolocationOverride(engine, ctx)) {
+          await applyGeolocationOverride(engine, send, geoCoords, coherence ?? undefined);
         }
         // 2-4. Timezone / Locale / UA+UA-CH overrides via CDP.
         //
@@ -696,88 +749,103 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           // Non-fatal — diagnostic only.
           void e;
         }
-      })
-      .catch((e: unknown) => {
-        throw new Error("WebRTC/CDP protection bootstrap failed; launch aborted", { cause: e });
       });
 
-    // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
-    // to Web Store pages only (the host polls a DOM attribute there, never on
-    // the user's normal browsing). The CDP session is profile-scoped, so any
-    // signal belongs to this profileId — no cross-profile ambiguity.
-    if (this.onCompanionInstall) {
-      void session.watchUrlForBinding({
-        urlIncludes: "chromewebstore.google.com",
-        onPayload: (payload) => {
-          try {
-            const parsed = JSON.parse(payload) as { id?: string };
-            if (parsed.id) this.onCompanionInstall?.(profileId, parsed.id);
-          } catch {
-            // ignore malformed payloads
-          }
-        },
-      });
-    }
-
-    // Watch for "no more page targets" via CDP. On macOS Chrome stays alive
-    // after the last window closes (standard Mac app lifecycle) — the spawned
-    // process keeps running with zero windows. We poll /json/list and force-
-    // kill the child when that happens, which then fires child.on('exit') and
-    // emits the running-changed event.
-    // Latch so the 1s watcher signals termination + shuts down exactly once,
-    // not on every tick while pages stay at zero during the ~1.5–4s wind-down.
-    let signalledClose = false;
-    const windowWatcher = createWindowWatcher(port, startedAt, () => {
-      if (signalledClose) return;
-      signalledClose = true;
-      // Window closed but the process lingers (mac app lifecycle) — tell the GUI
-      // we're terminating so the card stops showing "Stop" while it winds down.
-      this.emit("running-changed", { kind: "closing", profileId });
-      // Graceful CDP shutdown — preserves session-restore on CFT too.
-      void this.gracefulShutdown(r);
-    });
-
-    const record: RunningProcess = {
-      child,
-      cdpEndpoint,
-      port,
-      pid: child.pid,
-      startedAt,
-      session,
-      browserDataDir,
-      windowWatcher,
-    };
-    const r = record;
-    this.running.set(profileId, record);
-
-    child.on("exit", () => {
-      const wasTracked = this.running.has(profileId);
-      clearInterval(record.windowWatcher);
-      void session.close().catch(() => {});
-      void stopBridgeForProfile(profileId).catch(() => {});
-      this.running.delete(profileId);
-      if (wasTracked) {
-        // close() removes from the map first so wasTracked is false there;
-        // this path covers (a) user quit Chrome directly with ⌘Q, and (b)
-        // our own kill() from the windowWatcher when the last window closed.
-        this.emit("running-changed", { kind: "closed", profileId, reason: "external-exit" });
+      // Wire the companion's "Add to Phantom Browser" channel for this profile — scoped
+      // to Web Store pages only (the host polls a DOM attribute there, never on
+      // the user's normal browsing). The CDP session is profile-scoped, so any
+      // signal belongs to this profileId — no cross-profile ambiguity.
+      if (this.onCompanionInstall) {
+        void session.watchUrlForBinding({
+          urlIncludes: "chromewebstore.google.com",
+          onPayload: (payload) => {
+            try {
+              const parsed = JSON.parse(payload) as { id?: string };
+              if (parsed.id) this.onCompanionInstall?.(profileId, parsed.id);
+            } catch {
+              // ignore malformed payloads
+            }
+          },
+        });
       }
-    });
 
-    this.emit("running-changed", { kind: "launched", profileId });
-    return {
-      id: profileId,
-      cdpEndpoint,
-      pid: child.pid,
-      startedAt,
-      coherence: coherence
-        ? {
-            status: coherence.status,
-            issues: coherence.issues,
-            geolocationCoverage: coherence.geolocationCoverage,
-          }
-        : undefined,
-    };
+      // Watch for "no more page targets" via CDP. On macOS Chrome stays alive
+      // after the last window closes (standard Mac app lifecycle) — the spawned
+      // process keeps running with zero windows. We poll /json/list and force-
+      // kill the child when that happens, which then fires child.on('exit') and
+      // emits the running-changed event.
+      // Latch so the 1s watcher signals termination + shuts down exactly once,
+      // not on every tick while pages stay at zero during the ~1.5–4s wind-down.
+      let signalledClose = false;
+      const windowWatcher = this.launchDeps.createWindowWatcher(port, startedAt, () => {
+        if (signalledClose) return;
+        signalledClose = true;
+        // Window closed but the process lingers (mac app lifecycle) — tell the GUI
+        // we're terminating so the card stops showing "Stop" while it winds down.
+        this.emit("running-changed", { kind: "closing", profileId });
+        // Graceful CDP shutdown — preserves session-restore on CFT too.
+        void this.gracefulShutdown(r);
+      });
+
+      const record: RunningProcess = {
+        child,
+        cdpEndpoint,
+        port,
+        pid: child.pid,
+        startedAt,
+        session,
+        browserDataDir,
+        windowWatcher,
+      };
+      const r = record;
+      this.running.set(profileId, record);
+      launchOwnershipTransferred = true;
+
+      child.on("exit", () => {
+        const wasTracked = this.running.has(profileId);
+        clearInterval(record.windowWatcher);
+        void session.close().catch(() => {});
+        void stopBridgeForProfile(profileId).catch(() => {});
+        this.running.delete(profileId);
+        if (wasTracked) {
+          // close() removes from the map first so wasTracked is false there;
+          // this path covers (a) user quit Chrome directly with ⌘Q, and (b)
+          // our own kill() from the windowWatcher when the last window closed.
+          this.emit("running-changed", { kind: "closed", profileId, reason: "external-exit" });
+        }
+      });
+
+      this.emit("running-changed", { kind: "launched", profileId });
+      return {
+        id: profileId,
+        cdpEndpoint,
+        pid: child.pid,
+        startedAt,
+        coherence: coherence
+          ? {
+              status: coherence.status,
+              issues: coherence.issues,
+              geolocationCoverage: coherence.geolocationCoverage,
+            }
+          : undefined,
+      };
+    } catch (error) {
+      if (!launchOwnershipTransferred) {
+        await cleanupFailedBrowserLaunch({
+          killChild: () => {
+            if (ownedChild?.pid && this.launchDeps.isPidAlive(ownedChild.pid)) {
+              ownedChild.kill("SIGKILL");
+            }
+          },
+          closeSession: ownedSession ? () => ownedSession!.close() : undefined,
+          killUsingDataDir: ownedChild
+            ? () => this.launchDeps.killBrowsersUsingDataDir(browserDataDir)
+            : undefined,
+          stopBridge: () => this.launchDeps.stopBridgeForProfile(profileId),
+        });
+      }
+      throw new Error("Browser launch protection failed; launch aborted", { cause: error });
+    }
   }
 
   async close(profileId: ProfileId): Promise<void> {
@@ -798,18 +866,23 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       // bridge's server.close() blocks until the browser's socks connection
       // ends, so stopping it before the browser is dead would hang close()
       // forever (the real bug behind "Stop leaves Chromium running").
-      await this.gracefulShutdown(r);
+      const shutdown = this.getSettings();
+      await this.launchDeps.gracefulShutdown(r, {
+        shutdownGraceMs: shutdown.shutdownGraceMs,
+        shutdownSigtermMs: shutdown.shutdownSigtermMs,
+        shutdownSigkillMs: shutdown.shutdownSigkillMs,
+      });
       // Belt-and-suspenders: after the PID-based shutdown, sweep for ANY
       // process still holding this profile's user-data-dir and SIGKILL it.
       // Catches re-parented/forked survivors (or leftover helpers) that the
       // single tracked PID could miss.
-      await killBrowsersUsingDataDir(r.browserDataDir);
+      await this.launchDeps.killBrowsersUsingDataDir(r.browserDataDir);
       // Browser is gone now, so the bridge closes immediately. Timeout-bounded
       // anyway so a stuck socket can never strand Stop.
-      await withTimeout(stopBridgeForProfile(profileId), 2000);
+      await withTimeout(this.launchDeps.stopBridgeForProfile(profileId), 2000);
     } finally {
       console.log(
-        `[multizen] close() done profile=${profileId} pid=${r.pid} alive=${isPidAlive(r.pid)}`,
+        `[multizen] close() done profile=${profileId} pid=${r.pid} alive=${this.launchDeps.isPidAlive(r.pid)}`,
       );
       this.emit("running-changed", { kind: "closed", profileId, reason: "user-close" });
     }

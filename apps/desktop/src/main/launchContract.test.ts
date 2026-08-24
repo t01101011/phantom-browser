@@ -89,18 +89,6 @@ test("WebRTC spoof script is safe to evaluate in a worker global", () => {
   assert.doesNotMatch(script, /window\.webkitRTCPeerConnection/);
 });
 
-test("future target setup fails closed instead of resuming an unprotected target", () => {
-  const source = readFileSync(
-    new URL("../../../../packages/cdp-driver/src/CdpSession.ts", import.meta.url),
-    "utf8",
-  );
-  const handler = source.slice(source.indexOf('"Target.attachedToTarget"'));
-  assert.match(handler, /setupSucceeded = false/);
-  assert.match(handler, /target setup failed; closing browser fail-closed/);
-  assert.match(handler, /await this\.closeBrowser\(\)/);
-  assert.match(handler, /if \(setupSucceeded\)/);
-});
-
 // ── Contract completeness ───────────────────────────────────────────────────
 
 test("every top-level FingerprintConfig field appears in the launch contract", () => {

@@ -18,6 +18,18 @@ export type TargetSender = <T = unknown>(
   params?: Record<string, unknown>,
 ) => Promise<T>;
 
+async function settleWithin(promise: Promise<unknown>, timeoutMs: number): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  await Promise.race([
+    promise.catch(() => {}),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 function buildSender(client: CDP.Client, sessionId: string | undefined): TargetSender {
   return ((method: string, params?: Record<string, unknown>) => {
     if (sessionId === undefined) {
@@ -48,6 +60,10 @@ export interface CdpSessionOptions {
    * trips the automation tripwire.
    */
   engine?: string;
+  /** Maximum time given to each fail-closed shutdown step. */
+  protectionFailureTimeoutMs?: number;
+  /** Owner callback used to sweep tracked browser/process/bridge resources. */
+  onProtectionFailure?: (error: unknown) => Promise<void> | void;
 }
 
 /**
@@ -186,8 +202,6 @@ export class CdpSession {
     const client = this.require();
     const { Target } = client;
 
-    await setup(buildSender(client, undefined), { isRoot: true, type: "page" });
-
     // Targets that should receive the setup. "page" covers user tabs;
     // "iframe" covers OOPIFs (cross-origin iframes that live in a
     // separate process — common for ad networks and 3rd-party fingerprint
@@ -201,48 +215,55 @@ export class CdpSession {
     // STUN from the worker discovers the real public IP and posts it back
     // to the page via postMessage, bypassing the page-level preload.
     const SETUP_TARGET_TYPES = new Set(["page", "iframe", "shared_worker", "service_worker"]);
+    const configuredTargets = new Map<string, Promise<void>>();
+    let protectionFailure: Promise<void> | null = null;
 
-    try {
-      const targets = await Target.getTargets();
-      for (const t of targets.targetInfos) {
-        if (!SETUP_TARGET_TYPES.has(t.type)) continue;
-        const { sessionId } = await Target.attachToTarget({
-          targetId: t.targetId,
-          flatten: true,
-        });
-        await setup(buildSender(client, sessionId), {
-          isRoot: false,
-          type: t.type as TargetContext["type"],
-        });
-      }
-    } catch (e) {
-      throw new Error("CDP target bootstrap failed; WebRTC protection could not be installed", {
-        cause: e,
-      });
-    }
+    const handleProtectionFailure = (error: unknown): Promise<void> => {
+      if (protectionFailure) return protectionFailure;
+      protectionFailure = (async () => {
+        console.error("[cdp] target setup failed; closing browser fail-closed", error);
+        const timeoutMs = this.opts.protectionFailureTimeoutMs ?? 1000;
+        await settleWithin(this.closeBrowser(), timeoutMs);
+        await settleWithin(this.close(), timeoutMs);
+        if (this.opts.onProtectionFailure) {
+          await settleWithin(Promise.resolve(this.opts.onProtectionFailure(error)), timeoutMs);
+        }
+      })();
+      return protectionFailure;
+    };
 
-    await Target.setAutoAttach({
-      autoAttach: true,
-      waitForDebuggerOnStart: true,
-      flatten: true,
-    });
+    const configureTarget = (
+      targetId: string,
+      sessionId: string,
+      type: TargetContext["type"],
+    ): Promise<void> => {
+      const existing = configuredTargets.get(targetId);
+      if (existing) return existing;
+      const configured = setup(buildSender(client, sessionId), { isRoot: false, type });
+      configuredTargets.set(targetId, configured);
+      return configured;
+    };
+
+    // Arm the listener before enabling auto-attach, then enable auto-attach
+    // before enumerating existing targets. This closes the creation race:
+    // every target is either discovered by getTargets or paused and delivered
+    // through attachedToTarget. configuredTargets prevents double setup.
     client.on(
       "Target.attachedToTarget",
-      (params: { sessionId: string; targetInfo: { type: string } }) => {
+      (params: { sessionId: string; targetInfo: { targetId: string; type: string } }) => {
         void (async () => {
           let setupSucceeded = false;
           try {
             if (SETUP_TARGET_TYPES.has(params.targetInfo.type)) {
-              await setup(buildSender(client, params.sessionId), {
-                isRoot: false,
-                type: params.targetInfo.type as TargetContext["type"],
-              });
+              await configureTarget(
+                params.targetInfo.targetId,
+                params.sessionId,
+                params.targetInfo.type as TargetContext["type"],
+              );
             }
             setupSucceeded = true;
           } catch (e) {
-            console.error("[cdp] target setup failed; closing browser fail-closed", e);
-            await this.closeBrowser().catch(() => {});
-            await this.close().catch(() => {});
+            await handleProtectionFailure(e);
           } finally {
             if (setupSucceeded) {
               try {
@@ -255,6 +276,33 @@ export class CdpSession {
         })();
       },
     );
+    await Target.setAutoAttach({
+      autoAttach: true,
+      waitForDebuggerOnStart: true,
+      flatten: true,
+    });
+
+    await setup(buildSender(client, undefined), { isRoot: true, type: "page" });
+
+    try {
+      const targets = await Target.getTargets();
+      for (const t of targets.targetInfos) {
+        if (!SETUP_TARGET_TYPES.has(t.type)) continue;
+        if (configuredTargets.has(t.targetId)) {
+          await configuredTargets.get(t.targetId);
+          continue;
+        }
+        const { sessionId } = await Target.attachToTarget({
+          targetId: t.targetId,
+          flatten: true,
+        });
+        await configureTarget(t.targetId, sessionId, t.type as TargetContext["type"]);
+      }
+    } catch (e) {
+      throw new Error("CDP target bootstrap failed; WebRTC protection could not be installed", {
+        cause: e,
+      });
+    }
   }
 
   /**

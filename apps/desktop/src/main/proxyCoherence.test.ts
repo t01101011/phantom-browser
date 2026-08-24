@@ -15,8 +15,9 @@ import {
   summarizeCoherenceIssues,
 } from "./proxyCoherence.ts";
 import {
-  applyCftGeolocationOverride,
-  shouldApplyCftGeolocationOverride,
+  applyGeolocationOverride,
+  requireProxyGeolocationCoordinates,
+  shouldApplyGeolocationOverride,
 } from "./cdpGeolocation.ts";
 
 const PROXY = {
@@ -203,41 +204,79 @@ test("explicit acceptance allows degraded CloakBrowser coherence", () => {
   assert.equal(result.geolocationCoverage, "unavailable");
 });
 
-test("reports native-upstream Cloak coverage and weaker CFT CDP coverage", () => {
+test("accepted degradation cannot bypass the geolocation kill-switch", () => {
+  assert.throws(
+    () => requireProxyGeolocationCoordinates(null),
+    /Geolocation protection unavailable; launch blocked/,
+  );
+});
+
+test("reports weaker CDP geolocation coverage for both engines", () => {
   const fingerprint = { ...defaultFingerprint("engine-coverage"), country: "jp", locale: "ja-JP" };
   const cloak = resolveProxyCoherence({ engine: "cloakbrowser", fingerprint, geo: geo() });
   const cft = resolveProxyCoherence({ engine: "cft", fingerprint, geo: geo() });
-  assert.equal(cloak.geolocationCoverage, "native-upstream");
+  assert.equal(cloak.geolocationCoverage, "cdp-weaker");
   assert.equal(cft.geolocationCoverage, "cdp-weaker");
 });
 
-test("CFT geolocation override applies to the root and every attached page target", () => {
-  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: true, type: "page" }), true);
-  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "page" }), true);
-  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "iframe" }), false);
-  assert.equal(shouldApplyCftGeolocationOverride({ isRoot: false, type: "service_worker" }), false);
+test("geolocation override applies to every page target for both engines", () => {
+  for (const engine of ["cft", "cloakbrowser"] as const) {
+    assert.equal(shouldApplyGeolocationOverride(engine, { isRoot: true, type: "page" }), true);
+    assert.equal(shouldApplyGeolocationOverride(engine, { isRoot: false, type: "page" }), true);
+    assert.equal(shouldApplyGeolocationOverride(engine, { isRoot: false, type: "iframe" }), false);
+    assert.equal(
+      shouldApplyGeolocationOverride(engine, { isRoot: false, type: "service_worker" }),
+      false,
+    );
+  }
 });
 
-test("CFT geolocation override reports failure instead of claiming CDP coverage", async () => {
+test("CFT fails closed when its geolocation override is rejected", async () => {
   const calls: string[] = [];
   const coherence = resolveProxyCoherence({
     engine: "cft",
     fingerprint: { ...defaultFingerprint("cdp-failure"), country: "jp" },
     geo: geo(),
   });
-  const result = await applyCftGeolocationOverride(
-    async (method: string) => {
-      calls.push(method);
-      throw new Error("CDP rejected geolocation override");
-    },
-    { latitude: 35.6762, longitude: 139.6503 },
-    coherence,
+  await assert.rejects(
+    applyGeolocationOverride(
+      "cft",
+      async (method: string) => {
+        calls.push(method);
+        throw new Error("CDP rejected geolocation override");
+      },
+      { latitude: 35.6762, longitude: 139.6503 },
+      coherence,
+    ),
+    /geolocation protection failed closed/,
   );
   assert.deepEqual(calls, ["Emulation.setGeolocationOverride"]);
-  assert.equal(result, false);
   assert.equal(coherence.status, "degraded");
   assert.equal(coherence.geolocationCoverage, "unavailable");
-  assert.match(coherence.issues.join("; "), /CDP geolocation fallback failed/);
+  assert.match(coherence.issues.join("; "), /CDP geolocation override failed/);
+});
+
+test("CloakBrowser fails closed when its geolocation override is rejected", async () => {
+  const coherence = resolveProxyCoherence({
+    engine: "cloakbrowser",
+    fingerprint: { ...defaultFingerprint("cloak-cdp-failure"), country: "jp" },
+    geo: geo(),
+  });
+
+  await assert.rejects(
+    applyGeolocationOverride(
+      "cloakbrowser",
+      async () => {
+        throw new Error("CDP rejected geolocation override");
+      },
+      { latitude: 35.6762, longitude: 139.6503 },
+      coherence,
+    ),
+    /cloakbrowser geolocation protection failed closed/,
+  );
+  assert.equal(coherence.status, "degraded");
+  assert.equal(coherence.geolocationCoverage, "unavailable");
+  assert.match(coherence.issues.join("; "), /CDP geolocation override failed/);
 });
 
 // ── Item 8: recommendedAction + pre-launch visibility ─────────────────────
