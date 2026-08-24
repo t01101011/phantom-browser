@@ -94,3 +94,44 @@ test("duplicate failed future-target delivery triggers owner cleanup exactly onc
   await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(ownerCleanups, 1);
 });
+
+test("future paused page resumes when setup handles its transient missing execution context", async () => {
+  let ownerCleanups = 0;
+  const h = harness({
+    onProtectionFailure: async () => {
+      ownerCleanups += 1;
+    },
+  });
+  await h.session.bootstrapTargets(async (_send, ctx) => {
+    if (!ctx.isRoot) return;
+  });
+
+  h.emit({ sessionId: "s4", targetInfo: { targetId: "page-4", type: "page" } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(ownerCleanups, 0);
+  assert.equal(h.calls.filter((x) => x === "Runtime.runIfWaitingForDebugger").length, 1);
+});
+
+test("future worker setup rejection remains fail-closed and is never resumed", async () => {
+  let ownerCleanups = 0;
+  const h = harness({
+    onProtectionFailure: async () => {
+      ownerCleanups += 1;
+    },
+  });
+  await h.session.bootstrapTargets(async (_send, ctx) => {
+    if (!ctx.isRoot && ctx.type === "service_worker") {
+      throw new Error("Cannot find default execution context");
+    }
+  });
+
+  h.emit({
+    sessionId: "s5",
+    targetInfo: { targetId: "worker-5", type: "service_worker" },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(ownerCleanups, 1);
+  assert.equal(h.calls.filter((x) => x === "Runtime.runIfWaitingForDebugger").length, 0);
+});

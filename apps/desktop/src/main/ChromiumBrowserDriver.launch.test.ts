@@ -6,6 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+// Node's strip-types runner resolves the production CDP source directly.
+import { CdpSession } from "../../../../packages/cdp-driver/src/CdpSession.ts";
 
 const bundleDir = await mkdtemp(join(tmpdir(), "phantom-launch-test-bundle-"));
 const bundlePath = join(bundleDir, "ChromiumBrowserDriver.cjs");
@@ -104,12 +106,23 @@ async function harness(options: {
   bootstrapError?: Error;
   geolocationError?: Error;
   futureProtectionFailure?: boolean;
+  futurePageMissingContext?: boolean;
 }) {
   const root = await mkdtemp(join(tmpdir(), "phantom-launch-boundary-"));
   const calls: string[] = [];
   const child = new FakeChild();
   let protectionFailureCallback: ((error: unknown) => Promise<void> | void) | undefined;
-  const session = {
+  let emitAttached:
+    | ((params: { sessionId: string; targetInfo: { targetId: string; type: string } }) => void)
+    | undefined;
+  let session: {
+    closeBrowser: () => Promise<void>;
+    close: () => Promise<void>;
+    bootstrapTargets: (
+      configure: (send: (method: string) => Promise<unknown>, ctx: object) => Promise<void>,
+    ) => Promise<void>;
+    watchUrlForBinding: () => Promise<void>;
+  } = {
     closeBrowser: async () => {
       calls.push("close-browser");
       child.kill();
@@ -172,10 +185,43 @@ async function harness(options: {
       calls.push("spawn");
       return child;
     },
-    createSession: (sessionOptions: {
-      onProtectionFailure?: (error: unknown) => Promise<void> | void;
-    }) => {
+    createSession: (sessionOptions: ConstructorParameters<typeof CdpSession>[0]) => {
       protectionFailureCallback = sessionOptions.onProtectionFailure;
+      if (options.futurePageMissingContext) {
+        const realSession = new CdpSession(sessionOptions);
+        const client = {
+          Target: {
+            setAutoAttach: async () => {},
+            getTargets: async () => ({ targetInfos: [] }),
+            attachToTarget: async () => ({ sessionId: "existing-session" }),
+          },
+          on: (
+            event: string,
+            callback: (params: {
+              sessionId: string;
+              targetInfo: { targetId: string; type: string };
+            }) => void,
+          ) => {
+            if (event === "Target.attachedToTarget") emitAttached = callback;
+          },
+          send: async (method: string, _params?: unknown, sessionId?: string) => {
+            calls.push(method);
+            if (method === "Runtime.evaluate" && sessionId === "future-session") {
+              throw new Error("Cannot find default execution context");
+            }
+            return {};
+          },
+          close: async () => {
+            calls.push("close-session");
+          },
+        };
+        (realSession as unknown as { client: unknown }).client = client;
+        realSession.closeBrowser = async () => {
+          calls.push("close-browser");
+          child.kill();
+        };
+        session = realSession as unknown as typeof session;
+      }
       return session;
     },
     waitForCdpSessionReady: async () => {
@@ -209,7 +255,24 @@ async function harness(options: {
     assert(protectionFailureCallback);
     await protectionFailureCallback(new Error("future target geolocation rejected"));
   };
-  return { calls, child, driver, profileId, root, triggerFutureProtectionFailure };
+  const triggerFuturePageMissingContext = async () => {
+    assert(options.futurePageMissingContext);
+    assert(emitAttached);
+    emitAttached({
+      sessionId: "future-session",
+      targetInfo: { targetId: "future-page", type: "page" },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  };
+  return {
+    calls,
+    child,
+    driver,
+    profileId,
+    root,
+    triggerFutureProtectionFailure,
+    triggerFuturePageMissingContext,
+  };
 }
 
 async function expectPrimaryCause(promise: Promise<unknown>, primary: Error): Promise<void> {
@@ -311,6 +374,21 @@ test("future-target protection failure after ownership transfer closes tracked b
     assert.ok(h.calls.includes("close-browser"));
     assert.deepEqual(h.calls.slice(-3), ["close-session", "kill-data-dir", "stop-bridge"]);
   } finally {
+    await rm(h.root, { recursive: true, force: true });
+  }
+});
+
+test("future paused page without a default execution context stays open after its preload is installed", async () => {
+  const h = await harness({ futurePageMissingContext: true });
+  try {
+    await h.driver.launch(h.profileId);
+    await h.triggerFuturePageMissingContext();
+
+    assert.equal(h.driver.isRunning(h.profileId), true);
+    assert.equal(h.child.killed, false);
+    assert.equal(h.calls.includes("stop-bridge"), false);
+  } finally {
+    await h.driver.close(h.profileId);
     await rm(h.root, { recursive: true, force: true });
   }
 });

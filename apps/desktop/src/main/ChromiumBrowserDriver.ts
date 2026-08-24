@@ -608,7 +608,15 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           // Workers always get the eval (no navigation lifecycle).
           // Pages/iframes get it as belt-and-braces; failure is expected
           // if the execution context isn't ready yet.
-          await send("Runtime.evaluate", { expression: webrtcScript });
+          await send("Runtime.evaluate", { expression: webrtcScript }).catch((error: unknown) => {
+            // A newly auto-attached page/iframe is paused before its default
+            // execution context exists. Its preload was installed above and
+            // will run before page script after resume, so this transient eval
+            // miss is safe. Workers have no Page preload and must still fail
+            // closed because Runtime.evaluate is their only protection.
+            if (!isWorker && /default execution context/i.test((error as Error).message)) return;
+            throw error;
+          });
         }
         // 1b. Generic fingerprint patches (deviceMemory, hwConcurrency,
         //     navigator.platform, WebGL UNMASKED_*). CloakBrowser handles
