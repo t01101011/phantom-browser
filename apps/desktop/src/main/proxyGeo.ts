@@ -69,8 +69,7 @@ export async function probeProxyGeo(
   opts: {
     timeoutMs?: number;
     requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
-    /** Test seams for deterministic absolute-deadline coverage. */
-    now?: () => number;
+    /** Test seam for deterministic per-provider deadline coverage. */
     fetchJson?: (url: string, proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
   } = {},
 ): Promise<ProxyGeoResult> {
@@ -82,19 +81,15 @@ export async function probeProxyGeo(
   }
 
   const timeoutMs = opts.timeoutMs ?? 10000;
-  const now = opts.now ?? Date.now;
   const fetchJson = opts.fetchJson ?? fetchThroughProxy;
-  const deadline = now() + timeoutMs;
   const errors: string[] = [];
 
   for (const provider of PROVIDERS) {
-    const remaining = deadline - now();
-    if (remaining <= 0) {
-      errors.push(`${provider.name}: skipped (probe deadline reached)`);
-      break;
-    }
     try {
-      const raw = await fetchJson(provider.url, proxy, remaining);
+      // Each provider gets the configured request deadline. Sharing one deadline
+      // lets a slow first provider consume the whole budget and silently disables
+      // the fallback, which is exactly when the fallback is needed most.
+      const raw = await fetchJson(provider.url, proxy, timeoutMs);
       return provider.parse(raw);
     } catch (err) {
       const msg = (err as Error).message;

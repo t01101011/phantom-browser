@@ -5,40 +5,44 @@ import { fetchJsonWithAbsoluteDeadline, probeProxyGeo } from "./proxyGeo.ts";
 
 const proxy = { type: "http", host: "127.0.0.1", port: 8080 } as const;
 
-test("multi-provider geo fallback shares one overall deadline", async () => {
-  let now = 1_000;
+test("multi-provider geo fallback gives each provider a fresh deadline", async () => {
   const budgets: number[] = [];
   await assert.rejects(
     probeProxyGeo(proxy, {
       timeoutMs: 100,
-      now: () => now,
       fetchJson: async (_url, _proxy, timeoutMs) => {
         budgets.push(timeoutMs);
-        now += 60;
         throw new Error("down");
       },
     }),
     /All geo-IP providers failed/,
   );
-  assert.deepEqual(budgets, [100, 40]);
+  assert.deepEqual(budgets, [100, 100]);
 });
 
-test("geo fallback stops once its overall deadline is exhausted", async () => {
-  let now = 2_000;
+test("geo fallback still tries the next provider after the first provider uses its deadline", async () => {
   let calls = 0;
-  await assert.rejects(
-    probeProxyGeo(proxy, {
-      timeoutMs: 100,
-      now: () => now,
-      fetchJson: async () => {
-        calls += 1;
-        now += 100;
-        throw new Error("timed out");
-      },
-    }),
-    /deadline reached/,
-  );
-  assert.equal(calls, 1);
+  const result = await probeProxyGeo(proxy, {
+    timeoutMs: 100,
+    fetchJson: async () => {
+      calls += 1;
+      if (calls === 1) {
+        throw new Error("proxy probe timed out");
+      }
+      return {
+        ip: "203.0.113.10",
+        country_code: "US",
+        country_name: "United States",
+        timezone: "America/New_York",
+        city: "New York",
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.country, "us");
+  assert.equal(result.latitude, 40.7128);
 });
 
 test("proxy geo HTTP read enforces an absolute deadline against slow-drip bodies", async () => {
