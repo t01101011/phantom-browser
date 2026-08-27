@@ -4,11 +4,17 @@ import type { BrowserEngine } from "@multizen/settings-store";
 
 export type CdpSender = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 
+export class GeolocationProtectionError extends Error {}
+
 export function requireProxyGeolocationCoordinates(
   coordinates: { latitude: number; longitude: number } | null,
+  issues: string[] = [],
 ): { latitude: number; longitude: number } {
   if (!coordinates) {
-    throw new Error("Geolocation protection unavailable; launch blocked");
+    const diagnosis = issues.find((issue) => issue.startsWith("Proxy geolocation probe failed"));
+    throw new GeolocationProtectionError(
+      `Geolocation protection unavailable; launch blocked${diagnosis ? ` — ${diagnosis}` : ""}`,
+    );
   }
   return coordinates;
 }

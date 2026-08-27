@@ -238,7 +238,22 @@ function hasSameLocaleTuple(left: FingerprintConfig, right: FingerprintConfig): 
 
 function safeProbeError(error: unknown): string {
   const message = error instanceof Error ? error.message : "unknown error";
+  const providers = ["ipwho.is", "ipapi.co", "ip-api.com"];
+  const providerResults = providers
+    .map((provider) => {
+      const match = message.match(new RegExp(`${provider.replaceAll(".", "\\.")}: ([^;]+)`, "i"));
+      if (!match) return null;
+      return `${provider}: ${safeProbeCategory(match[1] ?? "")}`;
+    })
+    .filter((result): result is string => result !== null);
+  if (providerResults.length > 0) return providerResults.join("; ");
+  return safeProbeCategory(message);
+}
+
+function safeProbeCategory(message: string): string {
   if (/timed out/i.test(message)) return "timeout";
   if (/429|rate.?limit/i.test(message)) return "rate limited";
+  const status = message.match(/HTTP (4\d\d|5\d\d)/i)?.[1];
+  if (status) return `HTTP ${status}`;
   return "unavailable";
 }

@@ -21,6 +21,7 @@ import { startBridgeForProfile, stopBridgeForProfile } from "./socks5Bridge";
 import { probeProxyGeo } from "./proxyGeo";
 import {
   applyGeolocationOverride,
+  GeolocationProtectionError,
   requireProxyGeolocationCoordinates,
   shouldApplyGeolocationOverride,
 } from "./cdpGeolocation";
@@ -260,7 +261,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
       }
     }
     if (profile.proxy) {
-      geoCoords = requireProxyGeolocationCoordinates(geoCoords);
+      geoCoords = requireProxyGeolocationCoordinates(geoCoords, coherence?.issues);
     }
     // No-proxy: fp.timezone is left as the profile configured it (issue #13).
 
@@ -814,6 +815,7 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           stopBridge: () => this.launchDeps.stopBridgeForProfile(profileId),
         });
       }
+      if (error instanceof GeolocationProtectionError) throw error;
       throw new Error("Browser launch protection failed; launch aborted", { cause: error });
     }
   }

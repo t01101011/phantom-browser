@@ -17,7 +17,7 @@ test("multi-provider geo fallback gives each provider a fresh deadline", async (
     }),
     /All geo-IP providers failed/,
   );
-  assert.deepEqual(budgets, [100, 100]);
+  assert.deepEqual(budgets, [100, 100, 100]);
 });
 
 test("geo fallback still tries the next provider after the first provider uses its deadline", async () => {
@@ -43,6 +43,47 @@ test("geo fallback still tries the next provider after the first provider uses i
   assert.equal(calls, 2);
   assert.equal(result.country, "us");
   assert.equal(result.latitude, 40.7128);
+});
+
+test("geo fallback uses ip-api when HTTPS providers are unavailable", async () => {
+  let calls = 0;
+  const result = await probeProxyGeo(proxy, {
+    timeoutMs: 100,
+    fetchJson: async () => {
+      calls += 1;
+      if (calls < 3) throw new Error("HTTP 403");
+      return {
+        status: "success",
+        query: "203.0.113.10",
+        country: "United States",
+        countryCode: "US",
+        timezone: "America/New_York",
+        city: "New York",
+        lat: 40.7128,
+        lon: -74.006,
+      };
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.country, "us");
+  assert.equal(result.longitude, -74.006);
+});
+
+test("ip-api fallback rejects out-of-range coordinates", async () => {
+  await assert.rejects(
+    probeProxyGeo(proxy, {
+      fetchJson: async () => ({
+        status: "success",
+        query: "203.0.113.10",
+        country: "United States",
+        countryCode: "US",
+        timezone: "America/New_York",
+        lat: 123,
+        lon: -74.006,
+      }),
+    }),
+    /invalid coordinates/,
+  );
 });
 
 test("proxy geo HTTP read enforces an absolute deadline against slow-drip bodies", async () => {

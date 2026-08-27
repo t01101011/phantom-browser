@@ -211,6 +211,21 @@ test("accepted degradation cannot bypass the geolocation kill-switch", () => {
   );
 });
 
+test("geolocation kill-switch exposes only the sanitized probe diagnosis", () => {
+  assert.throws(
+    () =>
+      requireProxyGeolocationCoordinates(null, [
+        "Proxy geolocation probe failed (ipwho.is: timeout; ipapi.co: rate limited)",
+      ]),
+    (error: Error) => {
+      assert.match(error.message, /ipwho\.is: timeout/);
+      assert.match(error.message, /ipapi\.co: rate limited/);
+      assert.doesNotMatch(error.message, /secret-user|secret-password|proxy\.invalid/);
+      return true;
+    },
+  );
+});
+
 test("reports weaker CDP geolocation coverage for both engines", () => {
   const fingerprint = { ...defaultFingerprint("engine-coverage"), country: "jp", locale: "ja-JP" };
   const cloak = resolveProxyCoherence({ engine: "cloakbrowser", fingerprint, geo: geo() });

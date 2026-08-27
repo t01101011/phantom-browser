@@ -56,6 +56,13 @@ const PROVIDERS: GeoProvider[] = [
     url: "https://ipapi.co/json/",
     parse: parseIpapi,
   },
+  {
+    // The free tier is HTTP-only. This request still travels through the
+    // configured proxy, so it observes the proxy egress rather than the host.
+    name: "ip-api.com",
+    url: "http://ip-api.com/json/?fields=status,message,country,countryCode,city,timezone,lat,lon,query",
+    parse: parseIpApi,
+  },
 ];
 
 // ── Public API ─────────────────────────────────────────────────────────
@@ -196,6 +203,53 @@ function parseIpwho(raw: unknown): ProxyGeoResult {
     ip: json.ip!,
     latitude: typeof json.latitude === "number" ? json.latitude : undefined,
     longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+  };
+}
+
+/** Parse ip-api.com JSON response. */
+interface RawIpApi {
+  status?: string;
+  message?: string;
+  query?: string;
+  country?: string;
+  countryCode?: string;
+  timezone?: string;
+  city?: string;
+  lat?: number;
+  lon?: number;
+}
+
+function parseIpApi(raw: unknown): ProxyGeoResult {
+  const json = raw as RawIpApi;
+  if (json.status !== "success") {
+    throw new Error(`ip-api.com error: ${json.message ?? "unexpected payload"}`);
+  }
+  if (!json.countryCode || !json.timezone) {
+    throw new Error("ip-api.com returned an unexpected payload");
+  }
+  if (isIP(json.query ?? "") === 0) {
+    throw new Error("ip-api.com returned no valid egress IP");
+  }
+  if (
+    typeof json.lat !== "number" ||
+    !Number.isFinite(json.lat) ||
+    json.lat < -90 ||
+    json.lat > 90 ||
+    typeof json.lon !== "number" ||
+    !Number.isFinite(json.lon) ||
+    json.lon < -180 ||
+    json.lon > 180
+  ) {
+    throw new Error("ip-api.com returned invalid coordinates");
+  }
+  return {
+    country: json.countryCode.toLowerCase(),
+    countryName: json.country ?? json.countryCode,
+    timezone: json.timezone,
+    city: json.city ?? "",
+    ip: json.query!,
+    latitude: json.lat,
+    longitude: json.lon,
   };
 }
 
