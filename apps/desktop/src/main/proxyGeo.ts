@@ -84,6 +84,14 @@ const PROVIDERS: GeoProvider[] = [
     url: "http://ip-api.com/json/?fields=status,message,country,countryCode,city,timezone,lat,lon,query",
     parse: parseIpApi,
   },
+  {
+    // Independent HTTPS fallback. This is deliberately last: it is only
+    // reached when the established providers cannot be queried through the
+    // configured proxy.
+    name: "ipapi.is",
+    url: "https://api.ipapi.is/",
+    parse: parseIpapiIs,
+  },
 ];
 
 // ── Public API ─────────────────────────────────────────────────────────
@@ -268,6 +276,42 @@ function parseIpApi(raw: unknown): ProxyGeoResult {
     ip: json.query!,
     latitude: json.lat,
     longitude: json.lon,
+  };
+}
+
+/** Parse ipapi.is JSON response. */
+interface RawIpapiIs {
+  ip?: string;
+  location?: {
+    country?: string;
+    country_code?: string;
+    city?: string;
+    timezone?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+}
+
+function parseIpapiIs(raw: unknown): ProxyGeoResult {
+  const json = raw as RawIpapiIs;
+  const location = json.location;
+  if (!location?.country_code || !location.timezone) {
+    throw new Error("ipapi.is returned an unexpected payload");
+  }
+  if (isIP(json.ip ?? "") === 0) {
+    throw new Error("ipapi.is returned no valid egress IP");
+  }
+  if (!hasValidCoordinates(location.latitude, location.longitude)) {
+    throw new Error("ipapi.is returned invalid coordinates");
+  }
+  return {
+    country: location.country_code.toLowerCase(),
+    countryName: location.country ?? location.country_code,
+    timezone: location.timezone,
+    city: location.city ?? "",
+    ip: json.ip!,
+    latitude: location.latitude!,
+    longitude: location.longitude!,
   };
 }
 

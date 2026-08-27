@@ -17,7 +17,7 @@ test("multi-provider geo fallback gives each provider a fresh deadline", async (
     }),
     /All geo-IP providers failed/,
   );
-  assert.deepEqual(budgets, [100, 100, 100]);
+  assert.deepEqual(budgets, [100, 100, 100, 100]);
 });
 
 test("geo fallback still tries the next provider after the first provider uses its deadline", async () => {
@@ -67,6 +67,31 @@ test("geo fallback uses ip-api when HTTPS providers are unavailable", async () =
   assert.equal(calls, 3);
   assert.equal(result.country, "us");
   assert.equal(result.longitude, -74.006);
+});
+
+test("geo fallback uses ipapi.is after the existing providers are unavailable", async () => {
+  let calls = 0;
+  const result = await probeProxyGeo(proxy, {
+    timeoutMs: 100,
+    fetchJson: async () => {
+      calls += 1;
+      if (calls < 4) throw new Error("HTTP 403");
+      return {
+        ip: "203.0.113.10",
+        location: {
+          country: "United States",
+          country_code: "US",
+          city: "New York",
+          timezone: "America/New_York",
+          latitude: 40.7128,
+          longitude: -74.006,
+        },
+      };
+    },
+  });
+  assert.equal(calls, 4);
+  assert.equal(result.country, "us");
+  assert.equal(result.latitude, 40.7128);
 });
 
 test("ip-api fallback rejects out-of-range coordinates", async () => {
