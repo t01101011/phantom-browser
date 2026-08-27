@@ -815,7 +815,13 @@ export class ChromiumBrowserDriver extends EventEmitter implements BrowserDriver
           stopBridge: () => this.launchDeps.stopBridgeForProfile(profileId),
         });
       }
-      if (error instanceof GeolocationProtectionError) throw error;
+      if (
+        error instanceof GeolocationProtectionError ||
+        (error instanceof Error &&
+          (error as Error & { code?: string }).code === "GEOLOCATION_PROTECTION_UNAVAILABLE")
+      ) {
+        throw error;
+      }
       throw new Error("Browser launch protection failed; launch aborted", { cause: error });
     }
   }

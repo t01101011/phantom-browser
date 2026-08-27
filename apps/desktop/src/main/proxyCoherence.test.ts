@@ -226,6 +226,17 @@ test("geolocation kill-switch exposes only the sanitized probe diagnosis", () =>
   );
 });
 
+test("geolocation protection error carries a stable machine-readable code", () => {
+  assert.throws(
+    () => requireProxyGeolocationCoordinates(null),
+    (error: Error & { code?: string }) => {
+      assert.equal(error.name, "GeolocationProtectionError");
+      assert.equal(error.code, "GEOLOCATION_PROTECTION_UNAVAILABLE");
+      return true;
+    },
+  );
+});
+
 test("reports weaker CDP geolocation coverage for both engines", () => {
   const fingerprint = { ...defaultFingerprint("engine-coverage"), country: "jp", locale: "ja-JP" };
   const cloak = resolveProxyCoherence({ engine: "cloakbrowser", fingerprint, geo: geo() });

@@ -4,7 +4,14 @@ import type { BrowserEngine } from "@multizen/settings-store";
 
 export type CdpSender = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 
-export class GeolocationProtectionError extends Error {}
+export class GeolocationProtectionError extends Error {
+  readonly code = "GEOLOCATION_PROTECTION_UNAVAILABLE";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "GeolocationProtectionError";
+  }
+}
 
 export function requireProxyGeolocationCoordinates(
   coordinates: { latitude: number; longitude: number } | null,

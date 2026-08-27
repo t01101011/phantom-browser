@@ -82,7 +82,63 @@ test("ip-api fallback rejects out-of-range coordinates", async () => {
         lon: -74.006,
       }),
     }),
-    /invalid coordinates/,
+    /All geo-IP providers failed/,
+  );
+});
+
+test("fallback skips malformed coordinates from every provider", async () => {
+  let calls = 0;
+  const result = await probeProxyGeo(proxy, {
+    fetchJson: async () => {
+      calls += 1;
+      if (calls === 1) {
+        return {
+          success: true,
+          ip: "203.0.113.10",
+          country_code: "US",
+          country: "United States",
+          timezone: { id: "America/New_York" },
+          latitude: Number.NaN,
+          longitude: -74,
+        };
+      }
+      if (calls === 2) {
+        return {
+          ip: "203.0.113.10",
+          country_code: "US",
+          country_name: "United States",
+          timezone: "America/New_York",
+          latitude: 123,
+          longitude: -74,
+        };
+      }
+      return {
+        status: "success",
+        query: "203.0.113.10",
+        country: "United States",
+        countryCode: "US",
+        timezone: "America/New_York",
+        lat: 40.7128,
+        lon: -74.006,
+      };
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.latitude, 40.7128);
+});
+
+test("provider-controlled failures are reduced to bounded categories", async () => {
+  await assert.rejects(
+    probeProxyGeo(proxy, {
+      fetchJson: async () => {
+        throw new Error("evil\nsecret-user:secret-password@proxy.invalid");
+      },
+    }),
+    (error: Error) => {
+      assert.match(error.message, /ipwho\.is: unavailable/);
+      assert.doesNotMatch(error.message, /evil|secret-user|secret-password|proxy\.invalid|\n/);
+      return true;
+    },
   );
 });
 

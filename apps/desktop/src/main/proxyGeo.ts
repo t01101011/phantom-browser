@@ -35,6 +35,27 @@ interface GeoProvider {
   parse: (raw: unknown) => ProxyGeoResult;
 }
 
+function hasValidCoordinates(latitude: unknown, longitude: unknown): boolean {
+  return (
+    typeof latitude === "number" &&
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    typeof longitude === "number" &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
+
+function safeProviderFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (/timed out/i.test(message)) return "timeout";
+  if (/429|rate.?limit/i.test(message)) return "rate limited";
+  const status = message.match(/HTTP (4\d\d|5\d\d)/i)?.[1];
+  return status ? `HTTP ${status}` : "unavailable";
+}
+
 /**
  * Multi-provider proxy geo probe. Tries each provider in order until one
  * succeeds. This fixes persistent 429 rate-limiting from ipapi.co when
@@ -99,10 +120,7 @@ export async function probeProxyGeo(
       const raw = await fetchJson(provider.url, proxy, timeoutMs);
       return provider.parse(raw);
     } catch (err) {
-      const msg = (err as Error).message;
-      // Don't log credentials — errors from fetchThroughProxy already
-      // sanitize proxy details.
-      errors.push(`${provider.name}: ${msg}`);
+      errors.push(`${provider.name}: ${safeProviderFailure(err)}`);
     }
   }
 
@@ -134,6 +152,9 @@ export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
   if (isIP(json.ip ?? "") === 0) {
     throw new Error("ipapi.co returned no valid egress IP");
   }
+  if (!hasValidCoordinates(json.latitude, json.longitude)) {
+    throw new Error("ipapi.co returned invalid coordinates");
+  }
 
   return {
     country: json.country_code.toLowerCase(),
@@ -141,8 +162,8 @@ export function parseProxyGeoPayload(json: RawIpapi): ProxyGeoResult {
     timezone: json.timezone,
     city: json.city ?? "",
     ip: json.ip,
-    latitude: typeof json.latitude === "number" ? json.latitude : undefined,
-    longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+    latitude: json.latitude,
+    longitude: json.longitude,
   };
 }
 
@@ -160,14 +181,17 @@ function parseIpapi(raw: unknown): ProxyGeoResult {
   if (isIP(json.ip ?? "") === 0) {
     throw new Error("ipapi.co returned no valid egress IP");
   }
+  if (!hasValidCoordinates(json.latitude, json.longitude)) {
+    throw new Error("ipapi.co returned invalid coordinates");
+  }
   return {
     country: json.country_code.toLowerCase(),
     countryName: json.country_name ?? json.country_code,
     timezone: json.timezone,
     city: json.city ?? "",
     ip: json.ip,
-    latitude: typeof json.latitude === "number" ? json.latitude : undefined,
-    longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+    latitude: json.latitude,
+    longitude: json.longitude,
   };
 }
 
@@ -189,20 +213,23 @@ function parseIpwho(raw: unknown): ProxyGeoResult {
   if (!json.success && json.message) {
     throw new Error(`ipwho.is error: ${json.message}`);
   }
-  if (!json.country_code) {
+  if (!json.country_code || !json.timezone?.id) {
     throw new Error("ipwho.is returned an unexpected payload");
   }
   if (isIP(json.ip ?? "") === 0) {
     throw new Error("ipwho.is returned no valid egress IP");
   }
+  if (!hasValidCoordinates(json.latitude, json.longitude)) {
+    throw new Error("ipwho.is returned invalid coordinates");
+  }
   return {
     country: json.country_code.toLowerCase(),
     countryName: json.country ?? json.country_code,
-    timezone: json.timezone?.id ?? "",
+    timezone: json.timezone.id,
     city: json.city ?? "",
     ip: json.ip!,
-    latitude: typeof json.latitude === "number" ? json.latitude : undefined,
-    longitude: typeof json.longitude === "number" ? json.longitude : undefined,
+    latitude: json.latitude,
+    longitude: json.longitude,
   };
 }
 
@@ -230,16 +257,7 @@ function parseIpApi(raw: unknown): ProxyGeoResult {
   if (isIP(json.query ?? "") === 0) {
     throw new Error("ip-api.com returned no valid egress IP");
   }
-  if (
-    typeof json.lat !== "number" ||
-    !Number.isFinite(json.lat) ||
-    json.lat < -90 ||
-    json.lat > 90 ||
-    typeof json.lon !== "number" ||
-    !Number.isFinite(json.lon) ||
-    json.lon < -180 ||
-    json.lon > 180
-  ) {
+  if (!hasValidCoordinates(json.lat, json.lon)) {
     throw new Error("ip-api.com returned invalid coordinates");
   }
   return {
