@@ -238,7 +238,7 @@ function hasSameLocaleTuple(left: FingerprintConfig, right: FingerprintConfig): 
 
 function safeProbeError(error: unknown): string {
   const message = error instanceof Error ? error.message : "unknown error";
-  const providers = ["ipwho.is", "ipapi.co", "ip-api.com"];
+  const providers = ["ipwho.is", "ipapi.co", "ip-api.com", "ipapi.is"];
   const providerResults = providers
     .map((provider) => {
       const match = message.match(new RegExp(`${provider.replaceAll(".", "\\.")}: ([^;]+)`, "i"));
@@ -251,7 +251,7 @@ function safeProbeError(error: unknown): string {
 }
 
 function safeProbeCategory(message: string): string {
-  if (/timed out/i.test(message)) return "timeout";
+  if (/timed out|timeout/i.test(message)) return "timeout";
   if (/429|rate.?limit/i.test(message)) return "rate limited";
   const status = message.match(/HTTP (4\d\d|5\d\d)/i)?.[1];
   if (status) return `HTTP ${status}`;

@@ -80,6 +80,20 @@ test("classifies provider rate limiting without logging credentials", () => {
   assert.deepEqual(result.issues, ["Proxy geolocation probe failed (rate limited)"]);
 });
 
+test("surfaces the ipapi.is fallback failure category without proxy secrets", () => {
+  const result = resolveProxyCoherence({
+    engine: "cft",
+    fingerprint: defaultFingerprint("ipapi-is-diagnostic"),
+    probeError: new Error(
+      "All geo-IP providers failed — ipwho.is: timeout; ipapi.co: HTTP 403; ip-api.com: timeout; ipapi.is: HTTP 429; http://secret-user:secret-password@proxy.invalid:8080",
+    ),
+  });
+  assert.deepEqual(result.issues, [
+    "Proxy geolocation probe failed (ipwho.is: timeout; ipapi.co: HTTP 403; ip-api.com: timeout; ipapi.is: rate limited)",
+  ]);
+  assert.doesNotMatch(result.issues.join("; "), /secret-user|secret-password|proxy\.invalid/);
+});
+
 test("rejects a proxy geo payload without a valid egress IP", () => {
   assert.throws(
     () =>
