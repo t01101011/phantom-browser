@@ -107,6 +107,8 @@ export async function probeProxyGeo(
     requestJson?: (proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
     /** Test seam for deterministic per-provider deadline coverage. */
     fetchJson?: (url: string, proxy: ProxyConfig, timeoutMs: number) => Promise<unknown>;
+    /** Test seam for resolving a known egress IP without routing through the proxy. */
+    fetchDirectJson?: (url: string, timeoutMs: number) => Promise<unknown>;
   } = {},
 ): Promise<ProxyGeoResult> {
   // If a custom requestJson is injected (for testing), use the legacy
@@ -118,6 +120,7 @@ export async function probeProxyGeo(
 
   const timeoutMs = opts.timeoutMs ?? 10000;
   const fetchJson = opts.fetchJson ?? fetchThroughProxy;
+  const fetchDirectJson = opts.fetchDirectJson ?? fetchDirect;
   const errors: string[] = [];
 
   for (const provider of PROVIDERS) {
@@ -130,6 +133,29 @@ export async function probeProxyGeo(
     } catch (err) {
       errors.push(`${provider.name}: ${safeProviderFailure(err)}`);
     }
+  }
+
+  // Some residential proxies (observed with VN exits) block known GeoIP
+  // domains while allowing ordinary HTTPS traffic. In that case discover only
+  // the proxy's public IP through a minimal echo endpoint, then geolocate that
+  // already-validated IP directly. The direct response must report the exact
+  // same IP, otherwise fail closed rather than applying coordinates for the
+  // host machine or a provider-controlled different address.
+  try {
+    const egressPayload = (await fetchJson(
+      "https://api.ipify.org?format=json",
+      proxy,
+      timeoutMs,
+    )) as { ip?: unknown };
+    const egressIp = typeof egressPayload.ip === "string" ? egressPayload.ip : "";
+    if (isIP(egressIp) === 0) throw new Error("IP echo returned no valid egress IP");
+
+    const raw = await fetchDirectJson(`https://ipwho.is/${encodeURIComponent(egressIp)}`, timeoutMs);
+    const resolved = parseIpwho(raw);
+    if (resolved.ip !== egressIp) throw new Error("direct geo response IP mismatch");
+    return resolved;
+  } catch (err) {
+    errors.push(`egress rescue: ${safeProviderFailure(err)}`);
   }
 
   throw new Error(`All geo-IP providers failed — ${errors.join("; ")}`);
@@ -332,6 +358,10 @@ async function fetchThroughProxy(
     proxy.type === "socks5" ? new SocksProxyAgent(proxyUrl) : new HttpsProxyAgent(proxyUrl);
 
   return fetchJsonWithAbsoluteDeadline(url, agent, timeoutMs);
+}
+
+async function fetchDirect(url: string, timeoutMs: number): Promise<unknown> {
+  return fetchJsonWithAbsoluteDeadline(url, undefined, timeoutMs);
 }
 
 export function fetchJsonWithAbsoluteDeadline(

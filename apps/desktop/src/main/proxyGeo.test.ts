@@ -17,7 +17,7 @@ test("multi-provider geo fallback gives each provider a fresh deadline", async (
     }),
     /All geo-IP providers failed/,
   );
-  assert.deepEqual(budgets, [100, 100, 100, 100]);
+  assert.deepEqual(budgets, [100, 100, 100, 100, 100]);
 });
 
 test("geo fallback still tries the next provider after the first provider uses its deadline", async () => {
@@ -92,6 +92,59 @@ test("geo fallback uses ipapi.is after the existing providers are unavailable", 
   assert.equal(calls, 4);
   assert.equal(result.country, "us");
   assert.equal(result.latitude, 40.7128);
+});
+
+test("resolves geo after a proxy blocks every geo provider but still exposes its egress IP", async () => {
+  const proxiedUrls: string[] = [];
+  const directUrls: string[] = [];
+  const result = await probeProxyGeo(proxy, {
+    timeoutMs: 100,
+    fetchJson: async (url) => {
+      proxiedUrls.push(url);
+      if (url.includes("api.ipify.org")) return { ip: "203.0.113.10" };
+      throw new Error("blocked by proxy policy");
+    },
+    fetchDirectJson: async (url) => {
+      directUrls.push(url);
+      return {
+        success: true,
+        ip: "203.0.113.10",
+        country_code: "VN",
+        country: "Vietnam",
+        timezone: { id: "Asia/Ho_Chi_Minh" },
+        city: "Hanoi",
+        latitude: 21.0285,
+        longitude: 105.8542,
+      };
+    },
+  });
+
+  assert.equal(result.country, "vn");
+  assert.equal(result.ip, "203.0.113.10");
+  assert.equal(result.latitude, 21.0285);
+  assert(proxiedUrls.some((url) => url.includes("api.ipify.org")));
+  assert.deepEqual(directUrls, ["https://ipwho.is/203.0.113.10"]);
+});
+
+test("rejects rescue geo when the direct provider reports a different IP", async () => {
+  await assert.rejects(
+    probeProxyGeo(proxy, {
+      fetchJson: async (url) => {
+        if (url.includes("api.ipify.org")) return { ip: "203.0.113.10" };
+        throw new Error("blocked by proxy policy");
+      },
+      fetchDirectJson: async () => ({
+        success: true,
+        ip: "198.51.100.9",
+        country_code: "VN",
+        country: "Vietnam",
+        timezone: { id: "Asia/Ho_Chi_Minh" },
+        latitude: 21.0285,
+        longitude: 105.8542,
+      }),
+    }),
+    /All geo-IP providers failed/,
+  );
 });
 
 test("ip-api fallback rejects out-of-range coordinates", async () => {
