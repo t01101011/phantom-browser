@@ -3,6 +3,7 @@ import type { BrowserEngine } from "@multizen/settings-store";
 import type { FingerprintConfig, ProxyConfig } from "@multizen/types";
 import {
   findDeterministicLocaleIdByCountry,
+  localeCatalog,
   reconcileFingerprint,
 } from "../../../../packages/profile-manager/src/fingerprint.ts";
 import { probeProxyGeo, type ProxyGeoResult } from "./proxyGeo.ts";
@@ -62,9 +63,18 @@ export function resolveProxyCoherence(params: {
     const proxyCountry = geo.country.toLowerCase();
     const localeId = findDeterministicLocaleIdByCountry(proxyCountry);
     if (localeId) {
+      const locale = localeCatalog().find((entry) => entry.id === localeId);
+      // GeoIP databases may return an IANA alias used by a neighbouring
+      // country even though the offset is currently equivalent (notably
+      // Asia/Bangkok for VN). Reconciliation intentionally accepts only the
+      // selected locale's catalogued zones, so prefer the provider zone when
+      // allowed and otherwise use the locale's canonical first timezone.
+      const timezone = locale?.timezones.includes(geo.timezone)
+        ? geo.timezone
+        : (locale?.timezones[0] ?? geo.timezone);
       const reconciled = reconcileFingerprint(fingerprint, {
         localeId,
-        timezone: geo.timezone,
+        timezone,
       });
       if (!hasSameLocaleTuple(fingerprint, reconciled)) fingerprint = reconciled;
     } else if (fingerprint.country.toLowerCase() !== proxyCountry) {

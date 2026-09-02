@@ -145,6 +145,25 @@ test("deterministic country mapping reconciles locale and languages automaticall
   assert.equal(result.status, "coherent");
 });
 
+test("Vietnam proxy timezone alias reconciles to the locale-supported timezone", () => {
+  const result = resolveProxyCoherence({
+    engine: "cloakbrowser",
+    fingerprint: defaultFingerprint("vn-timezone-alias"),
+    geo: geo({
+      country: "vn",
+      countryName: "Vietnam",
+      city: "Hanoi",
+      timezone: "Asia/Bangkok",
+      latitude: 21.0285,
+      longitude: 105.8542,
+    }),
+  });
+  assert.equal(result.fingerprint.country, "vn");
+  assert.equal(result.fingerprint.locale, "vi-VN");
+  assert.equal(result.fingerprint.timezone, "Asia/Ho_Chi_Minh");
+  assert.equal(result.status, "coherent");
+});
+
 test("same-country locale and language mismatch is reconciled as a full tuple", () => {
   const fingerprint = {
     ...defaultFingerprint("same-country-locale-mismatch"),
